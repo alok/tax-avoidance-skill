@@ -61,6 +61,18 @@ If the user is a contractor or freelancer, a stronger version is:
 Use $tax-avoidance to gather my 2025 W-2s, 1099s, and tax receipts, build a Schedule C skeleton if I have 1099-NEC income, and tell me exactly what is still missing.
 ```
 
+## Try It Locally Without Connectors
+
+If you want to sanity-check the deterministic layer before using your own data:
+
+```bash
+uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
+  --input examples/contractor-and-investment-input.json \
+  --out-dir output/example-run
+```
+
+That should create the same four standard artifacts in `output/example-run/`.
+
 ## Install In Claude Cowork
 
 This repo also ships a Cowork plugin wrapper:

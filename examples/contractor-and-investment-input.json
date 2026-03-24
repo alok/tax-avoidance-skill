@@ -1,0 +1,66 @@
+{
+  "tax_year": 2025,
+  "filing_status": "single",
+  "connectors": {
+    "gmail": true,
+    "google_drive": true
+  },
+  "documents": [
+    {
+      "id": "sample-1099-nec",
+      "doc_type": "1099-NEC",
+      "source_type": "upload",
+      "source_ref": "upload://sample-1099-nec",
+      "fields": {
+        "nonemployee_compensation": 48000.0
+      }
+    },
+    {
+      "id": "sample-1099-int",
+      "doc_type": "1099-INT",
+      "source_type": "upload",
+      "source_ref": "upload://sample-1099-int",
+      "fields": {
+        "interest_income": 1200.0
+      }
+    },
+    {
+      "id": "sample-1099-div",
+      "doc_type": "1099-DIV",
+      "source_type": "upload",
+      "source_ref": "upload://sample-1099-div",
+      "fields": {
+        "ordinary_dividends": 950.0,
+        "capital_gains": 600.0
+      }
+    },
+    {
+      "id": "sample-anthropic-receipt",
+      "doc_type": "Expense Receipt",
+      "source_type": "upload",
+      "source_ref": "upload://sample-anthropic-receipt",
+      "document_date": "2025-03-24",
+      "fields": {
+        "amount": 200.0,
+        "vendor": "Anthropic, PBC"
+      }
+    },
+    {
+      "id": "sample-github-receipt",
+      "doc_type": "Expense Receipt",
+      "source_type": "upload",
+      "source_ref": "upload://sample-github-receipt",
+      "document_date": "2025-06-15",
+      "fields": {
+        "amount": 48.0,
+        "vendor": "GitHub"
+      }
+    }
+  ],
+  "answers": {
+    "business_expenses": 9000.0,
+    "deduction_amount": 15000.0,
+    "tax_before_credits": 6200.0
+  },
+  "user_request": "Build a sample contractor plus investment return package."
+}
