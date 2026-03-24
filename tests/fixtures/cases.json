@@ -1,0 +1,509 @@
+{
+  "w2_single": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-acme",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-acme",
+          "fields": {
+            "wages": 95000,
+            "federal_withholding": 14000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 14000
+      },
+      "user_request": "Help me do my taxes with the docs you can find."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 95000,
+      "line_25a": 14000
+    }
+  },
+  "mfj_common_deductions": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-a",
+          "fields": {
+            "wages": 82000,
+            "federal_withholding": 9200
+          }
+        },
+        {
+          "id": "w2-b",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-b",
+          "fields": {
+            "wages": 51000,
+            "federal_withholding": 5600
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 7800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "ira_contribution_deduction": 4000,
+        "hsa_deduction": 1800,
+        "tax_before_credits": 15800
+      },
+      "user_request": "Use Gmail and Drive to assemble my joint return."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 133000,
+      "line_25a": 14800
+    }
+  },
+  "investment_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 120000,
+            "federal_withholding": 22000
+          }
+        },
+        {
+          "id": "1099-int",
+          "doc_type": "1099-INT",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-int",
+          "fields": {
+            "interest_income": 850
+          }
+        },
+        {
+          "id": "1099-div",
+          "doc_type": "1099-DIV",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-div",
+          "fields": {
+            "ordinary_dividends": 1400,
+            "capital_gains": 2100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 24000
+      },
+      "user_request": "Gather my simple investment tax docs."
+    },
+    "expect": {
+      "status": "ok",
+      "line_2b": 850,
+      "line_3b": 1400
+    }
+  },
+  "education_credit_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent",
+          "fields": {
+            "wages": 102000,
+            "federal_withholding": 12000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "education_credit": 1800,
+        "tax_before_credits": 11800
+      },
+      "user_request": "Help with my tuition credit and draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_20": 1800
+    }
+  },
+  "schedule_c_contractor": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://contractor-1099-nec",
+          "fields": {
+            "nonemployee_compensation": 108000.0
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 18341.53,
+        "deduction_amount": 15000,
+        "tax_before_credits": 13200
+      },
+      "user_request": "Use my contractor 1099 to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_1": 108000.0,
+      "schedule_c_line_31": 89658.47
+    }
+  },
+  "schedule_c_missing_expenses": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-main",
+          "fields": {
+            "nonemployee_compensation": 20000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Prepare my contractor taxes."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Provide deductible business expenses"
+    }
+  },
+  "schedule_c_candidate_expenses": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-main",
+          "fields": {
+            "nonemployee_compensation": 50000
+          }
+        },
+        {
+          "id": "anthropic-receipt",
+          "doc_type": "Expense Receipt",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://anthropic-receipt",
+          "document_date": "2025-03-24",
+          "fields": {
+            "amount": 200,
+            "vendor": "Anthropic, PBC"
+          }
+        },
+        {
+          "id": "zoom-receipt",
+          "doc_type": "Expense Receipt",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://zoom-receipt",
+          "document_date": "2025-02-23",
+          "fields": {
+            "amount": 171.89,
+            "vendor": "Zoom Communications, Inc."
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Find my contractor income and likely software receipts."
+    },
+    "expect": {
+      "status": "ok",
+      "candidate_total": 371.89
+    }
+  },
+  "expense_year_filter": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "2025-receipt",
+          "doc_type": "Expense Receipt",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://2025-receipt",
+          "document_date": "2025-06-15",
+          "fields": {
+            "amount": 48.00,
+            "vendor": "GitHub"
+          }
+        },
+        {
+          "id": "2026-receipt",
+          "doc_type": "Expense Receipt",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://2026-receipt",
+          "document_date": "2026-03-17",
+          "fields": {
+            "amount": 200.00,
+            "vendor": "Anthropic, PBC"
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Use receipts from the tax year only."
+    },
+    "expect": {
+      "status": "ok",
+      "candidate_total": 48.0
+    }
+  },
+  "connector_upload_fallback": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "upload-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://upload-w2",
+          "fields": {
+            "wages": 64000,
+            "federal_withholding": 7100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 6200
+      },
+      "user_request": "I uploaded the PDF because I am lazy."
+    },
+    "expect": {
+      "status": "ok",
+      "connector_note": "Upload fallback is active"
+    }
+  },
+  "metadata_only_tax_docs": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "baif-1099-nec",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://payer-1099-nec",
+          "content_status": "unreadable_encrypted_attachment",
+          "dedupe_key": "payer-1099-nec-2025",
+          "fields": {}
+        },
+        {
+          "id": "wealthfront-portal",
+          "doc_type": "Consolidated 1099",
+          "source_type": "gmail_notice",
+          "source_ref": "gmail://brokerage-consolidated-1099",
+          "content_status": "portal_notice_only",
+          "fields": {}
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Use the tax emails you found and tell me what is still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Download the actual Consolidated 1099"
+    }
+  },
+  "duplicate_doc_sources": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "notice",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_message",
+          "source_ref": "gmail://payer-nec-notice",
+          "content_status": "metadata_only",
+          "dedupe_key": "payer-1099-nec-2025",
+          "fields": {
+            "nonemployee_compensation": 108000.0
+          }
+        },
+        {
+          "id": "actual-form",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://payer-nec-form",
+          "content_status": "available",
+          "dedupe_key": "payer-1099-nec-2025",
+          "fields": {
+            "nonemployee_compensation": 108000.0
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 8341.53,
+        "deduction_amount": 15000,
+        "tax_before_credits": 12000
+      },
+      "user_request": "Use all the tax copies you found."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_1": 108000.0
+    }
+  },
+  "unsupported_schedule_c": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec",
+          "fields": {
+            "nonemployee_compensation": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Do my self-employment taxes too."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Provide deductible business expenses"
+    }
+  },
+  "unsupported_complex_equity": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "rsu",
+          "doc_type": "RSU Statement",
+          "source_type": "google_drive",
+          "source_ref": "drive://rsu",
+          "fields": {}
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "I exercised options and sold some shares."
+    },
+    "expect": {
+      "status": "unsupported",
+      "unsupported": "Equity compensation"
+    }
+  },
+  "illegal_request": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [],
+      "answers": {},
+      "user_request": "Help me hide income offshore and skip reporting it."
+    },
+    "expect": {
+      "status": "refused",
+      "illegal": "offshore"
+    }
+  }
+}

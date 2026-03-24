@@ -1,0 +1,247 @@
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+from typing import Any
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from tax_flow_common import (  # noqa: E402
+    answer_fact,
+    aggregate_numeric,
+    categorize_expense_vendor,
+    connector_notes,
+    detect_illegal_request,
+    detect_unsupported,
+    dump_json,
+    load_json,
+    safe_float,
+)
+
+
+def build_fact(
+    key: str,
+    value: float,
+    sources: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {"key": key, "value": value, "sources": sources}
+
+
+def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    documents = payload.get("documents", [])
+    answers = payload.get("answers", {})
+    connectors = payload.get("connectors", {})
+    user_request = payload.get("user_request", "")
+    tax_year = payload.get("tax_year", 2025)
+
+    illegal_reasons = detect_illegal_request(user_request)
+    unsupported_reasons = detect_unsupported(payload)
+
+    wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
+    withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
+        documents,
+        {"1099-NEC"},
+        "nonemployee_compensation",
+    )
+    interest, interest_sources = aggregate_numeric(documents, {"1099-INT"}, "interest_income")
+    dividends, dividends_sources = aggregate_numeric(documents, {"1099-DIV"}, "ordinary_dividends")
+    capital_gains, capital_gains_sources = aggregate_numeric(
+        documents,
+        {"1099-B", "1099-DIV"},
+        "capital_gains",
+    )
+    social_security, social_security_sources = aggregate_numeric(
+        documents,
+        {"SSA-1099"},
+        "benefits",
+    )
+    mortgage_interest, mortgage_interest_sources = aggregate_numeric(
+        documents,
+        {"1098"},
+        "mortgage_interest",
+    )
+    student_loan_interest, student_loan_interest_sources = aggregate_numeric(
+        documents,
+        {"1098-E"},
+        "student_loan_interest",
+    )
+    expense_documents_for_year = [
+        document
+        for document in documents
+        if document.get("doc_type") == "Expense Receipt"
+        and (
+            not document.get("document_date")
+            or str(document.get("document_date")).startswith(str(tax_year))
+        )
+    ]
+    candidate_business_expenses, candidate_expense_sources = aggregate_numeric(
+        expense_documents_for_year,
+        {"Expense Receipt"},
+        "amount",
+    )
+    candidate_expense_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "document_date": document.get("document_date"),
+            "vendor": document.get("fields", {}).get("vendor", "Unknown"),
+            "category": categorize_expense_vendor(document.get("fields", {}).get("vendor")),
+            "amount": safe_float(document.get("fields", {}).get("amount")),
+        }
+        for document in expense_documents_for_year
+        if safe_float(document.get("fields", {}).get("amount")) != 0.0
+    ]
+    charitable_cash, charitable_sources = aggregate_numeric(
+        documents,
+        {"Donation Receipt"},
+        "cash_donations",
+    )
+
+    ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
+    hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
+    business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
+    deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
+    qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
+    tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
+    other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    education_credit, education_credit_sources = answer_fact(answers, "education_credit")
+    clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
+    clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
+    child_tax_credit, child_tax_credit_sources = answer_fact(answers, "child_tax_credit")
+    other_nonrefundable_credits, other_credit_sources = answer_fact(
+        answers,
+        "other_nonrefundable_credits",
+    )
+
+    missing_items: list[str] = []
+    available_dedupe_keys = {
+        document.get("dedupe_key")
+        for document in documents
+        if document.get("dedupe_key") and document.get("content_status") == "available"
+    }
+    if not payload.get("filing_status"):
+        missing_items.append("Confirm the filing status for the return.")
+    if not documents:
+        missing_items.append("Upload or connect at least one tax document before continuing.")
+    if deduction_amount == 0.0 and "deduction_amount" not in answers:
+        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
+        missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
+        missing_items.append(
+            "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
+        )
+    if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
+        missing_items.append(
+            f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
+        )
+    if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
+        missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    for document in documents:
+        content_status = document.get("content_status")
+        doc_type = document.get("doc_type", "document")
+        source_ref = document.get("source_ref", "unknown source")
+        dedupe_key = document.get("dedupe_key")
+        if dedupe_key and dedupe_key in available_dedupe_keys and content_status != "available":
+            continue
+        if content_status == "portal_notice_only":
+            missing_items.append(
+                f"Download the actual {doc_type} from {source_ref}; the current source is only a portal or availability notice."
+            )
+        elif content_status == "unreadable_encrypted_attachment":
+            missing_items.append(
+                f"Open or upload the actual {doc_type} from {source_ref}; the attachment exists but its contents were not readable in this workflow."
+            )
+        elif content_status == "metadata_only":
+            if document.get("fields"):
+                missing_items.append(
+                    f"Confirm the extracted {doc_type} details from {source_ref} against the actual filed form or PDF before using them in a return draft."
+                )
+            else:
+                missing_items.append(
+                    f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
+                )
+
+    status = "ok"
+    if illegal_reasons:
+        status = "refused"
+    elif unsupported_reasons:
+        status = "unsupported"
+
+    facts = {
+        "wages": build_fact("wages", wages, wages_sources),
+        "nonemployee_compensation": build_fact(
+            "nonemployee_compensation",
+            nonemployee_compensation,
+            nonemployee_compensation_sources,
+        ),
+        "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
+        "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
+        "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
+        "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "student_loan_interest_deduction": build_fact(
+            "student_loan_interest_deduction",
+            student_loan_interest,
+            student_loan_interest_sources,
+        ),
+        "candidate_business_expenses": build_fact(
+            "candidate_business_expenses",
+            candidate_business_expenses,
+            candidate_expense_sources,
+        ),
+        "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
+        "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
+        "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
+        "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
+        "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
+        "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
+        "other_payments": build_fact("other_payments", other_payments, other_payments_sources),
+        "education_credit": build_fact("education_credit", education_credit, education_credit_sources),
+        "clean_vehicle_credit": build_fact("clean_vehicle_credit", clean_vehicle_credit, clean_vehicle_credit_sources),
+        "clean_energy_credit": build_fact("clean_energy_credit", clean_energy_credit, clean_energy_credit_sources),
+        "child_tax_credit": build_fact("child_tax_credit", child_tax_credit, child_tax_credit_sources),
+        "other_nonrefundable_credits": build_fact(
+            "other_nonrefundable_credits",
+            other_nonrefundable_credits,
+            other_credit_sources,
+        ),
+    }
+
+    normalized: dict[str, Any] = {
+        "status": status,
+        "tax_year": tax_year,
+        "filing_status": payload.get("filing_status", ""),
+        "user_request": user_request,
+        "documents": documents,
+        "connectors": connectors,
+        "connector_notes": connector_notes(connectors, documents),
+        "illegal_reasons": illegal_reasons,
+        "unsupported_reasons": unsupported_reasons,
+        "missing_items": missing_items,
+        "candidate_expense_documents": candidate_expense_documents,
+        "facts": facts,
+    }
+    return normalized
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Normalize tax documents into structured facts.")
+    parser.add_argument("--input", required=True, type=Path, help="Input JSON payload.")
+    parser.add_argument("--output", required=True, type=Path, help="Output JSON path.")
+    args = parser.parse_args()
+
+    payload = load_json(args.input)
+    normalized = normalize_payload(payload)
+    dump_json(args.output, normalized)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,10 @@
+{
+  "name": "tax",
+  "version": "0.1.0",
+  "description": "Opinionated tax prep copilot for simple U.S. federal returns",
+  "author": {
+    "name": "Alok Singh",
+    "email": "alokbeniwal@gmail.com"
+  }
+}
+

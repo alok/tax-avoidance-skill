@@ -1,0 +1,14 @@
+[project]
+name = "tax-avoidance-skill"
+version = "0.1.0"
+description = "Normie-focused Codex and Claude Cowork tax copilot for simple U.S. federal returns."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Alok Singh", email = "alokbeniwal@gmail.com" }
+]
+
+[tool.uv]
+package = false
+

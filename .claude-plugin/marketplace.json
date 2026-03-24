@@ -1,0 +1,19 @@
+{
+  "name": "tax-avoidance-skill",
+  "owner": {
+    "name": "Alok Singh",
+    "email": "alokbeniwal@gmail.com"
+  },
+  "metadata": {
+    "description": "Normie-focused Codex/Cowork tax copilot for simple U.S. federal returns",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "tax",
+      "description": "Opinionated tax prep copilot for simple U.S. federal returns",
+      "source": "./plugins/tax"
+    }
+  ]
+}
+

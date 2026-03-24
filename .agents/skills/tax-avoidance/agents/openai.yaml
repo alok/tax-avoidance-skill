@@ -1,0 +1,9 @@
+interface:
+  display_name: "Tax Avoidance"
+  short_description: "Prepare a simple U.S. federal return using connectors, uploaded docs, and IRS citations."
+  brand_color: "#1F7A4D"
+  default_prompt: "Use $tax-avoidance to connect Gmail and Google Drive, gather my 2025 tax documents, ask only the missing questions, and assemble a prefilled federal return package."
+
+policy:
+  allow_implicit_invocation: true
+
