@@ -185,7 +185,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Standard or itemized deduction",
             "value": deduction_amount or None,
             "sources": fact_sources(normalized, "deduction_amount"),
-            "rule_citations": [],
+            "rule_citations": rule_citations("standard_deduction_2025", "mortgage_interest", "charitable_cash"),
         },
         {
             "form": "Form 1040",
@@ -316,6 +316,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_component_rows = [
+        [
+            component.get("label", ""),
+            money(component.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in component.get("sources", [])) or "TBD",
+        ]
+        for component in deduction_summary.get("itemized_components", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +350,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Decision",
+        "",
+        f"- Strategy: {deduction_summary.get('strategy') or 'unknown'}",
+        f"- Chosen path: {deduction_summary.get('choice') or 'unknown'}",
+        f"- 2025 standard deduction: {money(deduction_summary.get('standard_deduction'))}",
+        f"- Current itemized total: {money(deduction_summary.get('itemized_total'))}",
+        "",
+        make_markdown_table(
+            ["Component", "Amount", "Sources"],
+            deduction_component_rows or [["None", "$0.00", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",

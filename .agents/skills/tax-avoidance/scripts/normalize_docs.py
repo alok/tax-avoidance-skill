@@ -10,6 +10,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from tax_flow_common import (  # noqa: E402
+    STANDARD_DEDUCTION_2025,
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
@@ -30,6 +31,20 @@ def build_fact(
     sources: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {"key": key, "value": value, "sources": sources}
+
+
+def computed_source(
+    key: str,
+    value: float,
+    detail: str,
+) -> dict[str, Any]:
+    return {
+        "source_type": "computed",
+        "source_ref": f"computed:{key}",
+        "field": key,
+        "value": value,
+        "detail": detail,
+    }
 
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -104,6 +119,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    state_and_local_taxes, salt_sources = answer_fact(answers, "state_and_local_taxes")
+    medical_expenses_deduction, medical_sources = answer_fact(answers, "medical_expenses_deduction")
+    casualty_loss_deduction, casualty_sources = answer_fact(answers, "casualty_loss_deduction")
+    other_itemized_deductions, other_itemized_sources = answer_fact(answers, "other_itemized_deductions")
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -120,6 +139,84 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+
+    standard_deduction = STANDARD_DEDUCTION_2025.get(payload.get("filing_status", ""))
+    itemized_components = [
+        {
+            "key": "mortgage_interest",
+            "label": "Mortgage interest",
+            "value": mortgage_interest,
+            "sources": mortgage_interest_sources,
+        },
+        {
+            "key": "charitable_cash",
+            "label": "Charitable cash donations",
+            "value": charitable_cash,
+            "sources": charitable_sources,
+        },
+        {
+            "key": "state_and_local_taxes",
+            "label": "State and local taxes",
+            "value": state_and_local_taxes,
+            "sources": salt_sources,
+        },
+        {
+            "key": "medical_expenses_deduction",
+            "label": "Medical expense deduction",
+            "value": medical_expenses_deduction,
+            "sources": medical_sources,
+        },
+        {
+            "key": "casualty_loss_deduction",
+            "label": "Casualty loss deduction",
+            "value": casualty_loss_deduction,
+            "sources": casualty_sources,
+        },
+        {
+            "key": "other_itemized_deductions",
+            "label": "Other itemized deductions",
+            "value": other_itemized_deductions,
+            "sources": other_itemized_sources,
+        },
+    ]
+    itemized_total = sum(component["value"] for component in itemized_components)
+    deduction_strategy = "manual" if "deduction_amount" in answers else "undecided"
+    deduction_choice = "unknown"
+    if "deduction_amount" not in answers and standard_deduction is not None:
+        if itemized_total > standard_deduction:
+            deduction_amount = itemized_total
+            deduction_sources = [
+                source
+                for component in itemized_components
+                for source in component["sources"]
+            ]
+            deduction_sources.append(
+                computed_source(
+                    "deduction_amount",
+                    deduction_amount,
+                    "Auto-selected itemized deduction because it exceeds the 2025 standard deduction.",
+                )
+            )
+            deduction_strategy = "auto"
+            deduction_choice = "itemized"
+        else:
+            deduction_amount = standard_deduction
+            deduction_sources = [
+                computed_source(
+                    "deduction_amount",
+                    deduction_amount,
+                    "Auto-selected the 2025 standard deduction for the filing status.",
+                )
+            ]
+            deduction_strategy = "auto"
+            deduction_choice = "standard"
+    elif "deduction_amount" in answers:
+        if standard_deduction is not None and abs(deduction_amount - standard_deduction) < 0.01:
+            deduction_choice = "standard"
+        elif itemized_total > 0.0:
+            deduction_choice = "itemized"
+        else:
+            deduction_choice = "manual_review"
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -177,6 +274,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    elif "deduction_amount" not in answers and standard_deduction is not None:
+        missing_items.append(
+            "Review whether you had any additional itemized deductions beyond mortgage interest, charitable giving, and the deductions already captured before filing from this draft."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -241,6 +342,22 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             student_loan_interest,
             student_loan_interest_sources,
         ),
+        "state_and_local_taxes": build_fact("state_and_local_taxes", state_and_local_taxes, salt_sources),
+        "medical_expenses_deduction": build_fact(
+            "medical_expenses_deduction",
+            medical_expenses_deduction,
+            medical_sources,
+        ),
+        "casualty_loss_deduction": build_fact(
+            "casualty_loss_deduction",
+            casualty_loss_deduction,
+            casualty_sources,
+        ),
+        "other_itemized_deductions": build_fact(
+            "other_itemized_deductions",
+            other_itemized_deductions,
+            other_itemized_sources,
+        ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
@@ -288,6 +405,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     "withholding": totals["withholding"],
                 }
                 for code, totals in sorted(state_allocation_totals.items())
+            ],
+        },
+        "deduction_summary": {
+            "strategy": deduction_strategy,
+            "choice": deduction_choice,
+            "standard_deduction": standard_deduction,
+            "itemized_total": itemized_total,
+            "itemized_components": [
+                {
+                    "key": component["key"],
+                    "label": component["label"],
+                    "value": component["value"],
+                    "sources": component["sources"],
+                }
+                for component in itemized_components
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,

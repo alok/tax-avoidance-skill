@@ -62,6 +62,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "standard_deduction_2025": {
+        "title": "2025 Instructions for Forms 1040 and 1040-SR",
+        "url": "https://www.eitc.irs.gov/pub/irs-prior/i1040gi--2025.pdf",
+    },
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {
@@ -102,6 +106,10 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+STANDARD_DEDUCTION_2025 = {
+    "single": 15750.0,
+    "married_filing_jointly": 31500.0,
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:

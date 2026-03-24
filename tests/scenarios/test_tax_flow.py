@@ -48,6 +48,8 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "w2_single",
             "mfj_common_deductions",
+            "auto_standard_deduction",
+            "auto_itemized_deduction",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -72,6 +74,20 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_auto_deduction_scaffolding(self) -> None:
+        for name in ("auto_standard_deduction", "auto_itemized_deduction"):
+            with self.subTest(name=name):
+                normalized, artifacts = self.run_case(name)
+                expected = self.cases[name]["expect"]
+                self.assertEqual(normalized["status"], expected["status"])
+                self.assertEqual(normalized["deduction_summary"]["choice"], expected["deduction_choice"])
+                self.assertAlmostEqual(
+                    normalized["facts"]["deduction_amount"]["value"],
+                    expected["deduction_amount"],
+                )
+                self.assertIn(f"${expected['deduction_amount']:,.2f}", artifacts["federal-lines.md"])
+                self.assertIn(f"Chosen path: {expected['deduction_choice']}", artifacts["tax-dossier.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
