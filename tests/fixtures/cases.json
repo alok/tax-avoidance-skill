@@ -321,6 +321,41 @@
       "candidate_total": 48.0
     }
   },
+  "state_follow_up": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "state": {
+        "resident_state": "CA",
+        "work_states": ["CA", "NY"]
+      },
+      "documents": [
+        {
+          "id": "sample-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://sample-w2",
+          "fields": {
+            "wages": 85000,
+            "federal_withholding": 9000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 8400
+      },
+      "user_request": "Prepare my return and keep track of state filing follow-up."
+    },
+    "expect": {
+      "status": "ok",
+      "state_text": "California state return support is planned but not yet automated."
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

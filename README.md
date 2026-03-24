@@ -27,6 +27,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `missing-items.md`
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
+- Captures resident-state and work-state context now, even before automated state calculations are implemented.
 
 ## Scope
 
@@ -92,11 +93,12 @@ Primary command:
 
 1. Check whether Gmail and Google Drive are available. If they are missing, ask the user to connect them immediately or upload PDFs.
 2. Search for likely tax documents using fixed, opinionated queries instead of asking the user to browse manually.
-3. Build a document inventory and ask the minimum remaining interview questions.
-4. Normalize extracted facts into `return-data.json`.
-5. Assemble a prefilled federal line map and a human-readable dossier.
-6. Surface likely business-expense receipts separately from confirmed deductible expenses.
-7. Clearly label legal planning moves, missing items, unsupported complexity, and anything that needs professional review.
+3. Capture resident-state and work-state context as early as possible.
+4. Build a document inventory and ask the minimum remaining interview questions.
+5. Normalize extracted facts into `return-data.json`.
+6. Assemble a prefilled federal line map and a human-readable dossier.
+7. Surface likely business-expense receipts separately from confirmed deductible expenses.
+8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
 
 ## Repository Layout
 

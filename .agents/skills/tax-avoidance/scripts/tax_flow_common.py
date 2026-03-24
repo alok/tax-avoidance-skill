@@ -64,6 +64,23 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
     },
 }
 
+STATE_SUPPORT: dict[str, dict[str, str]] = {
+    "CA": {
+        "name": "California",
+        "status": "planned",
+        "resident_form": "Form 540",
+        "nonresident_form": "Form 540NR",
+        "source_url": "https://www.ftb.ca.gov/file/personal/do-you-need-to-file.html",
+    },
+    "NY": {
+        "name": "New York",
+        "status": "planned",
+        "resident_form": "Form IT-201",
+        "nonresident_form": "Form IT-203",
+        "source_url": "https://www.tax.ny.gov/pit/file/residents.htm",
+    },
+}
+
 ILLEGAL_PATTERNS = (
     "hide income",
     "skip reporting",
@@ -260,3 +277,29 @@ def categorize_expense_vendor(vendor: str | None) -> str:
     if any(token in normalized for token in ("delta", "united", "alaska airlines")):
         return "Travel"
     return "Uncategorized"
+
+
+def normalize_state_code(code: str | None) -> str | None:
+    if not code:
+        return None
+    normalized = code.strip().upper()
+    if len(normalized) != 2:
+        return None
+    return normalized
+
+
+def resolve_state_support(code: str | None) -> dict[str, str] | None:
+    normalized = normalize_state_code(code)
+    if not normalized:
+        return None
+    support = STATE_SUPPORT.get(normalized)
+    if support:
+        return {"code": normalized, **support}
+    return {
+        "code": normalized,
+        "name": normalized,
+        "status": "unconfigured",
+        "resident_form": "Unknown",
+        "nonresident_form": "Unknown",
+        "source_url": "",
+    }

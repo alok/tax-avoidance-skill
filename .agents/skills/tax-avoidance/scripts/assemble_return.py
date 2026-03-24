@@ -295,6 +295,19 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    state_summary = normalized.get("state_summary", {})
+    state_rows = [
+        [
+            module.get("code", ""),
+            module.get("name", ""),
+            module.get("status", ""),
+            module.get("resident_form", ""),
+            module.get("nonresident_form", ""),
+            module.get("source_url", "") or "TBD",
+        ]
+        for module in state_summary.get("modules", [])
+    ]
+    state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -329,6 +342,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## State Follow-Up",
+        "",
+        f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
+        f"- Work states: {', '.join(state_summary.get('work_states', [])) or 'None provided'}",
+        "",
+        make_markdown_table(
+            ["Code", "State", "Status", "Resident Form", "Nonresident Form", "Official Source"],
+            state_rows or [["None", "None", "None", "None", "None", "None"]],
+        ),
+        "",
+        *state_follow_up_lines,
         "",
         "## Missing Items",
         "",

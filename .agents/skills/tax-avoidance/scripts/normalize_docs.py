@@ -18,6 +18,8 @@ from tax_flow_common import (  # noqa: E402
     detect_unsupported,
     dump_json,
     load_json,
+    normalize_state_code,
+    resolve_state_support,
     safe_float,
 )
 
@@ -36,6 +38,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     connectors = payload.get("connectors", {})
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
+    state = payload.get("state", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -118,6 +121,34 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    resident_state = normalize_state_code(state.get("resident_state"))
+    work_states_raw = state.get("work_states", [])
+    work_states: list[str] = []
+    for item in work_states_raw:
+        normalized = normalize_state_code(item)
+        if normalized and normalized not in work_states:
+            work_states.append(normalized)
+    if resident_state and resident_state not in work_states:
+        work_states.insert(0, resident_state)
+
+    state_modules = [resolve_state_support(code) for code in work_states]
+    state_modules = [module for module in state_modules if module is not None]
+    state_follow_up: list[str] = []
+    if resident_state:
+        resident_module = resolve_state_support(resident_state)
+        if resident_module and resident_module["status"] == "planned":
+            state_follow_up.append(
+                f"{resident_module['name']} state return support is planned but not yet automated. Preserve state withholding and source-income details."
+            )
+        elif resident_module and resident_module["status"] == "unconfigured":
+            state_follow_up.append(
+                f"State return support for {resident_module['code']} is not configured yet. Preserve all state documents and withholding details."
+            )
+    if len(work_states) > 1:
+        state_follow_up.append(
+            "Multiple work states are present. Preserve state wage sourcing and withholding for resident and nonresident filings."
+        )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -140,6 +171,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    for note in state_follow_up:
+        if note not in missing_items:
+            missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
     for document in documents:
@@ -226,6 +260,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "state_summary": {
+            "resident_state": resident_state,
+            "work_states": work_states,
+            "modules": state_modules,
+            "follow_up": state_follow_up,
+        },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

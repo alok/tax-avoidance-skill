@@ -108,6 +108,13 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$48.00", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts totaling $48.00", artifacts["missing-items.md"])
 
+    def test_state_follow_up(self) -> None:
+        normalized, artifacts = self.run_case("state_follow_up")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("State Follow-Up", artifacts["tax-dossier.md"])
+        self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
+        self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

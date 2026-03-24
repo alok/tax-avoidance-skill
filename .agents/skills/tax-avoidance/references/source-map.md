@@ -16,6 +16,13 @@ Use IRS or Treasury sources for all substantive tax guidance. Use Wikipedia only
 - [About Schedule C (Form 1040)](https://www.irs.gov/forms-pubs/about-schedule-c-form-1040): current Schedule C landing page
 - [Instructions for Schedule SE (2025)](https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf): self-employment tax reference
 
+## Initial State Sources
+
+- [California FTB: Do you need to file?](https://www.ftb.ca.gov/file/personal/do-you-need-to-file.html)
+- [California FTB: e-file for individuals](https://www.ftb.ca.gov/tax-pros/efile/efile-for-individuals.html)
+- [New York: Filing information for residents](https://www.tax.ny.gov/pit/file/residents.htm)
+- [New York: Instructions for Form IT-203](https://www.tax.ny.gov/forms/current-forms/it/it203i.htm)
+
 ## Terminology-Only Links
 
 - [Tax avoidance](https://en.wikipedia.org/wiki/Tax_avoidance)
