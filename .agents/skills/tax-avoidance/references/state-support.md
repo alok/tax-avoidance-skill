@@ -24,9 +24,23 @@ Use a top-level `state` object in the flow input:
 }
 ```
 
+State-bearing tax documents may also include `state_allocations`:
+
+```json
+{
+  "fields": {
+    "state_allocations": [
+      { "state": "CA", "wages": 85000, "withholding": 3200 },
+      { "state": "NY", "wages": 12000, "withholding": 600 }
+    ]
+  }
+}
+```
+
 ## Current Behavior
 
 - render resident state and work states in the dossier
+- preserve state wage and withholding allocations when document fields provide them
 - attach state follow-up notes to `missing-items.md`
 - show module status for known states
 - preserve multistate information instead of throwing it away

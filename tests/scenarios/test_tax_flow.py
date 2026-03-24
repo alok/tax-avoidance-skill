@@ -115,6 +115,13 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
 
+    def test_state_allocations(self) -> None:
+        normalized, artifacts = self.run_case("state_allocations")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("State Wages", artifacts["tax-dossier.md"])
+        self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

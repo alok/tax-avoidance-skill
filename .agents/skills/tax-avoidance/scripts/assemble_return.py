@@ -307,6 +307,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for module in state_summary.get("modules", [])
     ]
+    state_allocation_rows = [
+        [
+            allocation.get("state", ""),
+            money(allocation.get("wages")),
+            money(allocation.get("withholding")),
+        ]
+        for allocation in state_summary.get("allocations", [])
+    ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
 
     sections = [
@@ -351,6 +359,11 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Code", "State", "Status", "Resident Form", "Nonresident Form", "Official Source"],
             state_rows or [["None", "None", "None", "None", "None", "None"]],
+        ),
+        "",
+        make_markdown_table(
+            ["State", "State Wages", "State Withholding"],
+            state_allocation_rows or [["None", "$0.00", "$0.00"]],
         ),
         "",
         *state_follow_up_lines,

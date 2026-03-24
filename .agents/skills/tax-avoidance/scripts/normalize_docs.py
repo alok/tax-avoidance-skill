@@ -131,6 +131,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if resident_state and resident_state not in work_states:
         work_states.insert(0, resident_state)
 
+    state_allocation_totals: dict[str, dict[str, float]] = {}
+    for document in documents:
+        for allocation in document.get("fields", {}).get("state_allocations", []):
+            code = normalize_state_code(allocation.get("state"))
+            if not code:
+                continue
+            bucket = state_allocation_totals.setdefault(code, {"wages": 0.0, "withholding": 0.0})
+            bucket["wages"] += safe_float(allocation.get("wages"))
+            bucket["withholding"] += safe_float(allocation.get("withholding"))
+            if code not in work_states:
+                work_states.append(code)
+
     state_modules = [resolve_state_support(code) for code in work_states]
     state_modules = [module for module in state_modules if module is not None]
     state_follow_up: list[str] = []
@@ -147,6 +159,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if len(work_states) > 1:
         state_follow_up.append(
             "Multiple work states are present. Preserve state wage sourcing and withholding for resident and nonresident filings."
+        )
+    if state_allocation_totals and not resident_state:
+        state_follow_up.append(
+            "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
     missing_items: list[str] = []
@@ -265,6 +281,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "work_states": work_states,
             "modules": state_modules,
             "follow_up": state_follow_up,
+            "allocations": [
+                {
+                    "state": code,
+                    "wages": totals["wages"],
+                    "withholding": totals["withholding"],
+                }
+                for code, totals in sorted(state_allocation_totals.items())
+            ],
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
