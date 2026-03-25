@@ -316,6 +316,23 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    intake_rows = [
+        [
+            item.get("topic", ""),
+            item.get("status", ""),
+            item.get("summary", ""),
+            item.get("prompt", "") or "None",
+        ]
+        for item in normalized.get("intake_checklist", [])
+    ]
+    next_question_lines = [
+        f"- {item.get('question')} ({item.get('reason')})"
+        for item in normalized.get("next_questions", [])
+    ] or ["- None"]
+    deferred_question_lines = [
+        f"- {item.get('question')} ({item.get('reason')})"
+        for item in normalized.get("deferred_questions", [])
+    ] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +358,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Intake Checklist",
+        "",
+        make_markdown_table(
+            ["Topic", "Status", "Summary", "Prompt"],
+            intake_rows or [["None", "None", "None", "None"]],
+        ),
+        "",
+        "## Next Questions",
+        "",
+        *next_question_lines,
+        "",
+        "## Deferred Questions",
+        "",
+        *deferred_question_lines,
         "",
         "## Candidate Business Expenses",
         "",

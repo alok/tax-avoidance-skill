@@ -32,6 +32,22 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_checklist_item(
+    topic: str,
+    status: str,
+    summary: str,
+    prompt: str = "",
+    evidence: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "topic": topic,
+        "status": status,
+        "summary": summary,
+        "prompt": prompt,
+        "evidence": evidence or [],
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -165,6 +181,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    present_doc_types = sorted(
+        {
+            document.get("doc_type")
+            for document in documents
+            if document.get("doc_type") not in (None, "Expense Receipt", "Donation Receipt")
+        }
+    )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -216,6 +240,197 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+
+    intake_checklist: list[dict[str, Any]] = []
+    uploads_present = any(document.get("source_type") == "upload" for document in documents)
+    source_evidence = [document.get("source_ref", "unknown") for document in documents[:3]]
+    if connectors.get("gmail") or connectors.get("google_drive") or uploads_present:
+        intake_checklist.append(
+            build_checklist_item(
+                "source_access",
+                "complete",
+                connector_notes(connectors, documents)[0],
+                evidence=source_evidence,
+            )
+        )
+    else:
+        intake_checklist.append(
+            build_checklist_item(
+                "source_access",
+                "needs_input",
+                "No connected source or uploaded tax document is available yet.",
+                "Connect Gmail or Google Drive, or upload at least one tax PDF to begin document collection.",
+            )
+        )
+
+    if payload.get("filing_status"):
+        intake_checklist.append(
+            build_checklist_item(
+                "filing_status",
+                "complete",
+                f"Filing status is set to {payload['filing_status']}.",
+                evidence=[payload["filing_status"]],
+            )
+        )
+    else:
+        intake_checklist.append(
+            build_checklist_item(
+                "filing_status",
+                "needs_input",
+                "The return still needs a filing status.",
+                "Are you filing single or married filing jointly for this 2025 federal return?",
+            )
+        )
+
+    if present_doc_types:
+        intake_checklist.append(
+            build_checklist_item(
+                "income_documents",
+                "complete",
+                f"Detected tax documents: {', '.join(present_doc_types)}.",
+                evidence=[
+                    document.get("source_ref", "unknown")
+                    for document in documents
+                    if document.get("doc_type") in present_doc_types
+                ],
+            )
+        )
+    else:
+        intake_checklist.append(
+            build_checklist_item(
+                "income_documents",
+                "needs_input",
+                "No tax-form documents are available yet.",
+                "Gather at least one W-2, 1099, SSA-1099, or comparable tax form before drafting return lines.",
+            )
+        )
+
+    if resident_state:
+        intake_checklist.append(
+            build_checklist_item(
+                "resident_state",
+                "complete",
+                f"Resident state is recorded as {resident_state}.",
+                evidence=[resident_state, *work_states],
+            )
+        )
+    else:
+        resident_prompt = "What was your resident state for the return year?"
+        if work_states:
+            resident_prompt = f"What was your resident state for the return year? Current state signals: {', '.join(work_states)}."
+        intake_checklist.append(
+            build_checklist_item(
+                "resident_state",
+                "needs_input",
+                "Resident-state context is still missing.",
+                resident_prompt,
+            )
+        )
+
+    if "deduction_amount" in answers:
+        intake_checklist.append(
+            build_checklist_item(
+                "deduction_path",
+                "complete",
+                f"A deduction amount of ${deduction_amount:,.2f} is already in the draft.",
+                evidence=[f"deduction_amount={deduction_amount:,.2f}"],
+            )
+        )
+    else:
+        intake_checklist.append(
+            build_checklist_item(
+                "deduction_path",
+                "needs_input",
+                "The draft does not yet know which deduction path to use.",
+                "Should this draft use the standard deduction or itemized deductions, and what amount should be carried into the package?",
+            )
+        )
+
+    if "tax_before_credits" in answers:
+        intake_checklist.append(
+            build_checklist_item(
+                "tax_review",
+                "complete",
+                f"A provisional tax-before-credits figure of ${tax_before_credits:,.2f} is present.",
+                evidence=[f"tax_before_credits={tax_before_credits:,.2f}"],
+            )
+        )
+    else:
+        intake_checklist.append(
+            build_checklist_item(
+                "tax_review",
+                "deferred",
+                "The draft can stay open, but the tax lines still need review because no provisional tax figure is present.",
+                "If you want the payment and refund lines filled in, provide a tax-before-credits estimate from a trusted worksheet or preparer review.",
+            )
+        )
+
+    if nonemployee_compensation > 0.0:
+        if "business_expenses" in answers:
+            intake_checklist.append(
+                build_checklist_item(
+                    "schedule_c_expenses",
+                    "complete",
+                    f"Schedule C expenses are set to ${business_expenses:,.2f}.",
+                    evidence=[f"business_expenses={business_expenses:,.2f}"],
+                )
+            )
+        else:
+            intake_checklist.append(
+                build_checklist_item(
+                    "schedule_c_expenses",
+                    "needs_input",
+                    "1099-NEC income is present, but deductible business expenses are not confirmed.",
+                    "What deductible business expenses should be applied to Schedule C, or should the contractor expense total be treated as zero?",
+                )
+            )
+
+    if candidate_business_expenses > 0.0:
+        status = "complete" if "business_expenses" in answers else "needs_input"
+        summary = (
+            f"Candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} were surfaced and confirmed separately."
+            if status == "complete"
+            else f"Candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} still need review."
+        )
+        prompt = (
+            ""
+            if status == "complete"
+            else "Review the candidate receipts and confirm which ones belong on Schedule C before they are applied."
+        )
+        intake_checklist.append(
+            build_checklist_item(
+                "candidate_expenses",
+                status,
+                summary,
+                prompt,
+                evidence=[expense.get("source_ref", "unknown") for expense in candidate_expense_documents],
+            )
+        )
+
+    needs_capital_gains_summary = any(
+        document.get("doc_type") == "1099-B" and "capital_gains" not in document.get("fields", {})
+        for document in documents
+    )
+    if needs_capital_gains_summary:
+        intake_checklist.append(
+            build_checklist_item(
+                "capital_gains_summary",
+                "needs_input",
+                "A 1099-B support document was found without a usable net capital gain or loss summary.",
+                "What net capital gain or loss should this draft carry from the 1099-B support documents?",
+            )
+        )
+
+    next_questions = [
+        {"topic": item["topic"], "question": item["prompt"], "reason": item["summary"]}
+        for item in intake_checklist
+        if item["status"] == "needs_input" and item.get("prompt")
+    ]
+    deferred_questions = [
+        {"topic": item["topic"], "question": item["prompt"], "reason": item["summary"]}
+        for item in intake_checklist
+        if item["status"] == "deferred" and item.get("prompt")
+    ]
 
     status = "ok"
     if illegal_reasons:
@@ -290,6 +505,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "intake_checklist": intake_checklist,
+        "next_questions": next_questions,
+        "deferred_questions": deferred_questions,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

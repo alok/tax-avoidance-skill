@@ -101,6 +101,10 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+        self.assertIn("## Intake Checklist", artifacts["tax-dossier.md"])
+        self.assertIn("## Next Questions", artifacts["tax-dossier.md"])
+        self.assertTrue(any(item["topic"] == "schedule_c_expenses" for item in normalized["next_questions"]))
+        self.assertTrue(any(item["topic"] == "candidate_expenses" for item in normalized["next_questions"]))
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
@@ -114,6 +118,14 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Follow-Up", artifacts["tax-dossier.md"])
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
+        self.assertTrue(any(item["topic"] == "resident_state" and item["status"] == "complete" for item in normalized["intake_checklist"]))
+        self.assertTrue(any(item["topic"] == "tax_review" for item in normalized["intake_checklist"]))
+
+    def test_deferred_tax_review_question(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
+        self.assertTrue(any(item["topic"] == "tax_review" and item["status"] == "deferred" for item in normalized["intake_checklist"]))
+        self.assertTrue(any(item["topic"] == "tax_review" for item in normalized["deferred_questions"]))
+        self.assertIn("## Deferred Questions", artifacts["tax-dossier.md"])
 
     def test_state_allocations(self) -> None:
         normalized, artifacts = self.run_case("state_allocations")
