@@ -104,6 +104,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_signal_total = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -176,7 +177,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if itemized_signal_total > 0.0:
+            missing_items.append(
+                f"Choose whether the draft should use the standard deduction or itemize. Known itemized-deduction signals currently total ${itemized_signal_total:,.2f} before any SALT, medical, or other review."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -190,6 +196,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
+    if itemized_signal_total > 0.0 and "deduction_amount" in answers:
+        missing_items.append(
+            f"Review the deduction choice. The draft currently uses ${deduction_amount:,.2f}, while mortgage interest and charitable receipts already show ${itemized_signal_total:,.2f} of itemized-deduction signals before any SALT, medical, or other add-backs."
+        )
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
     for document in documents:
@@ -288,6 +298,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     "withholding": totals["withholding"],
                 }
                 for code, totals in sorted(state_allocation_totals.items())
+            ],
+        },
+        "itemized_deduction_signals": {
+            "total": itemized_signal_total,
+            "components": [
+                {
+                    "label": "Mortgage interest",
+                    "value": mortgage_interest,
+                    "sources": mortgage_interest_sources,
+                },
+                {
+                    "label": "Cash charitable donations",
+                    "value": charitable_cash,
+                    "sources": charitable_sources,
+                },
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,

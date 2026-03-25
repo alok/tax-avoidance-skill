@@ -68,6 +68,15 @@
           "fields": {
             "mortgage_interest": 7800
           }
+        },
+        {
+          "id": "donation-annual",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-annual",
+          "fields": {
+            "cash_donations": 1250
+          }
         }
       ],
       "answers": {
@@ -81,7 +90,8 @@
     "expect": {
       "status": "ok",
       "line_1a": 133000,
-      "line_25a": 14800
+      "line_25a": 14800,
+      "itemized_signal_total": 9050
     }
   },
   "investment_household": {

@@ -295,6 +295,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    itemized_signals = normalized.get("itemized_deduction_signals", {})
+    itemized_signal_rows = [
+        [
+            component.get("label", "Unknown"),
+            money(component.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in component.get("sources", [])) or "None",
+        ]
+        for component in itemized_signals.get("components", [])
+        if float(component.get("value", 0.0) or 0.0) != 0.0
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +359,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Itemized Deduction Signals",
+        "",
+        f"- Known itemized-deduction signals currently total {money(itemized_signals.get('total')) if itemized_signals.get('total') else '$0.00'} before any SALT, medical, or other review items are added.",
+        "",
+        make_markdown_table(
+            ["Component", "Amount", "Document Sources"],
+            itemized_signal_rows or [["None", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",

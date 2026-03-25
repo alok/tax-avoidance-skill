@@ -72,6 +72,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "itemized_signal_total" in expected:
+                    self.assertIn("Itemized Deduction Signals", artifacts["tax-dossier.md"])
+                    self.assertIn(f"${expected['itemized_signal_total']:,.2f}", artifacts["tax-dossier.md"])
+                    self.assertIn("Review the deduction choice.", artifacts["missing-items.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
