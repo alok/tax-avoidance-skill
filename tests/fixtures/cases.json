@@ -167,6 +167,48 @@
       "line_20": 1800
     }
   },
+  "student_loan_interest_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-borrower",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-borrower",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "1098-e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098-e-servicer",
+          "fields": {
+            "student_loan_interest": 2100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9600
+      },
+      "user_request": "Gather my tax forms and include my student loan interest."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 88000,
+      "line_25a": 11800,
+      "student_loan_interest": 2100
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

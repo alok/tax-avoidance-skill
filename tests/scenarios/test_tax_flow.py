@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "student_loan_interest_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -121,6 +122,16 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_student_loan_interest_artifacts(self) -> None:
+        normalized, artifacts = self.run_case("student_loan_interest_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 2100)
+        self.assertIn("Schedule 1", artifacts["federal-lines.md"])
+        self.assertIn("Student loan interest deduction", artifacts["federal-lines.md"])
+        self.assertIn("$2,100.00", artifacts["federal-lines.md"])
+        self.assertIn("Adjustment Details", artifacts["tax-dossier.md"])
+        self.assertIn("gmail://1098-e-servicer", artifacts["tax-dossier.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

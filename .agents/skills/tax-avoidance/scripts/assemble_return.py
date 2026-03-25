@@ -88,6 +88,14 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
 
     return [
         {
+            "form": "Schedule 1",
+            "line": "21",
+            "label": "Student loan interest deduction",
+            "value": student_loan_interest or None,
+            "sources": fact_sources(normalized, "student_loan_interest_deduction"),
+            "rule_citations": rule_citations("student_loan_interest_deduction"),
+        },
+        {
             "form": "Schedule C",
             "line": "1",
             "label": "Gross receipts or sales",
@@ -316,6 +324,28 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    adjustment_rows = [
+        [
+            "IRA contribution deduction",
+            money(fact_value(normalized, "ira_contribution_deduction")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contribution_deduction"))
+            or "TBD",
+        ],
+        [
+            "HSA deduction",
+            money(fact_value(normalized, "hsa_deduction")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "hsa_deduction")) or "TBD",
+        ],
+        [
+            "Student loan interest deduction",
+            money(fact_value(normalized, "student_loan_interest_deduction")),
+            ", ".join(
+                src.get("source_ref", "unknown")
+                for src in fact_sources(normalized, "student_loan_interest_deduction")
+            )
+            or "TBD",
+        ],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +371,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Adjustment Details",
+        "",
+        make_markdown_table(
+            ["Adjustment", "Value", "Document Sources"],
+            adjustment_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",
