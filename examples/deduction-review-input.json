@@ -1,0 +1,51 @@
+{
+  "tax_year": 2025,
+  "filing_status": "single",
+  "connectors": {
+    "gmail": true,
+    "google_drive": true
+  },
+  "documents": [
+    {
+      "id": "sample-1098",
+      "doc_type": "1098",
+      "source_type": "google_drive",
+      "source_ref": "drive://sample-1098",
+      "fields": {
+        "mortgage_interest": 8400.0
+      }
+    },
+    {
+      "id": "sample-1098-e",
+      "doc_type": "1098-E",
+      "source_type": "gmail_attachment",
+      "source_ref": "gmail://sample-1098-e",
+      "fields": {
+        "student_loan_interest": 625.0
+      }
+    },
+    {
+      "id": "sample-5498",
+      "doc_type": "5498",
+      "source_type": "google_drive",
+      "source_ref": "drive://sample-5498",
+      "fields": {
+        "ira_contributions": 7000.0
+      }
+    },
+    {
+      "id": "sample-donation",
+      "doc_type": "Donation Receipt",
+      "source_type": "upload",
+      "source_ref": "upload://sample-donation",
+      "fields": {
+        "cash_donations": 900.0
+      }
+    }
+  ],
+  "answers": {
+    "deduction_amount": 15000.0,
+    "tax_before_credits": 7800.0
+  },
+  "user_request": "Show the deduction and adjustment review for common supported tax documents."
+}

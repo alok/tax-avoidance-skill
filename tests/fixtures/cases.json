@@ -536,6 +536,64 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "deduction_review_documents": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 8400
+          }
+        },
+        {
+          "id": "student-loan-1098-e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://student-loan-1098-e",
+          "fields": {
+            "student_loan_interest": 625
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        },
+        {
+          "id": "charity-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "upload",
+          "source_ref": "upload://charity-receipt",
+          "fields": {
+            "cash_donations": 900
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7800
+      },
+      "user_request": "Use my deduction documents to scaffold the remaining interview."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_review": "Review Form 5498 contributions totaling $7,000.00",
+      "dossier_text": "Deduction And Adjustment Review"
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,

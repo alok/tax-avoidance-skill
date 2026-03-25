@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Surfaces deduction and adjustment scaffolding from supported documents such as `1098`, `1098-E`, `5498`, and donation receipts so the remaining interview is explicit instead of hidden.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -73,6 +74,16 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 ```
 
 That should create the same four standard artifacts in `output/example-run/`.
+
+To see the deduction-review scaffolding without any personal data:
+
+```bash
+uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
+  --input examples/deduction-review-input.json \
+  --out-dir output/deduction-review-run
+```
+
+That sample highlights how `1098`, `1098-E`, `5498`, and donation receipts are preserved in the dossier and converted into explicit follow-up items.
 
 ## Install In Claude Cowork
 

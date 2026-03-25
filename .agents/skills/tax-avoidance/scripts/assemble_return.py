@@ -316,6 +316,52 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_review_rows: list[list[str]] = []
+    deduction_review_items = [
+        (
+            "Mortgage interest from Form 1098",
+            "mortgage_interest",
+            "Candidate itemized deduction",
+            ("mortgage_interest",),
+        ),
+        (
+            "Cash charitable contributions",
+            "charitable_cash",
+            "Candidate itemized deduction",
+            ("charitable_cash",),
+        ),
+        (
+            "Student loan interest from Form 1098-E",
+            "student_loan_interest_deduction",
+            "Potential above-the-line deduction",
+            ("student_loan_interest_deduction",),
+        ),
+        (
+            "IRA contributions reported on Form 5498",
+            "ira_contributions_reported",
+            "Needs deductible amount confirmation",
+            ("ira_contributions_reported",),
+        ),
+        (
+            "Confirmed IRA deduction",
+            "ira_contribution_deduction",
+            "Confirmed above-the-line deduction",
+            ("ira_contribution_deduction",),
+        ),
+        (
+            "Confirmed HSA deduction",
+            "hsa_deduction",
+            "Confirmed above-the-line deduction",
+            ("hsa_deduction",),
+        ),
+    ]
+    for label, fact_key, treatment, citation_keys in deduction_review_items:
+        amount = fact_value(normalized, fact_key)
+        if amount == 0.0:
+            continue
+        sources = ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, fact_key)) or "TBD"
+        rules = ", ".join(source["title"] for source in rule_citations(*citation_keys)) or "TBD"
+        deduction_review_rows.append([label, money(amount), treatment, sources, rules])
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +395,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction And Adjustment Review",
+        "",
+        make_markdown_table(
+            ["Item", "Amount", "Treatment", "Document Sources", "Rule Sources"],
+            deduction_review_rows or [["None", "$0.00", "None", "None", "None"]],
         ),
         "",
         "## State Follow-Up",
