@@ -35,3 +35,7 @@
 ## Behavior On Unsupported Cases
 
 Preserve the gathered facts, create `missing-items.md`, and state clearly that the flow is outside the supported simple-return envelope.
+
+## Scaffolding Notes
+
+- Form 5498 IRA contributions are surfaced as candidate retirement inputs and review prompts, not silently applied as deductible IRA amounts.

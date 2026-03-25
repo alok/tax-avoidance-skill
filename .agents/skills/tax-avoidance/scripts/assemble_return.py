@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    candidate_ira_contributions = fact_value(normalized, "candidate_ira_contributions")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -350,6 +351,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Retirement Contribution Review",
+        "",
+        f"- Found Form 5498 IRA contributions totaling {money(candidate_ira_contributions) if candidate_ira_contributions else '$0.00'} that still need deductible-amount review before they are applied to the draft return.",
         "",
         "## State Follow-Up",
         "",
