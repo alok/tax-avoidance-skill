@@ -158,6 +158,14 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             ),
         },
         {
+            "form": "Schedule 1 (Form 1040)",
+            "line": "21",
+            "label": "Student loan interest deduction",
+            "value": student_loan_interest or None,
+            "sources": fact_sources(normalized, "student_loan_interest_deduction"),
+            "rule_citations": rule_citations("student_loan_interest_deduction"),
+        },
+        {
             "form": "Form 1040",
             "line": "10",
             "label": "Adjustments to income",
@@ -295,6 +303,28 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    adjustment_rows = [
+        [
+            "IRA contribution deduction",
+            money(fact_value(normalized, "ira_contribution_deduction")),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "ira_contribution_deduction"))
+            or "TBD",
+        ],
+        [
+            "HSA deduction",
+            money(fact_value(normalized, "hsa_deduction")),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "hsa_deduction")) or "TBD",
+        ],
+        [
+            "Student loan interest deduction",
+            money(fact_value(normalized, "student_loan_interest_deduction")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in fact_sources(normalized, "student_loan_interest_deduction")
+            )
+            or "TBD",
+        ],
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +379,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Above-The-Line Deductions",
+        "",
+        make_markdown_table(
+            ["Deduction", "Amount", "Source"],
+            adjustment_rows,
         ),
         "",
         "## State Follow-Up",

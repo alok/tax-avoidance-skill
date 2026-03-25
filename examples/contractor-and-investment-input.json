@@ -35,6 +35,15 @@
       }
     },
     {
+      "id": "sample-1098-e",
+      "doc_type": "1098-E",
+      "source_type": "upload",
+      "source_ref": "upload://sample-1098-e",
+      "fields": {
+        "student_loan_interest": 1800.0
+      }
+    },
+    {
       "id": "sample-anthropic-receipt",
       "doc_type": "Expense Receipt",
       "source_type": "upload",
