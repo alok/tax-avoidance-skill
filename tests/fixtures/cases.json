@@ -135,6 +135,48 @@
       "line_3b": 1400
     }
   },
+  "social_security_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-part-time",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 21600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Gather my wages and Social Security tax forms and draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 18000,
+      "line_6a": 21600,
+      "line_25a": 1200
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
