@@ -167,6 +167,37 @@
       "line_20": 1800
     }
   },
+  "ira_5498_candidate": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "tax_year": 2025,
+            "account_type": "Traditional IRA",
+            "ira_contributions": 7000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Gather my IRA contribution evidence and tell me what still needs review."
+    },
+    "expect": {
+      "status": "ok",
+      "candidate_ira_total": 7000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

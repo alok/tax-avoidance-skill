@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    candidate_ira_contributions, candidate_ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -98,6 +103,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         }
         for document in expense_documents_for_year
         if safe_float(document.get("fields", {}).get("amount")) != 0.0
+    ]
+    candidate_ira_contribution_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "tax_year": document.get("fields", {}).get("tax_year"),
+            "account_type": document.get("fields", {}).get("account_type", "Unknown"),
+            "ira_contributions": safe_float(document.get("fields", {}).get("ira_contributions")),
+        }
+        for document in documents
+        if document.get("doc_type") == "5498"
+        and safe_float(document.get("fields", {}).get("ira_contributions")) != 0.0
     ]
     charitable_cash, charitable_sources = aggregate_numeric(
         documents,
@@ -179,6 +197,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if candidate_ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            "Review Form 5498 IRA contributions totaling "
+            f"${candidate_ira_contributions:,.2f} and confirm the deductible traditional IRA amount before applying any adjustment."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -246,6 +269,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_business_expenses,
             candidate_expense_sources,
         ),
+        "candidate_ira_contributions": build_fact(
+            "candidate_ira_contributions",
+            candidate_ira_contributions,
+            candidate_ira_contribution_sources,
+        ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
@@ -291,6 +319,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "candidate_ira_contribution_documents": candidate_ira_contribution_documents,
         "facts": facts,
     }
     return normalized
