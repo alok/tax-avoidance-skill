@@ -20,6 +20,7 @@ For a plain Codex app user:
 3. Search for likely forms before asking the user to browse.
 4. Build a document inventory with source, doc type, and confidence.
 5. Ask only the missing questions needed for supported lines.
+   - Example: if an `SSA-1099` is present, preserve the gross benefits and ask for the taxable amount used on Form 1040 line 6b instead of assuming 100% taxation.
 6. Normalize everything into structured facts.
 7. Assemble the artifact set.
 8. Flag unsupported complexity and illegal requests explicitly.

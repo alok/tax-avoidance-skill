@@ -135,6 +135,46 @@
       "line_3b": 1400
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1800
+      },
+      "user_request": "Draft my return package and keep the Social Security support visible."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 18000
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
@@ -226,6 +266,38 @@
     "expect": {
       "status": "ok",
       "missing": "Provide deductible business expenses"
+    }
+  },
+  "schedule_c_zero_expenses": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-main",
+          "fields": {
+            "nonemployee_compensation": 20000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 0,
+        "deduction_amount": 15000,
+        "tax_before_credits": 2200
+      },
+      "user_request": "Treat my contractor expenses as zero and draft the package."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_1": 20000,
+      "schedule_c_line_31": 20000
     }
   },
   "schedule_c_candidate_expenses": {
