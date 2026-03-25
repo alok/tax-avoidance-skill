@@ -102,6 +102,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
 
+    def test_document_derived_follow_ups(self) -> None:
+        normalized, artifacts = self.run_case("document_derived_follow_ups")
+        self.assertEqual(normalized["status"], "ok")
+        prompts = [signal["prompt"] for signal in normalized["review_signals"]]
+        self.assertEqual(len(prompts), 4)
+        self.assertTrue(any("itemize deductions" in prompt for prompt in prompts))
+        self.assertTrue(any("student-loan interest" in prompt for prompt in prompts))
+        self.assertTrue(any("IRA contribution" in prompt for prompt in prompts))
+        self.assertIn("Interview Follow-Up", artifacts["tax-dossier.md"])
+        self.assertIn("$8,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("$7,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("Confirm the deductible IRA contribution amount", artifacts["missing-items.md"])
+
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
         self.assertEqual(normalized["status"], "ok")

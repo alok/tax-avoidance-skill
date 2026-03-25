@@ -32,6 +32,20 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_review_signal(
+    key: str,
+    prompt: str,
+    value: float,
+    sources: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "prompt": prompt,
+        "value": value,
+        "sources": sources,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -71,6 +85,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"1098-E"},
         "student_loan_interest",
+    )
+    ira_contributions, ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
     )
     expense_documents_for_year = [
         document
@@ -165,6 +184,44 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    review_signals: list[dict[str, Any]] = []
+    if mortgage_interest > 0.0 and "deduction_amount" not in answers:
+        review_signals.append(
+            build_review_signal(
+                "mortgage_interest",
+                f"Review whether to itemize deductions before drafting the return. Mortgage-interest documents currently total ${mortgage_interest:,.2f}.",
+                mortgage_interest,
+                mortgage_interest_sources,
+            )
+        )
+    if charitable_cash > 0.0 and "deduction_amount" not in answers:
+        review_signals.append(
+            build_review_signal(
+                "charitable_cash",
+                f"Review whether to itemize deductions before drafting the return. Donation receipts currently total ${charitable_cash:,.2f}.",
+                charitable_cash,
+                charitable_sources,
+            )
+        )
+    if student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        review_signals.append(
+            build_review_signal(
+                "student_loan_interest_deduction",
+                f"Confirm the deductible student-loan interest amount. Supporting 1098-E documents currently show ${student_loan_interest:,.2f}.",
+                student_loan_interest,
+                student_loan_interest_sources,
+            )
+        )
+    if ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        review_signals.append(
+            build_review_signal(
+                "ira_contribution_deduction",
+                f"Confirm the deductible IRA contribution amount. Supporting 5498 documents currently show ${ira_contributions:,.2f}.",
+                ira_contributions,
+                ira_contribution_sources,
+            )
+        )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -187,6 +244,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    for signal in review_signals:
+        missing_items.append(signal["prompt"])
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -291,6 +350,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "review_signals": review_signals,
         "facts": facts,
     }
     return normalized

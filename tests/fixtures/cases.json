@@ -279,6 +279,72 @@
       "candidate_total": 371.89
     }
   },
+  "document_derived_follow_ups": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 10800
+          }
+        },
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 8200
+          }
+        },
+        {
+          "id": "student-1098e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://student-1098e",
+          "fields": {
+            "student_loan_interest": 1600
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        },
+        {
+          "id": "donation-bundle",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-bundle",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9200
+      },
+      "user_request": "Use the tax forms you found and tell me the minimum follow-up questions."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm the deductible IRA contribution amount"
+    }
+  },
   "expense_year_filter": {
     "input": {
       "tax_year": 2025,

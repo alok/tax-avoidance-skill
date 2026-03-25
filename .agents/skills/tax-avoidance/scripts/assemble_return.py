@@ -316,6 +316,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    review_signal_rows = [
+        [
+            signal.get("key", "unknown"),
+            money(signal.get("value")),
+            signal.get("prompt", ""),
+            ", ".join(source.get("source_ref", "unknown") for source in signal.get("sources", [])) or "unknown",
+        ]
+        for signal in normalized.get("review_signals", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +358,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Interview Follow-Up",
+        "",
+        make_markdown_table(
+            ["Topic", "Observed Amount", "What To Confirm", "Supporting Sources"],
+            review_signal_rows or [["None", "$0.00", "None", "None"]],
         ),
         "",
         "## State Follow-Up",
