@@ -280,6 +280,9 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    reported_traditional_ira = fact_value(normalized, "traditional_ira_contributions_reported")
+    reported_roth_ira = fact_value(normalized, "roth_ira_contributions_reported")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -295,6 +298,26 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    ira_source_rows = []
+    for source in fact_sources(normalized, "traditional_ira_contributions_reported"):
+        ira_source_rows.append(["Traditional IRA", money(source.get("value")), source.get("source_ref", "unknown")])
+    for source in fact_sources(normalized, "roth_ira_contributions_reported"):
+        ira_source_rows.append(["Roth IRA", money(source.get("value")), source.get("source_ref", "unknown")])
+    ira_section: list[str] = []
+    if reported_traditional_ira or reported_roth_ira or ira_deduction or ira_source_rows:
+        ira_section = [
+            "## IRA Contribution Intake",
+            "",
+            f"- Traditional IRA contributions reported on Form 5498: {money(reported_traditional_ira) if reported_traditional_ira else '$0.00'}",
+            f"- Roth IRA contributions reported on Form 5498: {money(reported_roth_ira) if reported_roth_ira else '$0.00'}",
+            f"- IRA deduction currently applied on Form 1040 line 10: {money(ira_deduction) if ira_deduction else '$0.00'}",
+            "",
+            make_markdown_table(
+                ["Contribution Type", "Reported Amount", "Document Source"],
+                ira_source_rows or [["None", "$0.00", "None"]],
+            ),
+            "",
+        ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -351,6 +374,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
         "",
+        *ira_section,
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
