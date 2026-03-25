@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "ira_5498_review",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -72,6 +73,17 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_ira_5498_evidence_requires_review(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contribution_evidence"]["value"], 3500)
+        self.assertEqual(normalized["facts"]["roth_ira_contribution_evidence"]["value"], 1000)
+        self.assertEqual(normalized["facts"]["ira_contribution_deduction"]["value"], 0.0)
+        self.assertIn("IRA Contribution Evidence", artifacts["tax-dossier.md"])
+        self.assertIn("gmail://ira-5498", artifacts["tax-dossier.md"])
+        self.assertIn("$3,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("confirm the deductible amount", artifacts["missing-items.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")

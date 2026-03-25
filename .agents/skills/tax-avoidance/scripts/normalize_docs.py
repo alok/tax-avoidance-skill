@@ -67,6 +67,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
+    ira_contribution_evidence, ira_contribution_evidence_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
+    roth_ira_contribution_evidence, roth_ira_contribution_evidence_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "roth_ira_contributions",
+    )
     student_loan_interest, student_loan_interest_sources = aggregate_numeric(
         documents,
         {"1098-E"},
@@ -177,6 +187,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if ira_contribution_evidence > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review Form 5498 traditional IRA contributions totaling ${ira_contribution_evidence:,.2f} and confirm the deductible amount to use. Deductibility can change based on IRA type, workplace coverage, and income."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -236,6 +250,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "ira_contribution_evidence": build_fact(
+            "ira_contribution_evidence",
+            ira_contribution_evidence,
+            ira_contribution_evidence_sources,
+        ),
+        "roth_ira_contribution_evidence": build_fact(
+            "roth_ira_contribution_evidence",
+            roth_ira_contribution_evidence,
+            roth_ira_contribution_evidence_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
             student_loan_interest,

@@ -22,6 +22,12 @@
 - SSA-1099
 - donation receipts
 
+Form 5498 currently improves intake and review only:
+
+- preserve traditional and Roth IRA contribution evidence in the artifact set
+- ask the user to confirm the deductible traditional IRA amount before using it on the draft return
+- do not auto-apply Form 5498 amounts as deductible adjustments
+
 ## Unsupported In V1
 
 - automated state tax calculations

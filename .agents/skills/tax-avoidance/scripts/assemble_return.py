@@ -280,6 +280,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    ira_contribution_evidence = fact_value(normalized, "ira_contribution_evidence")
+    roth_ira_contribution_evidence = fact_value(normalized, "roth_ira_contribution_evidence")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -294,6 +296,26 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             expense.get("source_ref") or "unknown",
         ]
         for expense in normalized.get("candidate_expense_documents", [])
+    ]
+    ira_evidence_rows = [
+        [
+            "Traditional IRA contributions",
+            money(ira_contribution_evidence),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in fact_sources(normalized, "ira_contribution_evidence")
+            )
+            or "None",
+        ],
+        [
+            "Roth IRA contributions",
+            money(roth_ira_contribution_evidence),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in fact_sources(normalized, "roth_ira_contribution_evidence")
+            )
+            or "None",
+        ],
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -349,6 +371,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## IRA Contribution Evidence",
+        "",
+        "- Form 5498 amounts are intake evidence only. Do not treat them as automatically deductible without confirming the deductible traditional IRA amount.",
+        "",
+        make_markdown_table(
+            ["Evidence", "Amount", "Document Sources"],
+            ira_evidence_rows,
         ),
         "",
         "## State Follow-Up",
