@@ -507,6 +507,55 @@
       "schedule_c_line_1": 108000.0
     }
   },
+  "deduction_choice_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 70000,
+            "federal_withholding": 8500
+          }
+        },
+        {
+          "id": "mortgage-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://mortgage-1098",
+          "fields": {
+            "mortgage_interest": 9000
+          }
+        },
+        {
+          "id": "charity-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://charity-receipt",
+          "fields": {
+            "cash_donations": 4000
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 6200
+      },
+      "user_request": "Show me whether I should take the standard deduction or itemize."
+    },
+    "expect": {
+      "status": "ok",
+      "standard_deduction_text": "$15,750.00",
+      "itemized_total_text": "$13,000.00"
+    }
+  },
   "unsupported_schedule_c": {
     "input": {
       "tax_year": 2025,

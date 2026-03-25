@@ -62,6 +62,15 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "standard_deduction": {
+        "title": "Publication 17 (2025), Your Federal Income Tax",
+        "url": "https://www.irs.gov/publications/p17",
+    },
+}
+
+STANDARD_DEDUCTION_AMOUNTS: dict[str, float] = {
+    "single": 15750.0,
+    "married_filing_jointly": 31500.0,
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {

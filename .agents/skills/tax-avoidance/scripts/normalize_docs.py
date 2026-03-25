@@ -10,6 +10,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from tax_flow_common import (  # noqa: E402
+    STANDARD_DEDUCTION_AMOUNTS,
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
@@ -104,6 +105,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    documented_itemized_deductions = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -165,6 +167,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    filing_status = payload.get("filing_status", "")
+    standard_deduction = STANDARD_DEDUCTION_AMOUNTS.get(filing_status, 0.0)
+    recommended_deduction_path = "unknown"
+    if standard_deduction:
+        recommended_deduction_path = (
+            "itemized" if documented_itemized_deductions > standard_deduction else "standard"
+        )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -176,7 +186,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if standard_deduction:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"For {filing_status}, the 2025 standard deduction is ${standard_deduction:,.2f}; "
+                f"documented itemized deductions currently total ${documented_itemized_deductions:,.2f}."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -289,6 +306,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "standard_deduction": standard_deduction,
+            "documented_itemized_deductions": documented_itemized_deductions,
+            "documented_itemized_components": {
+                "mortgage_interest": mortgage_interest,
+                "charitable_cash": charitable_cash,
+            },
+            "recommended_path": recommended_deduction_path,
+            "applied_deduction_amount": deduction_amount,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

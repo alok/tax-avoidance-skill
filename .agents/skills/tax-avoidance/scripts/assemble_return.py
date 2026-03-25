@@ -316,6 +316,9 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_summary = normalized.get("deduction_summary", {})
+    recommended_path = deduction_summary.get("recommended_path", "unknown").replace("_", " ")
+    applied_deduction_amount = deduction_summary.get("applied_deduction_amount")
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +344,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Decision",
+        "",
+        f"- 2025 standard deduction for this filing status: {money(deduction_summary.get('standard_deduction')) if deduction_summary.get('standard_deduction') else 'TBD'}",
+        f"- Standard deduction source: [{RULE_SOURCES['standard_deduction']['title']}]({RULE_SOURCES['standard_deduction']['url']})",
+        f"- Documented itemized deductions so far: {money(deduction_summary.get('documented_itemized_deductions'))}",
+        f"- Mortgage interest documented: {money(deduction_summary.get('documented_itemized_components', {}).get('mortgage_interest'))}",
+        f"- Charitable cash documented: {money(deduction_summary.get('documented_itemized_components', {}).get('charitable_cash'))}",
+        f"- Current deduction path recommendation: {recommended_path}",
+        f"- Deduction amount applied in this draft: {money(applied_deduction_amount) if applied_deduction_amount else 'TBD'}",
         "",
         "## Candidate Business Expenses",
         "",
