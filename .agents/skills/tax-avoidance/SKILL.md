@@ -24,6 +24,7 @@ Supported:
 - Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows
+- Social Security workflows that preserve `SSA-1099` benefits in the draft and ask for the taxable portion explicitly before counting it as taxable income
 
 Unsupported by default:
 
