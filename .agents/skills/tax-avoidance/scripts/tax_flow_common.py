@@ -10,6 +10,7 @@ WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 RULE_SOURCES: dict[str, dict[str, str]] = {
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "estimated_tax_payments": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},

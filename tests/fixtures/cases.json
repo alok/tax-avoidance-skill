@@ -135,6 +135,55 @@
       "line_3b": 1400
     }
   },
+  "estimated_payments_documented": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-main",
+          "fields": {
+            "nonemployee_compensation": 72000
+          }
+        },
+        {
+          "id": "q1-estimated-payment",
+          "doc_type": "Estimated Tax Payment",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://irs-direct-pay-q1",
+          "fields": {
+            "payment_amount": 2500
+          }
+        },
+        {
+          "id": "q2-estimated-payment",
+          "doc_type": "Estimated Tax Payment",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://irs-direct-pay-q2",
+          "fields": {
+            "payment_amount": 2500
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 12000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Use my contractor income and direct-pay confirmations to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_26": 5000
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
@@ -505,6 +554,38 @@
     "expect": {
       "status": "ok",
       "schedule_c_line_1": 108000.0
+    }
+  },
+  "estimated_payments_answer_only": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-div",
+          "doc_type": "1099-DIV",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-div",
+          "fields": {
+            "ordinary_dividends": 600,
+            "capital_gains": 400
+          }
+        }
+      ],
+      "answers": {
+        "estimated_tax_payments": 1200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Draft the return and include the quarterly payments I already know."
+    },
+    "expect": {
+      "status": "ok",
+      "line_26": 1200
     }
   },
   "unsupported_schedule_c": {
