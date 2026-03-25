@@ -88,11 +88,25 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "itemized_deduction_scaffold",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_itemized_deduction_scaffold(self) -> None:
+        normalized, artifacts = self.run_case("itemized_deduction_scaffold")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["itemized_deduction_candidates"]["value"], 9150)
+        self.assertIn("Deduction Planning Scaffold", artifacts["tax-dossier.md"])
+        self.assertIn("$9,150.00", artifacts["tax-dossier.md"])
+        self.assertIn("Choose the deduction path", artifacts["missing-items.md"])
+        self.assertIn("before any missing categories or tax-law limits", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

@@ -280,6 +280,43 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    deduction_scaffold_rows = [
+        [
+            "Mortgage interest documents",
+            money(fact_value(normalized, "mortgage_interest")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "mortgage_interest")) or "TBD",
+        ],
+        [
+            "Cash donation receipts",
+            money(fact_value(normalized, "charitable_cash")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "charitable_cash")) or "TBD",
+        ],
+        [
+            "Captured itemized-deduction subtotal",
+            money(fact_value(normalized, "itemized_deduction_candidates")),
+            "Document-derived scaffold only; confirm standard vs itemized separately.",
+        ],
+        [
+            "IRA deduction currently applied",
+            money(fact_value(normalized, "ira_contribution_deduction")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contribution_deduction")) or "TBD",
+        ],
+        [
+            "HSA deduction currently applied",
+            money(fact_value(normalized, "hsa_deduction")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "hsa_deduction")) or "TBD",
+        ],
+        [
+            "Student loan interest deduction currently applied",
+            money(fact_value(normalized, "student_loan_interest_deduction")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "student_loan_interest_deduction")) or "TBD",
+        ],
+        [
+            "Deduction amount used on Form 1040 line 12",
+            money(fact_value(normalized, "deduction_amount")) if fact_sources(normalized, "deduction_amount") or fact_value(normalized, "deduction_amount") else "TBD",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "deduction_amount")) or "Awaiting user choice",
+        ],
+    ]
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -349,6 +386,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Planning Scaffold",
+        "",
+        make_markdown_table(
+            ["Scaffold Item", "Amount", "Source Or Note"],
+            deduction_scaffold_rows,
         ),
         "",
         "## State Follow-Up",

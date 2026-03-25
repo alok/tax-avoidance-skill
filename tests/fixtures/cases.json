@@ -228,6 +228,55 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "itemized_deduction_scaffold": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 99000,
+            "federal_withholding": 13300
+          }
+        },
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 8400
+          }
+        },
+        {
+          "id": "charity-2025",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://charity-2025",
+          "fields": {
+            "cash_donations": 750
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 12000
+      },
+      "user_request": "Gather my tax docs and scaffold my deduction choice."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 99000,
+      "line_25a": 13300
+    }
+  },
   "schedule_c_candidate_expenses": {
     "input": {
       "tax_year": 2025,
