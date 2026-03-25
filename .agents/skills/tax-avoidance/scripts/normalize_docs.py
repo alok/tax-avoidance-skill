@@ -176,7 +176,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        deduction_signal_parts: list[str] = []
+        if mortgage_interest > 0.0:
+            deduction_signal_parts.append(f"mortgage interest of ${mortgage_interest:,.2f}")
+        if charitable_cash > 0.0:
+            deduction_signal_parts.append(f"charitable cash receipts of ${charitable_cash:,.2f}")
+        if student_loan_interest > 0.0:
+            deduction_signal_parts.append(f"student loan interest of ${student_loan_interest:,.2f}")
+        if deduction_signal_parts:
+            joined = ", ".join(deduction_signal_parts)
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"Known deduction signals already gathered: {joined}."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:

@@ -316,6 +316,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_signal_rows = [
+        ["Mortgage interest (1098)", money(fact_value(normalized, "mortgage_interest"))],
+        ["Cash donations", money(fact_value(normalized, "charitable_cash"))],
+        ["Student loan interest (1098-E)", money(fact_value(normalized, "student_loan_interest_deduction"))],
+        ["IRA deduction", money(fact_value(normalized, "ira_contribution_deduction"))],
+        ["HSA deduction", money(fact_value(normalized, "hsa_deduction"))],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +348,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Signals",
+        "",
+        "- These amounts are intake signals to help choose the right deduction path and adjustment set. They do not override the deduction amount supplied for the draft return.",
+        "",
+        make_markdown_table(["Signal", "Amount"], deduction_signal_rows),
         "",
         "## Candidate Business Expenses",
         "",

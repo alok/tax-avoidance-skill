@@ -536,6 +536,63 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "deduction_signals": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 110000,
+            "federal_withholding": 15000
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 8400
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 600
+          }
+        },
+        {
+          "id": "donation-school",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-school",
+          "fields": {
+            "cash_donations": 1950
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 12500
+      },
+      "user_request": "Use my docs to show me what deduction path I should finish."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 110000
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,

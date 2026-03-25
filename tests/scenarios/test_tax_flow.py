@@ -122,6 +122,16 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_deduction_signals(self) -> None:
+        normalized, artifacts = self.run_case("deduction_signals")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("## Deduction Signals", artifacts["tax-dossier.md"])
+        self.assertIn("$8,400.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,950.00", artifacts["tax-dossier.md"])
+        self.assertIn("$600.00", artifacts["tax-dossier.md"])
+        self.assertIn("Known deduction signals already gathered", artifacts["missing-items.md"])
+        self.assertIn("$600.00", artifacts["federal-lines.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
