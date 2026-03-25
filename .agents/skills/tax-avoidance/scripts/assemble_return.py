@@ -283,6 +283,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
+    interview_question_rows = [
+        [
+            "Yes" if question.get("blocking") else "No",
+            question.get("kind", ""),
+            question.get("answer_key", ""),
+            question.get("prompt", ""),
+            question.get("rationale", ""),
+        ]
+        for question in normalized.get("interview_questions", [])
+    ]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
     candidate_expense_rows = [
@@ -368,6 +378,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *state_follow_up_lines,
         "",
+        "## Interview Queue",
+        "",
+        make_markdown_table(
+            ["Blocking", "Kind", "Answer Key", "Question", "Why It Matters"],
+            interview_question_rows or [["No", "none", "none", "No follow-up questions queued.", "None"]],
+        ),
+        "",
         "## Missing Items",
         "",
         *missing_lines,
@@ -406,6 +423,20 @@ def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
 
 def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     lines = ["# Missing Items", ""]
+    interview_questions = normalized.get("interview_questions", [])
+    if interview_questions:
+        lines.extend(["## Interview Queue", ""])
+        for index, question in enumerate(interview_questions, start=1):
+            blocking = "blocking" if question.get("blocking") else "non-blocking"
+            lines.append(
+                f"{index}. [{blocking}] {question.get('prompt')} "
+                f"(answer key: `{question.get('answer_key', '')}`; kind: `{question.get('kind', '')}`)"
+            )
+            lines.append(f"   Why it matters: {question.get('rationale', '')}")
+            source_refs = question.get("source_refs") or []
+            if source_refs:
+                lines.append(f"   Related sources: {', '.join(source_refs)}")
+        lines.append("")
     if normalized.get("missing_items"):
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:

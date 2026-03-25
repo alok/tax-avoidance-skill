@@ -395,6 +395,43 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "state_allocations_missing_resident": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "state": {
+        "work_states": ["CA", "NY"]
+      },
+      "documents": [
+        {
+          "id": "sample-w2-missing-resident",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://sample-w2-missing-resident",
+          "fields": {
+            "wages": 85000,
+            "federal_withholding": 9000,
+            "state_allocations": [
+              { "state": "CA", "wages": 73000, "withholding": 3100 },
+              { "state": "NY", "wages": 12000, "withholding": 650 }
+            ]
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 8400
+      },
+      "user_request": "Keep my state wage allocations visible and tell me the next missing state question."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

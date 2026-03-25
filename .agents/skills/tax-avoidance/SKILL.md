@@ -52,7 +52,8 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
 7. Return the artifact set:
    `tax-dossier.md`, `return-data.json`, `federal-lines.md`, and `missing-items.md`
-8. Summarize:
+8. Derive a structured interview queue with stable answer keys and blocking vs non-blocking follow-ups from the normalized facts.
+9. Summarize:
    legal planning moves,
    candidate business expenses,
    unsupported or risky items,
@@ -67,6 +68,8 @@ Every completed run should yield:
 - `return-data.json`: normalized extracted facts with provenance
 - `federal-lines.md`: line-by-line draft for supported federal lines
 - `missing-items.md`: unresolved fields, absent documents, and unsupported complexity
+- `return-data.json` should also include `interview_questions`, a structured queue of the next questions to ask with stable answer keys and rationale.
+- `missing-items.md` should start with the interview queue before the flat missing-items list so an agent can continue the flow deterministically.
 - The dossier should separately surface **candidate business-expense receipts** that still need user confirmation before they are applied to Schedule C.
 
 Every nontrivial tax statement must cite an IRS source. Every extracted value must cite the originating document, email, file, or upload.

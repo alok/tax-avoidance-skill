@@ -94,6 +94,20 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
 
+    def test_interview_queue_is_structured(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_missing_expenses")
+        self.assertTrue(normalized["interview_questions"])
+        answer_keys = {question["answer_key"] for question in normalized["interview_questions"]}
+        self.assertIn("tax_before_credits", answer_keys)
+        self.assertIn("business_expenses", answer_keys)
+        business_expenses_question = next(
+            question for question in normalized["interview_questions"] if question["answer_key"] == "business_expenses"
+        )
+        self.assertTrue(business_expenses_question["blocking"])
+        self.assertIn("## Interview Queue", artifacts["missing-items.md"])
+        self.assertIn("business_expenses", artifacts["missing-items.md"])
+        self.assertIn("Interview Queue", artifacts["tax-dossier.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")
@@ -101,6 +115,11 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+        receipt_review = next(
+            question for question in normalized["interview_questions"] if question["id"] == "candidate-expenses-review"
+        )
+        self.assertFalse(receipt_review["blocking"])
+        self.assertEqual(receipt_review["kind"], "receipt_review")
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
@@ -121,6 +140,14 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+        self.assertFalse(any(question["id"] == "resident-state" for question in normalized["interview_questions"]))
+
+    def test_state_allocations_missing_resident_state_question(self) -> None:
+        normalized, _ = self.run_case("state_allocations_missing_resident")
+        resident_state_question = next(
+            question for question in normalized["interview_questions"] if question["id"] == "resident-state"
+        )
+        self.assertEqual(resident_state_question["source_refs"], ["CA", "NY"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
