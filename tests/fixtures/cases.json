@@ -167,6 +167,99 @@
       "line_20": 1800
     }
   },
+  "retirement_distribution_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 42000,
+            "federal_withholding": 5100
+          }
+        },
+        {
+          "id": "1099-r-ira",
+          "doc_type": "1099-R",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-r-ira",
+          "fields": {
+            "distribution_class": "ira",
+            "gross_distribution": 18000,
+            "taxable_amount": 18000,
+            "federal_withholding": 2400
+          }
+        },
+        {
+          "id": "1099-r-pension",
+          "doc_type": "1099-R",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-r-pension",
+          "fields": {
+            "distribution_class": "pension",
+            "gross_distribution": 6200,
+            "taxable_amount": 5400,
+            "federal_withholding": 700
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 16500
+      },
+      "user_request": "Include my 1099-R retirement distributions and withholding in the draft package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 42000,
+      "line_4a": 18000,
+      "line_4b": 18000,
+      "line_5a": 6200,
+      "line_5b": 5400,
+      "line_25a": 5100,
+      "line_25b": 3100,
+      "line_33": 8200
+    }
+  },
+  "retirement_distribution_needs_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-r-review",
+          "doc_type": "1099-R",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-r-review",
+          "fields": {
+            "gross_distribution": 9400,
+            "federal_withholding": 600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1800
+      },
+      "user_request": "Keep my 1099-R in the draft and tell me what retirement details are still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm whether 1099-R"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

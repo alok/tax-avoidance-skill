@@ -32,6 +32,49 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def normalize_distribution_class(value: Any) -> str | None:
+    if value is None:
+        return None
+    normalized = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    if normalized in {"ira", "ira_distribution"}:
+        return "ira"
+    if normalized in {"pension", "annuity", "pension_annuity", "pensions_and_annuities"}:
+        return "pension"
+    return None
+
+
+def dedupe_documents(documents: list[dict[str, Any]], doc_types: set[str]) -> list[dict[str, Any]]:
+    def source_rank(document: dict[str, Any]) -> tuple[int, int]:
+        content_status = document.get("content_status", "")
+        status_score = {
+            "available": 4,
+            "metadata_only": 3,
+            "unreadable_encrypted_attachment": 2,
+            "portal_notice_only": 1,
+        }.get(content_status, 0)
+        fields = document.get("fields", {})
+        has_core_value = any(
+            safe_float(fields.get(field_name)) != 0.0
+            for field_name in ("gross_distribution", "taxable_amount", "federal_withholding")
+        )
+        return (1 if has_core_value else 0, status_score)
+
+    grouped_documents: list[dict[str, Any]] = []
+    dedupe_groups: dict[str, list[dict[str, Any]]] = {}
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        dedupe_key = document.get("dedupe_key")
+        if dedupe_key:
+            dedupe_groups.setdefault(dedupe_key, []).append(document)
+        else:
+            grouped_documents.append(document)
+
+    for group in dedupe_groups.values():
+        grouped_documents.append(max(group, key=source_rank))
+    return grouped_documents
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -72,6 +115,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    other_federal_withholding, other_federal_withholding_sources = aggregate_numeric(
+        documents,
+        {"1099-INT", "1099-DIV", "1099-B", "1099-NEC", "1099-R", "SSA-1099"},
+        "federal_withholding",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -104,6 +152,62 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+
+    ira_distributions = 0.0
+    ira_distribution_sources: list[dict[str, Any]] = []
+    ira_taxable_amount = 0.0
+    ira_taxable_sources: list[dict[str, Any]] = []
+    pension_distributions = 0.0
+    pension_distribution_sources: list[dict[str, Any]] = []
+    pension_taxable_amount = 0.0
+    pension_taxable_sources: list[dict[str, Any]] = []
+    retirement_follow_up: list[str] = []
+    for document in dedupe_documents(documents, {"1099-R"}):
+        fields = document.get("fields", {})
+        distribution_class = normalize_distribution_class(fields.get("distribution_class"))
+        gross_distribution = safe_float(fields.get("gross_distribution"))
+        taxable_amount = safe_float(fields.get("taxable_amount"))
+        source_base = {
+            "doc_id": document.get("id"),
+            "doc_type": document.get("doc_type"),
+            "source_type": document.get("source_type"),
+            "source_ref": document.get("source_ref"),
+            "dedupe_key": document.get("dedupe_key"),
+        }
+        if not distribution_class:
+            retirement_follow_up.append(
+                f"Confirm whether 1099-R {document.get('source_ref', 'unknown source')} should draft Form 1040 line 4 (IRA distributions) or line 5 (pensions and annuities)."
+            )
+            continue
+        if gross_distribution == 0.0:
+            retirement_follow_up.append(
+                f"Provide the gross distribution amount from 1099-R {document.get('source_ref', 'unknown source')} before drafting retirement income lines."
+            )
+        if taxable_amount == 0.0 and "taxable_amount" not in fields:
+            retirement_follow_up.append(
+                f"Provide the taxable amount from 1099-R {document.get('source_ref', 'unknown source')} before drafting retirement income lines."
+            )
+
+        if distribution_class == "ira":
+            if gross_distribution != 0.0:
+                ira_distributions += gross_distribution
+                ira_distribution_sources.append(
+                    {**source_base, "field": "gross_distribution", "value": gross_distribution}
+                )
+            if taxable_amount != 0.0:
+                ira_taxable_amount += taxable_amount
+                ira_taxable_sources.append({**source_base, "field": "taxable_amount", "value": taxable_amount})
+        elif distribution_class == "pension":
+            if gross_distribution != 0.0:
+                pension_distributions += gross_distribution
+                pension_distribution_sources.append(
+                    {**source_base, "field": "gross_distribution", "value": gross_distribution}
+                )
+            if taxable_amount != 0.0:
+                pension_taxable_amount += taxable_amount
+                pension_taxable_sources.append(
+                    {**source_base, "field": "taxable_amount", "value": taxable_amount}
+                )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -187,7 +291,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
-    for note in state_follow_up:
+    for note in state_follow_up + retirement_follow_up:
         if note not in missing_items:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
@@ -240,6 +344,27 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "other_federal_withholding": build_fact(
+            "other_federal_withholding",
+            other_federal_withholding,
+            other_federal_withholding_sources,
+        ),
+        "ira_distributions": build_fact("ira_distributions", ira_distributions, ira_distribution_sources),
+        "ira_distributions_taxable": build_fact(
+            "ira_distributions_taxable",
+            ira_taxable_amount,
+            ira_taxable_sources,
+        ),
+        "pensions_and_annuities": build_fact(
+            "pensions_and_annuities",
+            pension_distributions,
+            pension_distribution_sources,
+        ),
+        "pensions_and_annuities_taxable": build_fact(
+            "pensions_and_annuities_taxable",
+            pension_taxable_amount,
+            pension_taxable_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",

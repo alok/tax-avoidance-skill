@@ -20,8 +20,8 @@ Assume a normal Codex-app user first: Gmail, Google Drive, and uploaded PDFs are
 Supported:
 
 - Single or married-filing-jointly federal individual returns
-- Wage, contractor, and investment income
-- Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
+- Wage, contractor, investment, and common retirement-distribution income
+- Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1099-R, 1098, 1098-E, 5498, SSA-1099, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows
 
@@ -79,6 +79,7 @@ Use fixed searches for likely forms before asking the user to hunt around:
 - `1099-INT OR 1099-DIV OR 1099-B`
 - `1099-NEC OR nonemployee compensation`
 - `1098 OR 1098-E OR tuition statement`
+- `1099-R OR retirement distribution OR pension distribution`
 - `5498 OR IRA contribution`
 - `SSA-1099`
 - `charitable contribution OR donation receipt`

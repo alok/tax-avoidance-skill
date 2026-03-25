@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "retirement_distribution_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -64,10 +65,22 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_4a" in expected:
+                    self.assertIn(f"${expected['line_4a']:,.2f}", federal_lines)
+                if "line_4b" in expected:
+                    self.assertIn(f"${expected['line_4b']:,.2f}", federal_lines)
+                if "line_5a" in expected:
+                    self.assertIn(f"${expected['line_5a']:,.2f}", federal_lines)
+                if "line_5b" in expected:
+                    self.assertIn(f"${expected['line_5b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_25b" in expected:
+                    self.assertIn(f"${expected['line_25b']:,.2f}", federal_lines)
+                if "line_33" in expected:
+                    self.assertIn(f"${expected['line_33']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -88,11 +101,22 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "retirement_distribution_needs_review",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_retirement_distribution_follow_up(self) -> None:
+        normalized, artifacts = self.run_case("retirement_distribution_needs_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("1099-R", artifacts["missing-items.md"])
+        self.assertIn("line 4 (IRA distributions) or line 5", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

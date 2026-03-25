@@ -14,6 +14,8 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "social_security_benefits": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
+    "ira_distributions": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
+    "pensions_and_annuities": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ira_contribution_deduction": {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",
@@ -62,6 +64,7 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "other_federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {
