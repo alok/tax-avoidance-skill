@@ -285,6 +285,11 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
+    interview_questions = normalized.get("interview_questions", [])
+    interview_question_lines = [
+        f"- [{'Blocking' if item.get('blocking') else 'Follow-up'}] {item.get('prompt')} ({item.get('reason')})"
+        for item in interview_questions
+    ] or ["- None"]
     candidate_expense_rows = [
         [
             expense.get("document_date") or "unknown",
@@ -372,6 +377,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *missing_lines,
         "",
+        "## Next Questions",
+        "",
+        *interview_question_lines,
+        "",
         "## Unsupported Or Risky Items",
         "",
         *unsupported_lines,
@@ -408,6 +417,14 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     lines = ["# Missing Items", ""]
     if normalized.get("missing_items"):
         lines.extend(f"- {item}" for item in normalized["missing_items"])
+    else:
+        lines.append("- None")
+
+    lines.extend(["", "## Next Questions", ""])
+    if normalized.get("interview_questions"):
+        for item in normalized["interview_questions"]:
+            label = "Blocking" if item.get("blocking") else "Follow-up"
+            lines.append(f"- [{label}] {item.get('prompt')}")
     else:
         lines.append("- None")
 

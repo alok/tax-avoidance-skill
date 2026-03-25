@@ -32,6 +32,137 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_interview_questions(
+    payload: dict[str, Any],
+    candidate_business_expenses: float,
+    state_follow_up: list[str],
+) -> list[dict[str, Any]]:
+    documents = payload.get("documents", [])
+    answers = payload.get("answers", {})
+
+    questions: list[dict[str, Any]] = []
+
+    def add_question(
+        question_id: str,
+        prompt: str,
+        reason: str,
+        category: str,
+        blocking: bool,
+    ) -> None:
+        questions.append(
+            {
+                "id": question_id,
+                "prompt": prompt,
+                "reason": reason,
+                "category": category,
+                "blocking": blocking,
+            }
+        )
+
+    if not payload.get("filing_status"):
+        add_question(
+            "filing_status",
+            "What filing status should this draft use: single or married filing jointly?",
+            "The return package cannot map supported federal lines until the filing status is confirmed.",
+            "identity",
+            True,
+        )
+
+    if "deduction_amount" not in answers:
+        add_question(
+            "deduction_amount",
+            "Should this draft use the standard deduction or itemized deductions, and what deduction amount should be carried into the package?",
+            "Taxable income stays provisional until the deduction path is chosen.",
+            "deductions",
+            True,
+        )
+
+    if "tax_before_credits" not in answers:
+        add_question(
+            "tax_before_credits",
+            "Do you already have a tax-before-credits figure to plug in, or should the tax lines stay marked for review?",
+            "The draft can normalize documents without it, but it cannot finish the payment and refund lines cleanly.",
+            "review",
+            False,
+        )
+
+    if any(doc.get("doc_type") == "1099-NEC" for doc in documents) and "business_expenses" not in answers:
+        add_question(
+            "business_expenses",
+            "What deductible business expenses should be applied to the 1099-NEC work, or should they be treated as zero for now?",
+            "Schedule C net profit is incomplete without an explicit business-expense decision.",
+            "schedule_c",
+            True,
+        )
+
+    if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
+        add_question(
+            "candidate_business_expenses_review",
+            f"Should the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} be included in Schedule C expenses?",
+            "The workflow found plausible receipts, but it should not convert them into deductions without confirmation.",
+            "schedule_c",
+            True,
+        )
+
+    if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
+        add_question(
+            "capital_gains_summary",
+            "What net capital gain or loss should be carried from the 1099-B support documents?",
+            "Brokerage support is present, but the draft still needs a summarized gain or loss figure.",
+            "investments",
+            True,
+        )
+
+    if state_follow_up:
+        add_question(
+            "state_follow_up",
+            "Which resident and work-state details should be preserved for the later state return workflow?",
+            "State automation is not complete yet, so the draft should preserve sourcing and withholding details now.",
+            "state",
+            False,
+        )
+
+    for document in documents:
+        content_status = document.get("content_status")
+        doc_type = document.get("doc_type", "document")
+        source_ref = document.get("source_ref", "unknown source")
+        if content_status == "portal_notice_only":
+            add_question(
+                f"upload_{document.get('id', 'document')}",
+                f"Can you upload the actual {doc_type} from {source_ref} instead of the portal notice?",
+                "The workflow only has an availability notice, not the tax form contents.",
+                "documents",
+                True,
+            )
+        elif content_status == "unreadable_encrypted_attachment":
+            add_question(
+                f"upload_{document.get('id', 'document')}",
+                f"Can you upload or unlock the {doc_type} from {source_ref} so its contents can be read?",
+                "The attachment exists, but the workflow could not read the document body.",
+                "documents",
+                True,
+            )
+        elif content_status == "metadata_only":
+            if document.get("fields"):
+                add_question(
+                    f"confirm_{document.get('id', 'document')}",
+                    f"Can you confirm the extracted {doc_type} details from {source_ref} against the actual form or PDF?",
+                    "Only metadata or a partial extraction is available, so the observed fields still need document-level confirmation.",
+                    "documents",
+                    False,
+                )
+            else:
+                add_question(
+                    f"upload_{document.get('id', 'document')}",
+                    f"Can you provide the actual contents for the {doc_type} from {source_ref}?",
+                    "Only metadata is available right now, so the draft cannot rely on the form contents.",
+                    "documents",
+                    True,
+                )
+
+    return questions
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -165,6 +296,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    interview_questions = build_interview_questions(
+        payload,
+        candidate_business_expenses=candidate_business_expenses,
+        state_follow_up=state_follow_up,
+    )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -276,6 +413,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "interview_questions": interview_questions,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

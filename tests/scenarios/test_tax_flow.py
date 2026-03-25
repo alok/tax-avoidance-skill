@@ -93,14 +93,27 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+                self.assertIn("Next Questions", artifacts["missing-items.md"])
+                self.assertTrue(normalized["interview_questions"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")
         self.assertIn("$371.89", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
+        prompts = "\n".join(question["prompt"] for question in normalized["interview_questions"])
+        self.assertIn("candidate business-expense receipts totaling $371.89", prompts)
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_interview_questions_are_structured_and_rendered(self) -> None:
+        normalized, artifacts = self.run_case("metadata_only_tax_docs")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertTrue(normalized["interview_questions"])
+        blocking_questions = [item for item in normalized["interview_questions"] if item["blocking"]]
+        self.assertTrue(blocking_questions)
+        self.assertIn("Can you upload or unlock the 1099-NEC", artifacts["missing-items.md"])
+        self.assertIn("Can you upload the actual Consolidated 1099", artifacts["tax-dossier.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
