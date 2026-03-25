@@ -167,6 +167,50 @@
       "line_20": 1800
     }
   },
+  "education_credit_review_from_1098t": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-main",
+          "fields": {
+            "wages": 68000,
+            "federal_withholding": 7600
+          }
+        },
+        {
+          "id": "1098t-student",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-student",
+          "fields": {
+            "qualified_tuition_expenses": 6400,
+            "scholarships_and_grants": 2500,
+            "institution_name": "State University",
+            "student_name": "Taylor Example"
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 6200
+      },
+      "user_request": "Review my tuition documents and draft what you safely can."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 68000,
+      "missing": "Review the 1098-T tuition statement"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
