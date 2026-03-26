@@ -295,6 +295,26 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_rows = [
+        [
+            "Provided line 12 deduction amount",
+            money(deduction_summary.get("provided_deduction_amount")),
+        ],
+        [
+            "Observed mortgage interest",
+            money(deduction_summary.get("mortgage_interest", {}).get("value")),
+        ],
+        [
+            "Observed cash donations",
+            money(deduction_summary.get("charitable_cash", {}).get("value")),
+        ],
+        [
+            "Observed itemized subtotal",
+            money(deduction_summary.get("observed_itemized_total")),
+        ],
+    ]
+    deduction_note_lines = [f"- {deduction_summary['note']}"] if deduction_summary.get("note") else ["- None"]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -350,6 +370,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Scaffolding",
+        "",
+        make_markdown_table(
+            ["Item", "Amount"],
+            deduction_rows,
+        ),
+        "",
+        *deduction_note_lines,
         "",
         "## State Follow-Up",
         "",

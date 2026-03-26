@@ -32,6 +32,36 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def deduction_scaffolding_note(
+    deduction_amount: float,
+    answers: dict[str, Any],
+    observed_itemized_total: float,
+) -> str | None:
+    if observed_itemized_total <= 0.0:
+        return None
+    if "deduction_amount" not in answers:
+        return (
+            f"Observed mortgage-interest and cash-donation documents already total "
+            f"${observed_itemized_total:,.2f}. Compare that with the standard deduction "
+            "before finalizing Form 1040 line 12."
+        )
+    if deduction_amount < observed_itemized_total:
+        return (
+            f"The provided deduction amount of ${deduction_amount:,.2f} is below the "
+            f"${observed_itemized_total:,.2f} currently observed from mortgage-interest "
+            "and cash-donation documents. Recheck whether line 12 should use a different "
+            "itemized total or the standard deduction."
+        )
+    if deduction_amount > observed_itemized_total:
+        return (
+            f"The provided deduction amount of ${deduction_amount:,.2f} exceeds the "
+            f"${observed_itemized_total:,.2f} currently observed from mortgage-interest "
+            "and cash-donation documents. Confirm whether additional itemized support "
+            "exists or whether line 12 is using the standard deduction."
+        )
+    return None
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -104,6 +134,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    observed_itemized_total = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -119,6 +150,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     other_nonrefundable_credits, other_credit_sources = answer_fact(
         answers,
         "other_nonrefundable_credits",
+    )
+    deduction_note = deduction_scaffolding_note(
+        deduction_amount,
+        answers,
+        observed_itemized_total,
     )
 
     resident_state = normalize_state_code(state.get("resident_state"))
@@ -176,7 +212,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if observed_itemized_total > 0.0:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the "
+                f"draft package. Mortgage-interest and cash-donation documents already "
+                f"show ${observed_itemized_total:,.2f} of possible itemized deductions."
+            )
+        else:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package."
+            )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -187,6 +232,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if deduction_note and "deduction_amount" in answers:
+        missing_items.append(deduction_note)
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -292,6 +339,13 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
+        "deduction_summary": {
+            "provided_deduction_amount": deduction_amount if "deduction_amount" in answers else None,
+            "observed_itemized_total": observed_itemized_total,
+            "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+            "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+            "note": deduction_note,
+        },
     }
     return normalized
 

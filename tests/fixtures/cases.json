@@ -395,6 +395,64 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "deduction_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 9800
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 9600
+          }
+        },
+        {
+          "id": "charity-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://charity-1",
+          "fields": {
+            "cash_donations": 1250
+          }
+        },
+        {
+          "id": "1098e-loan",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-loan",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 8200
+      },
+      "user_request": "Use my tax docs and show me what I still need to decide."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 78000,
+      "line_25a": 9800
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,
