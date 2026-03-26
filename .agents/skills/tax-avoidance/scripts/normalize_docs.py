@@ -32,6 +32,22 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_review_candidate(
+    key: str,
+    label: str,
+    amount: float,
+    sources: list[dict[str, Any]],
+    next_action: str,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": label,
+        "amount": amount,
+        "sources": sources,
+        "next_action": next_action,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -71,6 +87,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"1098-E"},
         "student_loan_interest",
+    )
+    ira_contributions_reported, ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
     )
     expense_documents_for_year = [
         document
@@ -177,8 +198,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if mortgage_interest > 0.0 and "deduction_amount" not in answers:
+        missing_items.append(
+            f"Review mortgage interest documents totaling ${mortgage_interest:,.2f} and decide whether the draft should use the standard deduction or an itemized amount."
+        )
+    if charitable_cash > 0.0 and "deduction_amount" not in answers:
+        missing_items.append(
+            f"Review charitable donation receipts totaling ${charitable_cash:,.2f} and confirm whether they belong in an itemized deduction total."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        missing_items.append(
+            f"Review Form 1098-E student loan interest totaling ${student_loan_interest:,.2f} and confirm the deductible amount after any income limits."
+        )
+    if ira_contributions_reported > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review Form 5498 IRA contributions totaling ${ira_contributions_reported:,.2f} and confirm the deductible amount after workplace-plan and income-limit checks."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -236,6 +273,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contribution_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
             student_loan_interest,
@@ -265,6 +307,48 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         ),
     }
 
+    review_candidates: list[dict[str, Any]] = []
+    if mortgage_interest > 0.0:
+        review_candidates.append(
+            build_review_candidate(
+                "mortgage_interest",
+                "Mortgage interest review",
+                mortgage_interest,
+                mortgage_interest_sources,
+                "Decide whether to use the standard deduction or include this in an itemized deduction total.",
+            )
+        )
+    if charitable_cash > 0.0:
+        review_candidates.append(
+            build_review_candidate(
+                "charitable_cash",
+                "Charitable donation review",
+                charitable_cash,
+                charitable_sources,
+                "Confirm whether these donations belong in the itemized deduction total for the draft package.",
+            )
+        )
+    if student_loan_interest > 0.0:
+        review_candidates.append(
+            build_review_candidate(
+                "student_loan_interest_deduction",
+                "Student loan interest review",
+                student_loan_interest,
+                student_loan_interest_sources,
+                "Confirm the deductible amount after any MAGI-based phaseout or other eligibility limits.",
+            )
+        )
+    if ira_contributions_reported > 0.0:
+        review_candidates.append(
+            build_review_candidate(
+                "ira_contributions_reported",
+                "IRA contribution review",
+                ira_contributions_reported,
+                ira_contribution_sources,
+                "Confirm the deductible amount after workplace-plan coverage and income-limit checks.",
+            )
+        )
+
     normalized: dict[str, Any] = {
         "status": status,
         "tax_year": tax_year,
@@ -291,6 +375,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "review_candidates": review_candidates,
         "facts": facts,
     }
     return normalized
