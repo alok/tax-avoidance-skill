@@ -64,6 +64,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -140,6 +144,17 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_social_security_requires_taxable_amount_review(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn(
+            "Determine the taxable portion of Social Security benefits for Form 1040 line 6b",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $18,000.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 9 | Total income | $12,000.00 |", artifacts["federal-lines.md"])
 
 
 if __name__ == "__main__":

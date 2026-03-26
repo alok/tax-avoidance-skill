@@ -39,6 +39,10 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def fact_is_known(normalized: dict[str, Any], key: str) -> bool:
+    return key in normalized.get("answered_fields", []) or bool(fact_sources(normalized, key))
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -47,12 +51,13 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
+    taxable_social_security = fact_value(normalized, "taxable_social_security_benefits")
     has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = wages + interest + dividends + capital_gains + taxable_social_security + (net_profit or 0.0)
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -137,6 +142,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "6a",
+            "label": "Social Security benefits",
+            "value": social_security if fact_is_known(normalized, "social_security_benefits") else None,
+            "sources": fact_sources(normalized, "social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "6b",
+            "label": "Taxable Social Security benefits",
+            "value": taxable_social_security if fact_is_known(normalized, "taxable_social_security_benefits") else None,
+            "sources": fact_sources(normalized, "taxable_social_security_benefits"),
+            "rule_citations": rule_citations("taxable_social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
             "line": "7",
             "label": "Capital gain or loss",
             "value": capital_gains or None,
@@ -154,6 +175,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
+                "taxable_social_security_benefits",
                 "schedule_c",
             ),
         },

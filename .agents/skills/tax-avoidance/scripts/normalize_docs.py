@@ -110,6 +110,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
+    taxable_social_security_benefits, taxable_social_security_sources = answer_fact(
+        answers,
+        "taxable_social_security_benefits",
+    )
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
@@ -179,6 +183,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if social_security > 0.0 and "taxable_social_security_benefits" not in answers:
+        missing_items.append(
+            "Determine the taxable portion of Social Security benefits for Form 1040 line 6b before treating SSA-1099 benefits as taxable income."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -241,6 +249,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             student_loan_interest,
             student_loan_interest_sources,
         ),
+        "taxable_social_security_benefits": build_fact(
+            "taxable_social_security_benefits",
+            taxable_social_security_benefits,
+            taxable_social_security_sources,
+        ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
@@ -275,6 +288,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "connector_notes": connector_notes(connectors, documents),
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
+        "answered_fields": sorted(answers.keys()),
         "missing_items": missing_items,
         "state_summary": {
             "resident_state": resident_state,
