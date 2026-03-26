@@ -94,6 +94,22 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
 
+    def test_intake_questions_are_queued_for_follow_up(self) -> None:
+        normalized, artifacts = self.run_case("metadata_only_tax_docs")
+        intake_summary = normalized["intake_summary"]
+        prompts = [question["prompt"] for question in intake_summary["questions"]]
+        question_ids = [question["id"] for question in intake_summary["questions"]]
+
+        self.assertFalse(intake_summary["ready_for_review"])
+        self.assertEqual(intake_summary["question_count"], len(intake_summary["questions"]))
+        self.assertIn("tax-before-credits", question_ids)
+        self.assertIn("replace-baif-1099-nec", question_ids)
+        self.assertIn("upload-wealthfront-portal", question_ids)
+        self.assertTrue(any("tax-before-credits figure" in prompt for prompt in prompts))
+        self.assertTrue(any("upload an unlocked copy" in prompt for prompt in prompts))
+        self.assertIn("## Next Intake Questions", artifacts["tax-dossier.md"])
+        self.assertIn("Answer Key", artifacts["tax-dossier.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

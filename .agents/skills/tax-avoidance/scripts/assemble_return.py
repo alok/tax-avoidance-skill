@@ -316,6 +316,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    intake_summary = normalized.get("intake_summary", {})
+    intake_question_rows = [
+        [
+            str(question.get("priority", "")),
+            question.get("prompt", ""),
+            question.get("answer_key") or "action-only",
+            question.get("reason", ""),
+        ]
+        for question in intake_summary.get("questions", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -367,6 +377,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ),
         "",
         *state_follow_up_lines,
+        "",
+        "## Next Intake Questions",
+        "",
+        f"- {intake_summary.get('next_step', 'No additional intake questions are queued.')}",
+        "",
+        make_markdown_table(
+            ["Priority", "Prompt", "Answer Key", "Why It Matters"],
+            intake_question_rows or [["", "None", "None", "All queued intake questions are resolved."]],
+        ),
         "",
         "## Missing Items",
         "",

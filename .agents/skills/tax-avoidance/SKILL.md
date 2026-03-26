@@ -53,6 +53,7 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
 7. Return the artifact set:
    `tax-dossier.md`, `return-data.json`, `federal-lines.md`, and `missing-items.md`
 8. Summarize:
+   next intake questions,
    legal planning moves,
    candidate business expenses,
    unsupported or risky items,
@@ -67,6 +68,7 @@ Every completed run should yield:
 - `return-data.json`: normalized extracted facts with provenance
 - `federal-lines.md`: line-by-line draft for supported federal lines
 - `missing-items.md`: unresolved fields, absent documents, and unsupported complexity
+- `return-data.json` should also include a deterministic `intake_summary` queue with the next questions, answer keys, and reasons
 - The dossier should separately surface **candidate business-expense receipts** that still need user confirmation before they are applied to Schedule C.
 
 Every nontrivial tax statement must cite an IRS source. Every extracted value must cite the originating document, email, file, or upload.
