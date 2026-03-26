@@ -6,7 +6,7 @@
 - Filing status: single or married filing jointly
 - Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, Social Security income
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
-- Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
+- Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review, masked dependent review for Child Tax Credit follow-up
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
 
@@ -21,6 +21,12 @@
 - 5498
 - SSA-1099
 - donation receipts
+
+## Household Review Scaffolding
+
+- Preserve dependent names or labels, relationship, birth year, months in household, and masked tax-ID status notes
+- Surface Child Tax Credit follow-up prompts when under-17 dependents are present but no draft child credit amount is recorded
+- Do not store full SSNs or pretend dependency eligibility has been finally determined
 
 ## Unsupported In V1
 

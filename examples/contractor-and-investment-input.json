@@ -60,7 +60,16 @@
   "answers": {
     "business_expenses": 9000.0,
     "deduction_amount": 15000.0,
-    "tax_before_credits": 6200.0
+    "tax_before_credits": 6200.0,
+    "dependents": [
+      {
+        "name": "Sample Child",
+        "relationship": "child",
+        "birth_year": 2019,
+        "months_lived_with_taxpayer": 12,
+        "tax_id_status": "masked-ssn-on-file"
+      }
+    ]
   },
   "user_request": "Build a sample contractor plus investment return package."
 }

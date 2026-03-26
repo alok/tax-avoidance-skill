@@ -217,6 +217,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "education_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
+                "child_tax_credit",
             ),
         },
         {
@@ -296,6 +297,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    household_summary = normalized.get("household_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +318,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_rows = [
+        [
+            dependent.get("name", "Unnamed dependent"),
+            dependent.get("relationship") or "TBD",
+            str(dependent.get("birth_year") or "TBD"),
+            str(dependent.get("age_at_year_end") or "TBD"),
+            str(dependent.get("months_lived_with_taxpayer") or "TBD"),
+            dependent.get("tax_id_status") or "TBD",
+            "; ".join(dependent.get("review_notes", [])) or "None",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +363,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured for review: {household_summary.get('dependent_count', 0)}",
+        f"- Under-17 dependents to review for Child Tax Credit support: {household_summary.get('under_17_dependent_count', 0)}",
+        "",
+        make_markdown_table(
+            ["Name", "Relationship", "Birth Year", "Age At Year End", "Months With Taxpayer", "Tax ID Status", "Review Notes"],
+            dependent_rows or [["None", "None", "None", "None", "None", "None", "None"]],
         ),
         "",
         "## State Follow-Up",

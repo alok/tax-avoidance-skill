@@ -122,6 +122,114 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_intake_scaffolding(self) -> None:
+        payload = {
+            "tax_year": 2025,
+            "filing_status": "married_filing_jointly",
+            "connectors": {"gmail": True, "google_drive": True},
+            "documents": [
+                {
+                    "id": "w2-parent-a",
+                    "doc_type": "W-2",
+                    "source_type": "gmail_attachment",
+                    "source_ref": "gmail://w2-parent-a",
+                    "fields": {"wages": 92000, "federal_withholding": 9500},
+                },
+                {
+                    "id": "w2-parent-b",
+                    "doc_type": "W-2",
+                    "source_type": "google_drive",
+                    "source_ref": "drive://w2-parent-b",
+                    "fields": {"wages": 41000, "federal_withholding": 4300},
+                },
+            ],
+            "answers": {
+                "deduction_amount": 29200,
+                "tax_before_credits": 7600,
+                "child_tax_credit": 4000,
+                "dependents": [
+                    {
+                        "name": "Avery",
+                        "relationship": "child",
+                        "birth_year": 2018,
+                        "months_lived_with_taxpayer": 12,
+                        "tax_id_status": "ssn-on-file",
+                    },
+                    {
+                        "name": "Milo",
+                        "relationship": "child",
+                        "birth_year": 2021,
+                        "months_lived_with_taxpayer": 12,
+                        "tax_id_status": "itin-requested",
+                    },
+                ],
+            },
+            "user_request": "Draft our joint return package with our kids included.",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_path = temp_path / "input.json"
+            out_dir = temp_path / "out"
+            input_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(input_path), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+            normalized = json.loads((out_dir / "return-data.json").read_text(encoding="utf-8"))
+            dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
+            federal_lines = (out_dir / "federal-lines.md").read_text(encoding="utf-8")
+            self.assertEqual(normalized["household_summary"]["dependent_count"], 2)
+            self.assertEqual(normalized["household_summary"]["under_17_dependent_count"], 2)
+            self.assertIn("Household And Dependents", dossier)
+            self.assertIn("Avery", dossier)
+            self.assertIn("itin-requested", dossier)
+            self.assertIn("$4,000.00", federal_lines)
+            self.assertIn("Instructions for Schedule 8812 (Form 1040)", federal_lines)
+
+    def test_dependents_prompt_credit_review_when_missing(self) -> None:
+        payload = {
+            "tax_year": 2025,
+            "filing_status": "single",
+            "connectors": {"gmail": False, "google_drive": True},
+            "documents": [
+                {
+                    "id": "w2-parent",
+                    "doc_type": "W-2",
+                    "source_type": "google_drive",
+                    "source_ref": "drive://w2-parent",
+                    "fields": {"wages": 78000, "federal_withholding": 8100},
+                }
+            ],
+            "answers": {
+                "deduction_amount": 15000,
+                "tax_before_credits": 6200,
+                "dependents": [
+                    {
+                        "name": "Noah",
+                        "relationship": "child",
+                        "birth_year": 2016,
+                        "months_lived_with_taxpayer": 12,
+                        "tax_id_status": "ssn-on-file",
+                    }
+                ],
+            },
+            "user_request": "Prepare my return and keep track of my child details.",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_path = temp_path / "input.json"
+            out_dir = temp_path / "out"
+            input_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(input_path), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+            missing_items = (out_dir / "missing-items.md").read_text(encoding="utf-8")
+            self.assertIn("Review Child Tax Credit support", missing_items)
+            self.assertIn("Noah", (out_dir / "tax-dossier.md").read_text(encoding="utf-8"))
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

@@ -46,6 +46,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Clean vehicle and energy credits",
         "url": "https://www.irs.gov/credits-deductions/clean-vehicle-and-energy-credits",
     },
+    "child_tax_credit": {
+        "title": "Instructions for Schedule 8812 (Form 1040)",
+        "url": "https://www.irs.gov/instructions/i8812",
+    },
     "nonemployee_compensation": {
         "title": "IRS Publication 334",
         "url": "https://www.irs.gov/publications/p334",

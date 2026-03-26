@@ -12,6 +12,7 @@ For a plain Codex app user:
 2. If a source only exposes a portal notice, ask for the actual PDF immediately.
 3. Prefer uploaded PDFs over vague email snippets.
 4. Treat likely SaaS or tooling receipts as candidate expenses until the user confirms they belong on Schedule C.
+5. When dependents matter, collect only masked tax-ID status and review details, not full SSNs.
 
 ## Order Of Operations
 
@@ -42,5 +43,6 @@ For a plain Codex app user:
 - Ask for filing status only after document collection begins.
 - Ask one question at a time when the answer changes supported-line output.
 - Prefer targeted clarifications over generic tax questionnaires.
+- When a user may claim dependents, ask for the minimum safe review fields: relationship, birth year, months in household, and masked tax-ID status.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.

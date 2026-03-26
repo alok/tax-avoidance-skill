@@ -32,6 +32,42 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def normalize_dependent(raw: dict[str, Any], tax_year: int) -> dict[str, Any]:
+    birth_year_raw = raw.get("birth_year")
+    birth_year: int | None = None
+    if birth_year_raw not in (None, ""):
+        birth_year = int(birth_year_raw)
+
+    months_raw = raw.get("months_lived_with_taxpayer")
+    months_lived_with_taxpayer: int | None = None
+    if months_raw not in (None, ""):
+        months_lived_with_taxpayer = int(months_raw)
+
+    age_at_year_end: int | None = None
+    if birth_year is not None:
+        age_at_year_end = tax_year - birth_year
+
+    review_notes: list[str] = []
+    if age_at_year_end is not None and age_at_year_end < 17:
+        review_notes.append("Under age 17 at tax-year end; review for Child Tax Credit support.")
+    if raw.get("is_full_time_student"):
+        review_notes.append("Marked as a full-time student; preserve school support records.")
+    if raw.get("is_disabled"):
+        review_notes.append("Marked as disabled; preserve dependency-support records.")
+
+    return {
+        "name": str(raw.get("name") or "Unnamed dependent"),
+        "relationship": str(raw.get("relationship") or "").strip(),
+        "birth_year": birth_year,
+        "age_at_year_end": age_at_year_end,
+        "months_lived_with_taxpayer": months_lived_with_taxpayer,
+        "tax_id_status": str(raw.get("tax_id_status") or "").strip(),
+        "is_full_time_student": bool(raw.get("is_full_time_student")),
+        "is_disabled": bool(raw.get("is_disabled")),
+        "review_notes": review_notes,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -120,6 +156,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    dependents = [normalize_dependent(item, tax_year) for item in answers.get("dependents", [])]
+    under_17_dependents = [
+        dependent
+        for dependent in dependents
+        if dependent.get("age_at_year_end") is not None and dependent["age_at_year_end"] < 17
+    ]
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -179,6 +221,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if child_tax_credit > 0.0 and not dependents:
+        missing_items.append(
+            "Add dependent review details supporting the claimed child tax credit or other dependent credit. Use masked tax-ID status notes rather than full SSNs."
+        )
+    if dependents and "child_tax_credit" not in answers and under_17_dependents:
+        missing_items.append(
+            "Review Child Tax Credit support for the listed under-17 dependents and record a draft child_tax_credit amount if you want it reflected in the federal lines."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -216,6 +266,20 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+    for dependent in dependents:
+        dependent_name = dependent["name"]
+        if not dependent.get("relationship"):
+            missing_items.append(f"Add the relationship for dependent review entry: {dependent_name}.")
+        if dependent.get("birth_year") is None:
+            missing_items.append(f"Add the birth year for dependent review entry: {dependent_name}.")
+        if dependent.get("months_lived_with_taxpayer") is None:
+            missing_items.append(
+                f"Add months_lived_with_taxpayer for dependent review entry: {dependent_name}."
+            )
+        if not dependent.get("tax_id_status"):
+            missing_items.append(
+                f"Confirm masked tax_id_status for dependent review entry: {dependent_name}."
+            )
 
     status = "ok"
     if illegal_reasons:
@@ -291,6 +355,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "household_summary": {
+            "dependents": dependents,
+            "dependent_count": len(dependents),
+            "under_17_dependent_count": len(under_17_dependents),
+        },
         "facts": facts,
     }
     return normalized
