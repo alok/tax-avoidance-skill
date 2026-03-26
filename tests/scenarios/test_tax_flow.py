@@ -102,6 +102,14 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
 
+    def test_ira_contribution_evidence(self) -> None:
+        normalized, artifacts = self.run_case("ira_contribution_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contribution_evidence"]["value"], 6500.0)
+        self.assertIn("IRA Contribution Evidence", artifacts["tax-dossier.md"])
+        self.assertIn("upload://sample-5498", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498 shows $6,500.00 of traditional IRA contributions", artifacts["missing-items.md"])
+
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
         self.assertEqual(normalized["status"], "ok")

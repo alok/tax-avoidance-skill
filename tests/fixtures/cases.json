@@ -199,6 +199,36 @@
       "schedule_c_line_31": 89658.47
     }
   },
+  "ira_contribution_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "sample-5498",
+          "doc_type": "5498",
+          "source_type": "upload",
+          "source_ref": "upload://sample-5498",
+          "document_date": "2026-05-14",
+          "fields": {
+            "traditional_ira_contributions": 6500.0
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Use my IRA contribution form to help draft the return package."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "schedule_c_missing_expenses": {
     "input": {
       "tax_year": 2025,

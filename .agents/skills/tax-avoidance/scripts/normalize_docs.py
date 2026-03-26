@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contribution_evidence, ira_contribution_evidence_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -98,6 +103,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         }
         for document in expense_documents_for_year
         if safe_float(document.get("fields", {}).get("amount")) != 0.0
+    ]
+    ira_contribution_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "document_date": document.get("document_date"),
+            "amount": safe_float(document.get("fields", {}).get("traditional_ira_contributions")),
+        }
+        for document in documents
+        if document.get("doc_type") == "5498"
+        and safe_float(document.get("fields", {}).get("traditional_ira_contributions")) != 0.0
     ]
     charitable_cash, charitable_sources = aggregate_numeric(
         documents,
@@ -179,6 +196,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if ira_contribution_evidence > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Form 5498 shows ${ira_contribution_evidence:,.2f} of traditional IRA contributions. Confirm how much is deductible for 2025 before applying it to Schedule 1."
+        )
+    if (
+        ira_contribution_evidence > 0.0
+        and "ira_contribution_deduction" in answers
+        and abs(ira_deduction - ira_contribution_evidence) > 0.01
+    ):
+        missing_items.append(
+            f"Form 5498 shows ${ira_contribution_evidence:,.2f} of traditional IRA contributions, but the current deductible amount is ${ira_deduction:,.2f}. Confirm the deductible portion for 2025."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -241,6 +270,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             student_loan_interest,
             student_loan_interest_sources,
         ),
+        "ira_contribution_evidence": build_fact(
+            "ira_contribution_evidence",
+            ira_contribution_evidence,
+            ira_contribution_evidence_sources,
+        ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
@@ -276,6 +310,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "ira_contribution_documents": ira_contribution_documents,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

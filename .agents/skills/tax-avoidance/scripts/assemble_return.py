@@ -295,6 +295,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    ira_contribution_evidence = fact_value(normalized, "ira_contribution_evidence")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    ira_contribution_rows = [
+        [
+            contribution.get("document_date") or "unknown",
+            money(contribution.get("amount")),
+            contribution.get("source_ref") or "unknown",
+        ]
+        for contribution in normalized.get("ira_contribution_documents", [])
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +359,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## IRA Contribution Evidence",
+        "",
+        f"- Form 5498 evidence shows {money(ira_contribution_evidence) if ira_contribution_evidence else '$0.00'} of traditional IRA contributions.",
+        f"- Deductible IRA amount currently applied in the draft: {money(ira_deduction) if ira_deduction else '$0.00'}.",
+        "",
+        make_markdown_table(
+            ["Date", "Amount", "Source"],
+            ira_contribution_rows or [["None", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",
