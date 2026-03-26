@@ -316,6 +316,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    ira_review = normalized.get("ira_review", {})
+    ira_review_lines = [f"- {item}" for item in ira_review.get("notes", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -367,6 +369,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ),
         "",
         *state_follow_up_lines,
+        "",
+        "## IRA Contribution Review",
+        "",
+        f"- Traditional IRA contributions found on Form 5498: {money(ira_review.get('traditional_contributions'))}",
+        f"- Roth IRA contributions found on Form 5498: {money(ira_review.get('roth_contributions'))}",
+        f"- Deductible IRA amount currently applied in the draft package: {money(ira_review.get('deductible_amount'))}",
+        "",
+        *ira_review_lines,
         "",
         "## Missing Items",
         "",

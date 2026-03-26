@@ -106,6 +106,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
+    if not ira_sources:
+        ira_deduction, ira_sources = aggregate_numeric(
+            documents,
+            {"5498"},
+            "deductible_traditional_ira_contribution",
+        )
+        if not ira_sources:
+            ira_deduction, ira_sources = aggregate_numeric(
+                documents,
+                {"5498"},
+                "ira_contribution_deduction",
+            )
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
@@ -119,6 +131,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     other_nonrefundable_credits, other_credit_sources = answer_fact(
         answers,
         "other_nonrefundable_credits",
+    )
+    traditional_ira_contributions, traditional_ira_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
+    roth_ira_contributions, roth_ira_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "roth_ira_contributions",
     )
 
     resident_state = normalize_state_code(state.get("resident_state"))
@@ -179,6 +201,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if traditional_ira_contributions > 0.0 and not ira_sources:
+        missing_items.append(
+            f"Review the Form 5498 traditional IRA contributions totaling ${traditional_ira_contributions:,.2f} and confirm how much is deductible before applying an IRA adjustment."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -241,6 +267,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             student_loan_interest,
             student_loan_interest_sources,
         ),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_sources,
+        ),
+        "roth_ira_contributions": build_fact(
+            "roth_ira_contributions",
+            roth_ira_contributions,
+            roth_ira_sources,
+        ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
@@ -288,6 +324,27 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     "withholding": totals["withholding"],
                 }
                 for code, totals in sorted(state_allocation_totals.items())
+            ],
+        },
+        "ira_review": {
+            "traditional_contributions": traditional_ira_contributions,
+            "roth_contributions": roth_ira_contributions,
+            "deductible_amount": ira_deduction,
+            "notes": [
+                note
+                for note in [
+                    (
+                        f"Traditional IRA contributions from Form 5498 total ${traditional_ira_contributions:,.2f}. Do not assume the full amount is deductible without checking Publication 590-A limits and workplace-plan phaseouts."
+                        if traditional_ira_contributions > 0.0
+                        else ""
+                    ),
+                    (
+                        f"Roth IRA contributions from Form 5498 total ${roth_ira_contributions:,.2f}. Roth IRA contributions are not deductible on Form 1040."
+                        if roth_ira_contributions > 0.0
+                        else ""
+                    ),
+                ]
+                if note
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,

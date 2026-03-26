@@ -9,6 +9,7 @@
 - Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
+- Form 5498 handling that safely distinguishes between deductible traditional IRA amounts already extracted versus contribution amounts that still need deductibility review
 
 ## Supported Documents
 
