@@ -45,6 +45,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    estimated_tax_payments, estimated_tax_payment_sources = aggregate_numeric(
+        documents,
+        {"Estimated Tax Payment"},
+        "payment_amount",
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -112,6 +117,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    answer_estimated_tax_payments, answer_estimated_tax_payment_sources = answer_fact(
+        answers,
+        "estimated_tax_payments",
+    )
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
@@ -120,6 +129,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+
+    estimated_tax_payments += answer_estimated_tax_payments
+    estimated_tax_payment_sources.extend(answer_estimated_tax_payment_sources)
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -187,6 +199,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    has_estimated_tax_sources = bool(estimated_tax_payment_sources)
+    has_non_w2_income = nonemployee_compensation > 0.0 or interest > 0.0 or dividends > 0.0 or capital_gains > 0.0
+    if has_non_w2_income and not has_estimated_tax_sources and "estimated_tax_payments" not in answers:
+        missing_items.append(
+            "Confirm whether any 2025 federal estimated tax payments or prior-year overpayments applied to 2025 should be included on Form 1040 line 26."
+        )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -231,6 +249,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             nonemployee_compensation_sources,
         ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "estimated_tax_payments": build_fact(
+            "estimated_tax_payments",
+            estimated_tax_payments,
+            estimated_tax_payment_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),

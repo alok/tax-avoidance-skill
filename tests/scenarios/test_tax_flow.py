@@ -49,9 +49,11 @@ class TaxFlowTest(unittest.TestCase):
             "w2_single",
             "mfj_common_deductions",
             "investment_household",
+            "estimated_payments_documented",
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "estimated_payments_answer_only",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -68,6 +70,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_26" in expected:
+                    self.assertIn(f"${expected['line_26']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -93,6 +97,11 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_estimated_payment_follow_up(self) -> None:
+        normalized, artifacts = self.run_case("investment_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Confirm whether any 2025 federal estimated tax payments", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
