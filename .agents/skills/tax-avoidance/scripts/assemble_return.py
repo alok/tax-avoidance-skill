@@ -217,6 +217,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "education_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
+                "child_tax_credit",
             ),
         },
         {
@@ -295,6 +296,23 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    dependent_summary = normalized.get("dependent_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("label", ""),
+            dependent.get("relationship", ""),
+            str(dependent.get("birth_year") or "TBD"),
+            str(dependent.get("age_end_of_tax_year") or "TBD"),
+            str(dependent.get("months_lived_with_taxpayer") or "TBD"),
+            "Yes" if dependent.get("claimed_dependent") is True else "No" if dependent.get("claimed_dependent") is False else "TBD",
+            "Yes"
+            if dependent.get("child_tax_credit_candidate") is True
+            else "No"
+            if dependent.get("child_tax_credit_candidate") is False
+            else "TBD",
+        ]
+        for dependent in dependent_summary.get("dependents", [])
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +367,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Household Dependents",
+        "",
+        f"- Dependents captured: {dependent_summary.get('dependent_count', 0)}",
+        f"- Potential child tax credit children: {dependent_summary.get('qualifying_child_count', 0)}",
+        f"- Other dependents preserved for review: {dependent_summary.get('other_dependent_count', 0)}",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Birth Year", "Age At Year End", "Months In Home", "Claimed", "CTC Candidate"],
+            dependent_rows or [["None", "None", "TBD", "TBD", "TBD", "TBD", "TBD"]],
         ),
         "",
         "## State Follow-Up",

@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "child_tax_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -66,6 +67,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "dependent_count" in expected:
+                    self.assertIn(f"Dependents captured: {expected['dependent_count']}", artifacts["tax-dossier.md"])
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
@@ -88,11 +91,25 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "dependent_credit_review",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_household_dependents_section(self) -> None:
+        normalized, artifacts = self.run_case("child_tax_credit_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["dependent_summary"]["dependent_count"], 2)
+        self.assertEqual(normalized["dependent_summary"]["qualifying_child_count"], 2)
+        self.assertIn("Household Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Child A", artifacts["tax-dossier.md"])
+        self.assertIn("Potential child tax credit children: 2", artifacts["tax-dossier.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

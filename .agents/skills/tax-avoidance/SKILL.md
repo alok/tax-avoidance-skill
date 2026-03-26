@@ -21,9 +21,11 @@ Supported:
 
 - Single or married-filing-jointly federal individual returns
 - Wage, contractor, and investment income
+- Safe household-dependent scaffolding for child-credit review
 - Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows
+- Child tax credit review when the user provides redacted dependent facts and a draft credit amount
 
 Unsupported by default:
 
@@ -55,6 +57,7 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
 8. Summarize:
    legal planning moves,
    candidate business expenses,
+   dependent-credit review items,
    unsupported or risky items,
    missing items,
    and professional-review escalations.

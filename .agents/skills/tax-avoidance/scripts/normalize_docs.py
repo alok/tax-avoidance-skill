@@ -32,6 +32,85 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def as_bool(value: Any) -> bool | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"true", "yes", "y", "1"}:
+            return True
+        if lowered in {"false", "no", "n", "0"}:
+            return False
+    return bool(value)
+
+
+def normalize_dependents(payload: dict[str, Any], tax_year: int) -> tuple[dict[str, Any], list[str]]:
+    dependents = payload.get("dependents", [])
+    normalized_dependents: list[dict[str, Any]] = []
+    missing_items: list[str] = []
+    qualifying_child_count = 0
+    other_dependent_count = 0
+
+    for index, dependent in enumerate(dependents, start=1):
+        birth_year_raw = dependent.get("birth_year")
+        try:
+            birth_year = int(birth_year_raw) if birth_year_raw not in (None, "") else None
+        except (TypeError, ValueError):
+            birth_year = None
+        age_end_of_tax_year = tax_year - birth_year if birth_year is not None else None
+        relationship = str(dependent.get("relationship") or "").strip() or "unspecified"
+        months_lived_raw = dependent.get("months_lived_with_taxpayer")
+        months_lived = None
+        if months_lived_raw not in (None, ""):
+            try:
+                months_lived = int(months_lived_raw)
+            except (TypeError, ValueError):
+                months_lived = None
+        claimed_dependent = as_bool(dependent.get("claimed_dependent"))
+        ctc_candidate = as_bool(dependent.get("child_tax_credit_candidate"))
+        if ctc_candidate is None:
+            ctc_candidate = bool(
+                claimed_dependent
+                and age_end_of_tax_year is not None
+                and age_end_of_tax_year < 17
+                and (months_lived is None or months_lived >= 6)
+            )
+        if ctc_candidate:
+            qualifying_child_count += 1
+        elif claimed_dependent:
+            other_dependent_count += 1
+
+        label = str(dependent.get("label") or "").strip() or f"Dependent {index}"
+        normalized_dependents.append(
+            {
+                "label": label,
+                "relationship": relationship,
+                "birth_year": birth_year,
+                "age_end_of_tax_year": age_end_of_tax_year,
+                "months_lived_with_taxpayer": months_lived,
+                "claimed_dependent": claimed_dependent,
+                "child_tax_credit_candidate": ctc_candidate,
+            }
+        )
+
+        if claimed_dependent is None:
+            missing_items.append(f"Confirm whether {label} will be claimed as a dependent on the return.")
+        if birth_year is None:
+            missing_items.append(f"Add {label}'s birth year so the child-credit review can be checked safely.")
+        if months_lived is None:
+            missing_items.append(f"Confirm how many months {label} lived with the taxpayer in {tax_year}.")
+
+    summary = {
+        "dependents": normalized_dependents,
+        "dependent_count": len(normalized_dependents),
+        "qualifying_child_count": qualifying_child_count,
+        "other_dependent_count": other_dependent_count,
+    }
+    return summary, missing_items
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -122,6 +201,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     )
 
     resident_state = normalize_state_code(state.get("resident_state"))
+    dependent_summary, dependent_missing_items = normalize_dependents(payload, tax_year)
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
     for item in work_states_raw:
@@ -179,6 +259,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if dependent_summary["qualifying_child_count"] > 0 and "child_tax_credit" not in answers:
+        missing_items.append(
+            "Review child tax credit eligibility for the listed dependents and provide the draft credit amount, or mark the credit for professional review."
+        )
+    if "child_tax_credit" in answers and dependent_summary["dependent_count"] == 0:
+        missing_items.append(
+            "Add a redacted dependent summary supporting the child tax credit amount so the draft package can be reviewed safely."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -190,6 +278,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
+    for item in dependent_missing_items:
+        if item not in missing_items:
+            missing_items.append(item)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
     for document in documents:
@@ -290,6 +381,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "dependent_summary": dependent_summary,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

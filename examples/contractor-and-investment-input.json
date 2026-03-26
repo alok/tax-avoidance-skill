@@ -5,6 +5,15 @@
     "gmail": true,
     "google_drive": true
   },
+  "dependents": [
+    {
+      "label": "Child A",
+      "relationship": "daughter",
+      "birth_year": 2018,
+      "months_lived_with_taxpayer": 12,
+      "claimed_dependent": true
+    }
+  ],
   "documents": [
     {
       "id": "sample-1099-nec",
@@ -59,6 +68,7 @@
   ],
   "answers": {
     "business_expenses": 9000.0,
+    "child_tax_credit": 2000.0,
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
