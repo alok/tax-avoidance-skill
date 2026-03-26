@@ -18,6 +18,7 @@
 - 1099-B summary data
 - 1098
 - 1098-E
+- 1098-T
 - 5498
 - SSA-1099
 - donation receipts

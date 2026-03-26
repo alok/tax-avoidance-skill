@@ -32,6 +32,11 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def has_document_type(documents: list[dict[str, Any]], *doc_types: str) -> bool:
+    expected = set(doc_types)
+    return any(document.get("doc_type") in expected for document in documents)
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +44,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+
+    def answered_or_documented(value_from_docs: float, value_from_answers: float) -> float:
+        return value_from_docs or value_from_answers
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -107,6 +115,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
+    student_loan_interest_answer, student_loan_interest_answer_sources = answer_fact(
+        answers,
+        "student_loan_interest",
+    )
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
@@ -187,6 +199,37 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if ira_deduction > 0.0 and not has_document_type(documents, "5498", "IRA Contribution Record"):
+        missing_items.append(
+            "Provide a 2025 IRA contribution record such as Form 5498, a custodian confirmation, or year-end account statement before finalizing the IRA deduction."
+        )
+    if answered_or_documented(student_loan_interest, student_loan_interest_answer) > 0.0 and not has_document_type(
+        documents,
+        "1098-E",
+    ):
+        missing_items.append(
+            "Provide Form 1098-E or the lender's annual interest statement before finalizing the student loan interest deduction."
+        )
+    if education_credit > 0.0 and not has_document_type(documents, "1098-T", "Tuition Statement"):
+        missing_items.append(
+            "Provide Form 1098-T or a school tuition statement before finalizing the education credit."
+        )
+    if clean_vehicle_credit > 0.0 and not has_document_type(documents, "Clean Vehicle Report", "Vehicle Purchase Agreement"):
+        missing_items.append(
+            "Provide the clean-vehicle seller report or purchase agreement with VIN and placed-in-service date before finalizing the clean vehicle credit."
+        )
+    if clean_energy_credit > 0.0 and not has_document_type(documents, "Clean Energy Invoice", "Home Energy Receipt"):
+        missing_items.append(
+            "Provide the installation invoices and manufacturer certification details before finalizing the clean energy credit."
+        )
+    if charitable_cash > 0.0 and not has_document_type(documents, "Donation Receipt"):
+        missing_items.append(
+            "Provide donation receipts or acknowledgments before finalizing the charitable contribution amount."
+        )
+    if other_payments > 0.0 and not has_document_type(documents, "Estimated Tax Payment Record", "IRS Account Transcript"):
+        missing_items.append(
+            "Provide estimated-tax payment confirmations or an IRS account transcript before finalizing other tax payments."
+        )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -238,8 +281,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
-            student_loan_interest,
-            student_loan_interest_sources,
+            student_loan_interest or student_loan_interest_answer,
+            student_loan_interest_sources or student_loan_interest_answer_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",

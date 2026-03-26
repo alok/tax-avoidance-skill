@@ -167,6 +167,41 @@
       "line_20": 1800
     }
   },
+  "substantiation_follow_up": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 13200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9200,
+        "ira_contribution_deduction": 3000,
+        "student_loan_interest": 1200,
+        "education_credit": 1800,
+        "other_payments": 500
+      },
+      "user_request": "Draft my return and tell me exactly which support docs are still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Form 1098-T or a school tuition statement"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
