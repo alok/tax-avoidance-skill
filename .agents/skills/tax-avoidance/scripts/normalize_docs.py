@@ -32,6 +32,12 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def append_checklist_item(checklist: dict[str, list[str]], section: str, item: str) -> None:
+    bucket = checklist.setdefault(section, [])
+    if item not in bucket:
+        bucket.append(item)
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -165,33 +171,57 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
-    missing_items: list[str] = []
+    checklist: dict[str, list[str]] = {
+        "missing_documents": [],
+        "interview_questions": [],
+        "review_confirmations": [],
+        "state_follow_up": [],
+    }
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
         if document.get("dedupe_key") and document.get("content_status") == "available"
     }
     if not payload.get("filing_status"):
-        missing_items.append("Confirm the filing status for the return.")
+        append_checklist_item(checklist, "interview_questions", "Confirm the filing status for the return.")
     if not documents:
-        missing_items.append("Upload or connect at least one tax document before continuing.")
+        append_checklist_item(
+            checklist,
+            "missing_documents",
+            "Upload or connect at least one tax document before continuing.",
+        )
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        append_checklist_item(
+            checklist,
+            "interview_questions",
+            "Choose the deduction path and provide the deduction amount to use in the draft package.",
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
-        missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+        append_checklist_item(
+            checklist,
+            "interview_questions",
+            "Provide a tax-before-credits figure or leave the tax lines marked for review.",
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
-        missing_items.append(
+        append_checklist_item(
+            checklist,
+            "interview_questions",
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
-        missing_items.append(
+        append_checklist_item(
+            checklist,
+            "review_confirmations",
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
     for note in state_follow_up:
-        if note not in missing_items:
-            missing_items.append(note)
+        append_checklist_item(checklist, "state_follow_up", note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
-        missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+        append_checklist_item(
+            checklist,
+            "interview_questions",
+            "Summarize net capital gains or losses from the 1099-B support documents.",
+        )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -200,22 +230,37 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         if dedupe_key and dedupe_key in available_dedupe_keys and content_status != "available":
             continue
         if content_status == "portal_notice_only":
-            missing_items.append(
+            append_checklist_item(
+                checklist,
+                "missing_documents",
                 f"Download the actual {doc_type} from {source_ref}; the current source is only a portal or availability notice."
             )
         elif content_status == "unreadable_encrypted_attachment":
-            missing_items.append(
+            append_checklist_item(
+                checklist,
+                "missing_documents",
                 f"Open or upload the actual {doc_type} from {source_ref}; the attachment exists but its contents were not readable in this workflow."
             )
         elif content_status == "metadata_only":
             if document.get("fields"):
-                missing_items.append(
+                append_checklist_item(
+                    checklist,
+                    "review_confirmations",
                     f"Confirm the extracted {doc_type} details from {source_ref} against the actual filed form or PDF before using them in a return draft."
                 )
             else:
-                missing_items.append(
+                append_checklist_item(
+                    checklist,
+                    "missing_documents",
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+
+    missing_items = [
+        *checklist["missing_documents"],
+        *checklist["interview_questions"],
+        *checklist["review_confirmations"],
+        *checklist["state_follow_up"],
+    ]
 
     status = "ok"
     if illegal_reasons:
@@ -276,6 +321,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "intake_checklist": checklist,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

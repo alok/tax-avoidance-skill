@@ -280,9 +280,24 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    checklist = normalized.get("intake_checklist", {})
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
+    checklist_sections = [
+        ("Missing Documents", checklist.get("missing_documents", [])),
+        ("Interview Questions", checklist.get("interview_questions", [])),
+        ("Review Confirmations", checklist.get("review_confirmations", [])),
+        ("State Follow-Up", checklist.get("state_follow_up", [])),
+    ]
+    checklist_lines: list[str] = []
+    for title, items in checklist_sections:
+        checklist_lines.extend([f"### {title}", ""])
+        if items:
+            checklist_lines.extend(f"- {item}" for item in items)
+        else:
+            checklist_lines.append("- None")
+        checklist_lines.append("")
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
     candidate_expense_rows = [
@@ -368,6 +383,9 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *state_follow_up_lines,
         "",
+        "## Intake Checklist",
+        "",
+        *checklist_lines,
         "## Missing Items",
         "",
         *missing_lines,
@@ -405,18 +423,29 @@ def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
 
 
 def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
+    checklist = normalized.get("intake_checklist", {})
+    section_specs = [
+        ("Missing Documents", checklist.get("missing_documents", [])),
+        ("Interview Questions", checklist.get("interview_questions", [])),
+        ("Review Confirmations", checklist.get("review_confirmations", [])),
+        ("State Follow-Up", checklist.get("state_follow_up", [])),
+    ]
     lines = ["# Missing Items", ""]
-    if normalized.get("missing_items"):
-        lines.extend(f"- {item}" for item in normalized["missing_items"])
-    else:
-        lines.append("- None")
+    for title, items in section_specs:
+        lines.extend([f"## {title}", ""])
+        if items:
+            lines.extend(f"- {item}" for item in items)
+        else:
+            lines.append("- None")
+        lines.append("")
 
     if normalized.get("unsupported_reasons"):
-        lines.extend(["", "## Unsupported Complexity", ""])
+        lines.extend(["## Unsupported Complexity", ""])
         lines.extend(f"- {item}" for item in normalized["unsupported_reasons"])
+        lines.append("")
 
     if normalized.get("illegal_reasons"):
-        lines.extend(["", "## Refusal", ""])
+        lines.extend(["## Refusal", ""])
         lines.extend(f"- {item}" for item in normalized["illegal_reasons"])
     return "\n".join(lines).strip() + "\n"
 
