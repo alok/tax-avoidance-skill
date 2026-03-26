@@ -39,6 +39,13 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def deduction_rule_citations(normalized: dict[str, Any]) -> list[dict[str, str]]:
+    deduction_sources = fact_sources(normalized, "deduction_amount")
+    if any(source.get("source_type") == "system_default" for source in deduction_sources):
+        return rule_citations("standard_deduction_2025")
+    return []
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -185,7 +192,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Standard or itemized deduction",
             "value": deduction_amount or None,
             "sources": fact_sources(normalized, "deduction_amount"),
-            "rule_citations": [],
+            "rule_citations": deduction_rule_citations(normalized),
         },
         {
             "form": "Form 1040",

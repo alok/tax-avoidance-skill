@@ -14,6 +14,7 @@ from tax_flow_common import (  # noqa: E402
     aggregate_numeric,
     categorize_expense_vendor,
     connector_notes,
+    deduction_fact,
     detect_illegal_request,
     detect_unsupported,
     dump_json,
@@ -108,7 +109,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
-    deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
+    filing_status = payload.get("filing_status", "")
+
+    deduction_amount, deduction_sources = deduction_fact(filing_status, answers, documents)
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
@@ -171,7 +174,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         for document in documents
         if document.get("dedupe_key") and document.get("content_status") == "available"
     }
-    if not payload.get("filing_status"):
+    if not filing_status:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
@@ -268,7 +271,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     normalized: dict[str, Any] = {
         "status": status,
         "tax_year": tax_year,
-        "filing_status": payload.get("filing_status", ""),
+        "filing_status": filing_status,
         "user_request": user_request,
         "documents": documents,
         "connectors": connectors,

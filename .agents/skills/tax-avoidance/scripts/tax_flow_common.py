@@ -8,6 +8,10 @@ WIKIPEDIA_AVOIDANCE = "https://en.wikipedia.org/wiki/Tax_avoidance"
 WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 
 RULE_SOURCES: dict[str, dict[str, str]] = {
+    "standard_deduction_2025": {
+        "title": "IRS standard deduction amounts for tax year 2025",
+        "url": "https://www.irs.gov/newsroom/new-and-enhanced-deductions-for-individuals",
+    },
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
@@ -103,6 +107,11 @@ UNSUPPORTED_DOC_TYPES = {
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
 
+STANDARD_DEDUCTION_2025: dict[str, float] = {
+    "single": 15750.0,
+    "married_filing_jointly": 31500.0,
+}
+
 
 def load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
@@ -190,6 +199,43 @@ def answer_fact(
     if value == 0.0:
         return value, []
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
+
+
+def has_itemized_deduction_signal(documents: list[dict[str, Any]], answers: dict[str, Any]) -> bool:
+    if answers.get("deduction_mode") == "itemized":
+        return True
+
+    itemized_doc_types = {"1098", "Donation Receipt"}
+    for document in documents:
+        if document.get("doc_type") in itemized_doc_types:
+            return True
+    return False
+
+
+def deduction_fact(
+    filing_status: str,
+    answers: dict[str, Any],
+    documents: list[dict[str, Any]],
+) -> tuple[float, list[dict[str, Any]]]:
+    if "deduction_amount" in answers:
+        return answer_fact(answers, "deduction_amount")
+
+    if has_itemized_deduction_signal(documents, answers):
+        return 0.0, []
+
+    standard_deduction = STANDARD_DEDUCTION_2025.get(filing_status)
+    if standard_deduction is None:
+        return 0.0, []
+
+    return standard_deduction, [
+        {
+            "source_type": "system_default",
+            "source_ref": f"irs:standard-deduction:{filing_status}:2025",
+            "field": "deduction_amount",
+            "value": standard_deduction,
+            "note": "Defaulted to the 2025 standard deduction because no deduction amount or itemized-deduction signal was provided.",
+        }
+    ]
 
 
 def detect_illegal_request(user_request: str) -> list[str]:

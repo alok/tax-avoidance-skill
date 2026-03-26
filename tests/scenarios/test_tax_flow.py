@@ -47,7 +47,9 @@ class TaxFlowTest(unittest.TestCase):
     def test_happy_paths(self) -> None:
         for name in (
             "w2_single",
+            "w2_single_standard_deduction_default",
             "mfj_common_deductions",
+            "mfj_standard_deduction_default",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -72,6 +74,22 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_standard_deduction_default(self) -> None:
+        normalized, artifacts = self.run_case("w2_single_standard_deduction_default")
+        self.assertEqual(normalized["status"], "ok")
+        deduction_fact = normalized["facts"]["deduction_amount"]
+        self.assertEqual(deduction_fact["value"], 15750.0)
+        self.assertEqual(deduction_fact["sources"][0]["source_type"], "system_default")
+        self.assertIn("$15,750.00", artifacts["federal-lines.md"])
+        self.assertIn("IRS standard deduction amounts for tax year 2025", artifacts["federal-lines.md"])
+        self.assertNotIn("Choose the deduction path", artifacts["missing-items.md"])
+
+    def test_itemized_signal_still_requires_deduction_amount(self) -> None:
+        normalized, artifacts = self.run_case("itemized_signal_requires_deduction_amount")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["deduction_amount"]["value"], 0.0)
+        self.assertIn("Choose the deduction path", artifacts["missing-items.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")

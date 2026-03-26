@@ -31,6 +31,36 @@
       "line_25a": 14000
     }
   },
+  "w2_single_standard_deduction_default": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-standard-default",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-standard-default",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 9800
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 8600
+      },
+      "user_request": "Draft a simple W-2 return from the forms you found."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 78000
+    }
+  },
   "mfj_common_deductions": {
     "input": {
       "tax_year": 2025,
@@ -82,6 +112,87 @@
       "status": "ok",
       "line_1a": 133000,
       "line_25a": 14800
+    }
+  },
+  "mfj_standard_deduction_default": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-default-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-default-a",
+          "fields": {
+            "wages": 84000,
+            "federal_withholding": 9100
+          }
+        },
+        {
+          "id": "w2-default-b",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-default-b",
+          "fields": {
+            "wages": 36000,
+            "federal_withholding": 2700
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9800
+      },
+      "user_request": "Assemble a joint draft from the W-2s."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 120000,
+      "line_25a": 11800
+    }
+  },
+  "itemized_signal_requires_deduction_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-itemized-signal",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-itemized-signal",
+          "fields": {
+            "wages": 99000,
+            "federal_withholding": 12500
+          }
+        },
+        {
+          "id": "1098-home-itemized-signal",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home-itemized-signal",
+          "fields": {
+            "mortgage_interest": 11000
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 13200
+      },
+      "user_request": "Draft the return but leave anything still needed on the checklist."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 99000,
+      "line_25a": 12500
     }
   },
   "investment_household": {
