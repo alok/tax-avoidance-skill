@@ -88,11 +88,25 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "social_security_missing_taxable_benefits",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_social_security_taxable_benefits(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_benefits")
+        self.assertEqual(normalized["status"], "ok")
+        federal_lines = artifacts["federal-lines.md"]
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $24,000.00 |", federal_lines)
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | $8,500.00 |", federal_lines)
+        self.assertIn("| Form 1040 | 9 | Total income | $8,500.00 |", federal_lines)
+        self.assertNotIn("Provide the taxable Social Security benefits amount", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

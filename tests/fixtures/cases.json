@@ -167,6 +167,69 @@
       "line_20": 1800
     }
   },
+  "social_security_taxable_benefits": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 8500,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Use my SSA-1099 and ask only the missing questions."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 24000,
+      "line_6b": 8500,
+      "line_9": 8500
+    }
+  },
+  "social_security_missing_taxable_benefits": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Use my SSA-1099 and tell me what is still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Provide the taxable Social Security benefits amount"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
