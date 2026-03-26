@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    deduction_summary = normalized.get("deduction_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,29 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_rows: list[list[str]] = []
+    for item in deduction_summary.get("adjustments", []):
+        deduction_rows.append(
+            [
+                "Adjustment",
+                item.get("label", ""),
+                money(item.get("amount")),
+                ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "TBD",
+                RULE_SOURCES.get(item.get("key", ""), {}).get("title", "TBD"),
+            ]
+        )
+    for item in deduction_summary.get("itemized_signals", []):
+        deduction_rows.append(
+            [
+                "Itemized signal",
+                item.get("label", ""),
+                money(item.get("amount")),
+                ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "TBD",
+                RULE_SOURCES.get(item.get("key", ""), {}).get("title", "TBD"),
+            ]
+        )
+    adjustment_total = deduction_summary.get("adjustment_total", 0.0)
+    itemized_signal_total = deduction_summary.get("itemized_signal_total", 0.0)
 
     sections = [
         "# Tax Dossier",
@@ -336,6 +360,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["ID", "Type", "Source", "Reference", "Content Status", "Observed Fields"],
             inventory_rows or [["None", "None", "None", "None", "None", "None"]],
+        ),
+        "",
+        "## Deduction And Adjustment Signals",
+        "",
+        f"- Observed above-the-line adjustments total {money(adjustment_total) if adjustment_total else '$0.00'}.",
+        f"- Observed itemized-deduction signals total {money(itemized_signal_total) if itemized_signal_total else '$0.00'}. These signals are evidence inputs, not an automatic standard-vs-itemized choice.",
+        "",
+        make_markdown_table(
+            ["Type", "Label", "Amount", "Document Sources", "Rule Source"],
+            deduction_rows or [["None", "None", "$0.00", "None", "None"]],
         ),
         "",
         "## Draft Federal Lines",

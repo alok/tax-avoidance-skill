@@ -32,6 +32,20 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_signal(
+    key: str,
+    label: str,
+    amount: float,
+    sources: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": label,
+        "amount": amount,
+        "sources": sources,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -165,6 +179,53 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    deduction_summary = {
+        "adjustments": [
+            build_signal(
+                "student_loan_interest_deduction",
+                "Student loan interest deduction evidence (Form 1098-E)",
+                student_loan_interest,
+                student_loan_interest_sources,
+            ),
+            build_signal(
+                "ira_contribution_deduction",
+                "IRA contribution deduction input",
+                ira_deduction,
+                ira_sources,
+            ),
+            build_signal(
+                "hsa_deduction",
+                "HSA deduction input",
+                hsa_deduction,
+                hsa_sources,
+            ),
+        ],
+        "itemized_signals": [
+            build_signal(
+                "mortgage_interest",
+                "Mortgage interest evidence (Form 1098)",
+                mortgage_interest,
+                mortgage_interest_sources,
+            ),
+            build_signal(
+                "charitable_cash",
+                "Charitable cash receipt evidence",
+                charitable_cash,
+                charitable_sources,
+            ),
+        ],
+    }
+    deduction_summary["adjustments"] = [
+        item for item in deduction_summary["adjustments"] if item["amount"] > 0.0
+    ]
+    deduction_summary["itemized_signals"] = [
+        item for item in deduction_summary["itemized_signals"] if item["amount"] > 0.0
+    ]
+    deduction_summary["adjustment_total"] = sum(item["amount"] for item in deduction_summary["adjustments"])
+    deduction_summary["itemized_signal_total"] = sum(
+        item["amount"] for item in deduction_summary["itemized_signals"]
+    )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -176,7 +237,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        itemized_signal_total = deduction_summary["itemized_signal_total"]
+        if itemized_signal_total > 0.0:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"Observed itemized-deduction signals already total ${itemized_signal_total:,.2f} from extracted tax documents."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -290,6 +358,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "deduction_summary": deduction_summary,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

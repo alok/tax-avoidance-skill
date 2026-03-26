@@ -536,6 +536,63 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "deduction_evidence_scaffold": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 86000,
+            "federal_withholding": 9100
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 9400
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        },
+        {
+          "id": "donation-shelter",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-shelter",
+          "fields": {
+            "cash_donations": 600
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9800
+      },
+      "user_request": "Use my forms to draft the return package and tell me what deduction choice is missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Observed itemized-deduction signals already total $10,000.00"
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,
