@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "estimated_tax_payment_contractor",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -68,6 +69,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_26" in expected:
+                    self.assertIn(f"${expected['line_26']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -93,6 +96,11 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_schedule_c_missing_estimated_payment_prompt(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_missing_expenses")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("quarterly estimated tax payments", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

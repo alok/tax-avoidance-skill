@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_fields,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -104,6 +105,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    estimated_payments, estimated_payment_sources = aggregate_numeric_fields(
+        documents,
+        {"Estimated Tax Payment", "1040-ES Confirmation"},
+        ("amount", "estimated_tax_payment", "payment_amount"),
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -112,6 +118,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    total_other_payments = estimated_payments + other_payments
+    total_other_payment_sources = estimated_payment_sources + other_payments_sources
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
@@ -183,6 +191,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    if nonemployee_compensation > 0.0 and withholding == 0.0 and total_other_payments == 0.0:
+        missing_items.append(
+            "Confirm whether you made any quarterly estimated tax payments or extension payments for the self-employment income."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -253,7 +265,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
         "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
         "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
-        "other_payments": build_fact("other_payments", other_payments, other_payments_sources),
+        "other_payments": build_fact("other_payments", total_other_payments, total_other_payment_sources),
         "education_credit": build_fact("education_credit", education_credit, education_credit_sources),
         "clean_vehicle_credit": build_fact("clean_vehicle_credit", clean_vehicle_credit, clean_vehicle_credit_sources),
         "clean_energy_credit": build_fact("clean_energy_credit", clean_energy_credit, clean_energy_credit_sources),

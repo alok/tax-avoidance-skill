@@ -199,6 +199,57 @@
       "schedule_c_line_31": 89658.47
     }
   },
+  "estimated_tax_payment_contractor": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-main",
+          "fields": {
+            "nonemployee_compensation": 64000
+          }
+        },
+        {
+          "id": "q1-estimate",
+          "doc_type": "Estimated Tax Payment",
+          "source_type": "google_drive",
+          "source_ref": "drive://q1-estimate",
+          "fields": {
+            "amount": 2500
+          }
+        },
+        {
+          "id": "q2-estimate",
+          "doc_type": "1040-ES Confirmation",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://q2-estimate",
+          "fields": {
+            "estimated_tax_payment": 2500
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 12000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 9000
+      },
+      "user_request": "Use my contractor docs and estimated tax payments to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_26": 5000,
+      "schedule_c_line_1": 64000,
+      "schedule_c_line_31": 52000
+    }
+  },
   "schedule_c_missing_expenses": {
     "input": {
       "tax_year": 2025,

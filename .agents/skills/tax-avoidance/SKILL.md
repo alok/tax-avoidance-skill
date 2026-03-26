@@ -21,7 +21,7 @@ Supported:
 
 - Single or married-filing-jointly federal individual returns
 - Wage, contractor, and investment income
-- Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
+- Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, quarterly estimated-tax payment confirmations, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows
 
@@ -82,6 +82,7 @@ Use fixed searches for likely forms before asking the user to hunt around:
 - `5498 OR IRA contribution`
 - `SSA-1099`
 - `charitable contribution OR donation receipt`
+- `estimated tax payment OR 1040-ES OR extension payment confirmation`
 - `clean vehicle OR energy credit`
 - `receipt OR invoice OR payment processed` for likely SaaS, tooling, travel, and other business-expense candidates
 

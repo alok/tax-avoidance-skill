@@ -10,6 +10,7 @@ WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 RULE_SOURCES: dict[str, dict[str, str]] = {
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "other_payments": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
@@ -173,6 +174,59 @@ def aggregate_numeric(
                 "source_ref": document.get("source_ref"),
                 "dedupe_key": dedupe_key,
                 "field": field_name,
+                "value": value,
+            }
+        )
+    return total, sources
+
+
+def aggregate_numeric_fields(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: tuple[str, ...],
+) -> tuple[float, list[dict[str, Any]]]:
+    def source_rank(document: dict[str, Any]) -> tuple[int, int]:
+        content_status = document.get("content_status", "")
+        status_score = {
+            "available": 4,
+            "metadata_only": 3,
+            "unreadable_encrypted_attachment": 2,
+            "portal_notice_only": 1,
+        }.get(content_status, 0)
+        value_score = 1 if any(safe_float(document.get("fields", {}).get(name)) != 0.0 for name in field_names) else 0
+        return (value_score, status_score)
+
+    grouped_documents: list[dict[str, Any]] = []
+    dedupe_groups: dict[str, list[dict[str, Any]]] = {}
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        dedupe_key = document.get("dedupe_key")
+        if dedupe_key:
+            dedupe_groups.setdefault(dedupe_key, []).append(document)
+        else:
+            grouped_documents.append(document)
+
+    for group in dedupe_groups.values():
+        grouped_documents.append(max(group, key=source_rank))
+
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for document in grouped_documents:
+        fields = document.get("fields", {})
+        chosen_field = next((name for name in field_names if safe_float(fields.get(name)) != 0.0), field_names[0])
+        value = safe_float(fields.get(chosen_field))
+        if value == 0.0:
+            continue
+        total += value
+        sources.append(
+            {
+                "doc_id": document.get("id"),
+                "doc_type": document.get("doc_type"),
+                "source_type": document.get("source_type"),
+                "source_ref": document.get("source_ref"),
+                "dedupe_key": document.get("dedupe_key"),
+                "field": chosen_field,
                 "value": value,
             }
         )

@@ -44,3 +44,4 @@ For a plain Codex app user:
 - Prefer targeted clarifications over generic tax questionnaires.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.
+- If self-employment income appears, also ask whether quarterly estimated tax or extension payments were made before finalizing payment lines.
