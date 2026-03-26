@@ -167,6 +167,68 @@
       "line_20": 1800
     }
   },
+  "dependent_follow_up_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 10400
+          }
+        },
+        {
+          "id": "w2-parent-b",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent-b",
+          "fields": {
+            "wages": 36000,
+            "federal_withholding": 3200
+          }
+        }
+      ],
+      "household": {
+        "dependents": [
+          {
+            "label": "Avery",
+            "relationship": "Child",
+            "age_at_year_end": 8,
+            "months_lived_with_taxpayer": 12,
+            "has_ssn_or_itin": true,
+            "us_citizen_resident_or_national": true,
+            "provided_over_half_own_support": false,
+            "childcare_expenses_for_work": true
+          },
+          {
+            "label": "Milo",
+            "relationship": "Child",
+            "birth_year": 2010,
+            "months_lived_with_taxpayer": 7
+          }
+        ]
+      },
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 12600
+      },
+      "user_request": "Keep dependent context in the draft package without making unsupported assumptions."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_label": "Avery",
+      "dependent_follow_up": "child-tax-credit follow-up"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

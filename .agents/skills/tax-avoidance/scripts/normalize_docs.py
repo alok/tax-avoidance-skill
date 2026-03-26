@@ -32,6 +32,66 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def optional_bool(value: Any) -> bool | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    normalized = str(value).strip().lower()
+    if normalized in {"true", "yes", "y", "1"}:
+        return True
+    if normalized in {"false", "no", "n", "0"}:
+        return False
+    return None
+
+
+def optional_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def normalize_dependent(
+    dependent: dict[str, Any],
+    tax_year: int,
+    position: int,
+) -> dict[str, Any]:
+    label = (
+        dependent.get("label")
+        or dependent.get("nickname")
+        or dependent.get("first_name")
+        or f"Dependent {position}"
+    )
+    relationship = str(dependent.get("relationship", "") or "").strip()
+    age_at_year_end = optional_int(dependent.get("age_at_year_end"))
+    birth_year = optional_int(dependent.get("birth_year"))
+    if age_at_year_end is None and birth_year is not None:
+        age_at_year_end = tax_year - birth_year
+
+    sanitized = {
+        "label": label,
+        "relationship": relationship or "Unknown",
+        "age_at_year_end": age_at_year_end,
+        "months_lived_with_taxpayer": optional_int(dependent.get("months_lived_with_taxpayer")),
+        "full_time_student_months": optional_int(dependent.get("full_time_student_months")),
+        "permanently_disabled": optional_bool(dependent.get("permanently_disabled")),
+        "has_ssn_or_itin": optional_bool(dependent.get("has_ssn_or_itin")),
+        "us_citizen_resident_or_national": optional_bool(dependent.get("us_citizen_resident_or_national")),
+        "provided_over_half_own_support": optional_bool(dependent.get("provided_over_half_own_support")),
+        "filed_joint_return": optional_bool(dependent.get("filed_joint_return")),
+        "childcare_expenses_for_work": optional_bool(dependent.get("childcare_expenses_for_work")),
+        "childcare_provider_tax_id_available": optional_bool(dependent.get("childcare_provider_tax_id_available")),
+        "notes": str(dependent.get("notes", "") or "").strip(),
+    }
+    sanitized["possible_child_tax_credit"] = age_at_year_end is not None and age_at_year_end < 17
+    return sanitized
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +99,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -165,6 +226,35 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    dependents = [
+        normalize_dependent(item, tax_year=tax_year, position=index)
+        for index, item in enumerate(household.get("dependents", []), start=1)
+        if isinstance(item, dict)
+    ]
+    dependent_follow_up: list[str] = []
+    possible_child_tax_credit_dependents = sum(
+        1 for dependent in dependents if dependent["possible_child_tax_credit"]
+    )
+    for dependent in dependents:
+        missing_details: list[str] = []
+        if dependent["months_lived_with_taxpayer"] is None:
+            missing_details.append("months lived with you")
+        if dependent["has_ssn_or_itin"] is None:
+            missing_details.append("SSN or ITIN status")
+        if dependent["us_citizen_resident_or_national"] is None:
+            missing_details.append("U.S. citizen or residency status")
+        if dependent["provided_over_half_own_support"] is None:
+            missing_details.append("support test detail")
+        if dependent["filed_joint_return"] is None:
+            missing_details.append("joint-return status")
+        if dependent["childcare_expenses_for_work"] and dependent["childcare_provider_tax_id_available"] is None:
+            missing_details.append("childcare provider tax ID readiness")
+        dependent["missing_details"] = missing_details
+        if missing_details:
+            dependent_follow_up.append(
+                f"{dependent['label']}: confirm {', '.join(missing_details)} before using them for dependent or child-credit treatment."
+            )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -187,6 +277,13 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if possible_child_tax_credit_dependents > 0 and "child_tax_credit" not in answers:
+        missing_items.append(
+            "Review child-tax-credit follow-up for the listed dependents before claiming any credit; preserve only safe status fields, not full SSNs."
+        )
+    for follow_up in dependent_follow_up:
+        if follow_up not in missing_items:
+            missing_items.append(follow_up)
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -289,6 +386,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "dependents": dependents,
+            "dependent_count": len(dependents),
+            "possible_child_tax_credit_dependents": possible_child_tax_credit_dependents,
+            "follow_up": dependent_follow_up,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

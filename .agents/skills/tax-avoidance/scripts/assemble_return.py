@@ -39,6 +39,12 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def bool_text(value: bool | None) -> str:
+    if value is None:
+        return "Unknown"
+    return "Yes" if value else "No"
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -316,6 +322,24 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    household_summary = normalized.get("household_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("label", "Unknown"),
+            dependent.get("relationship", "Unknown"),
+            str(dependent.get("age_at_year_end")) if dependent.get("age_at_year_end") is not None else "Unknown",
+            str(dependent.get("months_lived_with_taxpayer"))
+            if dependent.get("months_lived_with_taxpayer") is not None
+            else "Unknown",
+            bool_text(dependent.get("has_ssn_or_itin")),
+            bool_text(dependent.get("us_citizen_resident_or_national")),
+            bool_text(dependent.get("provided_over_half_own_support")),
+            bool_text(dependent.get("childcare_expenses_for_work")),
+            "Possible follow-up" if dependent.get("possible_child_tax_credit") else "General follow-up",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
+    dependent_follow_up_lines = [f"- {item}" for item in household_summary.get("follow_up", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -367,6 +391,30 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ),
         "",
         *state_follow_up_lines,
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured: {household_summary.get('dependent_count', 0)}",
+        f"- Possible child-credit follow-up dependents: {household_summary.get('possible_child_tax_credit_dependents', 0)}",
+        "- Preserve only safe dependent scaffolding here. Do not store full SSNs or treat this section as an eligibility determination.",
+        "",
+        make_markdown_table(
+            [
+                "Label",
+                "Relationship",
+                "Age",
+                "Months With You",
+                "SSN/ITIN Ready",
+                "Citizen/Resident",
+                "Provided > Half Own Support",
+                "Childcare For Work",
+                "Follow-Up Focus",
+            ],
+            dependent_rows
+            or [["None", "None", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "None"]],
+        ),
+        "",
+        *dependent_follow_up_lines,
         "",
         "## Missing Items",
         "",

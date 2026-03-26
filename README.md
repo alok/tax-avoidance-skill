@@ -28,10 +28,11 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Preserves safe household and dependent scaffolding so a draft package can carry child-credit follow-up context without storing full SSNs or pretending to decide eligibility automatically.
 
 ## Scope
 
-This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
+This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It now keeps safe dependent scaffolding for household follow-up, but it still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
 
 All substantive tax facts should trace back to primary IRS sources such as [Publication 17](https://www.irs.gov/publications/p17), [Publication 505](https://www.irs.gov/publications/p505), [Publication 590-A](https://www.irs.gov/publications/p590a), and [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969). Wikipedia is only used for the avoidance-vs-evasion terminology framing.
 
@@ -94,11 +95,11 @@ Primary command:
 1. Check whether Gmail and Google Drive are available. If they are missing, ask the user to connect them immediately or upload PDFs.
 2. Search for likely tax documents using fixed, opinionated queries instead of asking the user to browse manually.
 3. Capture resident-state and work-state context as early as possible.
-4. Build a document inventory and ask the minimum remaining interview questions.
+4. Build a document inventory, preserve safe household and dependent context, and ask the minimum remaining interview questions.
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.
-8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
+8. Clearly label legal planning moves, missing items, household follow-up, unsupported complexity, state follow-up, and anything that needs professional review.
 
 ## Repository Layout
 
@@ -110,5 +111,6 @@ Primary command:
 
 - This project does **not** e-file.
 - This project does **not** give personalized legal advice.
+- This project does **not** store full SSNs or claim that a listed dependent is automatically eligible for any credit.
 - Illegal requests such as hiding income, concealing ownership, or skipping required reporting must be refused and redirected to lawful compliance.
 - If a portal notice exists but the actual form does not, the workflow should stop and ask for the downloadable PDF or the line-item figures.

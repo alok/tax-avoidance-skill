@@ -57,6 +57,19 @@
       }
     }
   ],
+  "household": {
+    "dependents": [
+      {
+        "label": "Jordan",
+        "relationship": "Child",
+        "age_at_year_end": 9,
+        "months_lived_with_taxpayer": 12,
+        "has_ssn_or_itin": true,
+        "us_citizen_resident_or_national": true,
+        "provided_over_half_own_support": false
+      }
+    ]
+  },
   "answers": {
     "business_expenses": 9000.0,
     "deduction_amount": 15000.0,
