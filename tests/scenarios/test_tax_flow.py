@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_zero_expenses_confirmed",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -66,10 +67,21 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "line_16" in expected:
+                    self.assertIn(f"| Form 1040 | 16 | Tax | ${expected['line_16']:,.2f} |", federal_lines)
+                if "line_22" in expected:
+                    self.assertIn(f"| Form 1040 | 22 | Total tax | ${expected['line_22']:,.2f} |", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_34" in expected:
+                    self.assertIn(f"| Form 1040 | 34 | Refund | ${expected['line_34']:,.2f} |", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
+                if "schedule_c_line_28" in expected:
+                    self.assertIn(
+                        f"| Schedule C | 28 | Total expenses | ${expected['schedule_c_line_28']:,.2f} |",
+                        federal_lines,
+                    )
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
 

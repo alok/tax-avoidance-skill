@@ -279,6 +279,42 @@
       "candidate_total": 371.89
     }
   },
+  "schedule_c_zero_expenses_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-main",
+          "fields": {
+            "nonemployee_compensation": 24000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 0,
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Treat my contractor business expenses as zero and draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_1": 24000,
+      "schedule_c_line_28": 0,
+      "schedule_c_line_31": 24000,
+      "line_16": 0,
+      "line_22": 0,
+      "line_34": 0
+    }
+  },
   "expense_year_filter": {
     "input": {
       "tax_year": 2025,
