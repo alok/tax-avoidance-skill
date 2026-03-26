@@ -35,6 +35,15 @@
       }
     },
     {
+      "id": "sample-ira-5498",
+      "doc_type": "5498",
+      "source_type": "upload",
+      "source_ref": "upload://sample-ira-5498",
+      "fields": {
+        "traditional_ira_contributions": 3000.0
+      }
+    },
+    {
       "id": "sample-anthropic-receipt",
       "doc_type": "Expense Receipt",
       "source_type": "upload",
@@ -59,8 +68,9 @@
   ],
   "answers": {
     "business_expenses": 9000.0,
+    "ira_contribution_deduction": 3000.0,
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
-  "user_request": "Build a sample contractor plus investment return package."
+  "user_request": "Build a sample contractor plus investment return package with retirement contribution tracking."
 }

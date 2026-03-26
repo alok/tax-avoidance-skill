@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Tracks Form 5498 traditional and Roth IRA contribution amounts separately, while requiring explicit confirmation before treating traditional contributions as a deductible IRA adjustment.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -72,7 +73,7 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
   --out-dir output/example-run
 ```
 
-That should create the same four standard artifacts in `output/example-run/`.
+That should create the same four standard artifacts in `output/example-run/`, including the retirement-contribution section in `tax-dossier.md`.
 
 ## Install In Claude Cowork
 

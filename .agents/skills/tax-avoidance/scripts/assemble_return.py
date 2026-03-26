@@ -316,6 +316,39 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    traditional_ira_contributions = fact_value(normalized, "traditional_ira_contributions")
+    roth_ira_contributions = fact_value(normalized, "roth_ira_contributions")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    retirement_rows = [
+        [
+            "Traditional IRA contributions reported on Form 5498",
+            money(traditional_ira_contributions),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "traditional_ira_contributions"))
+            or "TBD",
+        ],
+        [
+            "Roth IRA contributions reported on Form 5498",
+            money(roth_ira_contributions),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "roth_ira_contributions"))
+            or "TBD",
+        ],
+        [
+            "IRA deduction currently applied to Form 1040 line 10",
+            money(ira_deduction),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "ira_contribution_deduction"))
+            or "TBD",
+        ],
+    ]
+    retirement_notes = []
+    if traditional_ira_contributions > 0.0 and ira_deduction == 0.0:
+        retirement_notes.append(
+            "Traditional IRA contributions were found on Form 5498, but no deductible IRA amount has been applied yet."
+        )
+    if roth_ira_contributions > 0.0:
+        retirement_notes.append(
+            "Roth IRA contributions are tracked for completeness and should not be treated as a federal above-the-line deduction."
+        )
+    retirement_note_lines = [f"- {note}" for note in retirement_notes] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +383,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Retirement Contributions",
+        "",
+        make_markdown_table(
+            ["Item", "Amount", "Document Sources"],
+            retirement_rows,
+        ),
+        "",
+        *retirement_note_lines,
         "",
         "## State Follow-Up",
         "",

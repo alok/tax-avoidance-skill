@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_fields,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -104,6 +105,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    traditional_ira_contributions, traditional_ira_sources = aggregate_numeric_fields(
+        documents,
+        {"5498"},
+        ("traditional_ira_contributions", "ira_contributions", "box_1_ira_contributions"),
+    )
+    roth_ira_contributions, roth_ira_sources = aggregate_numeric_fields(
+        documents,
+        {"5498"},
+        ("roth_ira_contributions", "box_10_roth_ira_contributions"),
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -177,6 +188,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if traditional_ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 5498 traditional IRA contributions totaling ${traditional_ira_contributions:,.2f} and confirm what portion is deductible before applying an IRA adjustment."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -247,6 +262,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_sources,
+        ),
+        "roth_ira_contributions": build_fact(
+            "roth_ira_contributions",
+            roth_ira_contributions,
+            roth_ira_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
