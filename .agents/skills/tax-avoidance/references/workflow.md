@@ -37,6 +37,12 @@ For a plain Codex app user:
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
 
+## Education Review
+
+- If a 1098-T appears, surface the payments received and scholarships-or-grants fields explicitly before asking about education-credit eligibility.
+- Do not silently compute an education credit from the 1098-T alone; ask for the final credit amount or an explicit confirmation that no education credit applies.
+- If the 1098-T exists but its key boxes are missing, stop and ask for the tuition statement details or the underlying school records.
+
 ## Interview Principles
 
 - Ask for filing status only after document collection begins.

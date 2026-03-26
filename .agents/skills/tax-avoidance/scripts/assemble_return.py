@@ -280,6 +280,9 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    tuition_payments = fact_value(normalized, "tuition_payments")
+    scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
+    education_credit = fact_value(normalized, "education_credit")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -295,6 +298,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    education_sources = fact_sources(normalized, "tuition_payments") + fact_sources(normalized, "scholarships_and_grants")
+    education_source_refs = ", ".join(
+        dict.fromkeys(source.get("source_ref", "unknown") for source in education_sources if source.get("source_ref"))
+    ) or "None"
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -350,7 +357,6 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
-        "",
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
@@ -380,6 +386,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *refusal_lines,
     ]
+    if education_sources or fact_sources(normalized, "education_credit"):
+        education_section = [
+            "",
+            "## Education Credit Review",
+            "",
+            f"- 1098-T payments received: {money(tuition_payments) if education_sources else 'TBD'}",
+            f"- 1098-T scholarships or grants: {money(scholarships_and_grants) if education_sources else 'TBD'}",
+            f"- Draft education credit amount: {money(education_credit) if fact_sources(normalized, 'education_credit') else 'TBD'}",
+            f"- Source documents: {education_source_refs}",
+            "",
+            "- Preserve the 1098-T and supporting tuition records until the education-credit review is complete.",
+        ]
+        insert_at = sections.index("## State Follow-Up")
+        sections[insert_at:insert_at] = education_section
     return "\n".join(sections).strip() + "\n"
 
 

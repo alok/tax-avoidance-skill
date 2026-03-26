@@ -31,7 +31,7 @@ No separate backend or custom API setup is required for the main workflow in thi
 
 ## Scope
 
-This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
+This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, investment, and basic education-credit intake plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
 
 All substantive tax facts should trace back to primary IRS sources such as [Publication 17](https://www.irs.gov/publications/p17), [Publication 505](https://www.irs.gov/publications/p505), [Publication 590-A](https://www.irs.gov/publications/p590a), and [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969). Wikipedia is only used for the avoidance-vs-evasion terminology framing.
 
@@ -60,6 +60,12 @@ If the user is a contractor or freelancer, a stronger version is:
 
 ```text
 Use $tax-avoidance to gather my 2025 W-2s, 1099s, and tax receipts, build a Schedule C skeleton if I have 1099-NEC income, and tell me exactly what is still missing.
+```
+
+If the user needs tuition or education-credit help, a stronger version is:
+
+```text
+Use $tax-avoidance to gather my 2025 W-2s and 1098-T forms, surface the tuition and scholarship facts you found, and tell me what is still missing before an education-credit review.
 ```
 
 ## Try It Locally Without Connectors

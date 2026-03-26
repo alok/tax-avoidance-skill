@@ -67,6 +67,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
+    tuition_payments, tuition_payment_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "payments_received",
+    )
+    scholarships_and_grants, scholarship_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "scholarships_or_grants",
+    )
     student_loan_interest, student_loan_interest_sources = aggregate_numeric(
         documents,
         {"1098-E"},
@@ -179,6 +189,23 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if tuition_payments > 0.0 and "education_credit" not in answers:
+        missing_items.append(
+            "Review the 1098-T tuition and scholarship amounts, then provide the education credit amount to use in the draft package or explicitly confirm that no education credit applies."
+        )
+    elif any(document.get("doc_type") == "1098-T" for document in documents) and "education_credit" not in answers:
+        missing_items.append(
+            "Review the 1098-T support documents and provide the education credit amount to use in the draft package or explicitly confirm that no education credit applies."
+        )
+    if any(
+        document.get("doc_type") == "1098-T"
+        and not document.get("fields", {}).get("payments_received")
+        and not document.get("fields", {}).get("scholarships_or_grants")
+        for document in documents
+    ):
+        missing_items.append(
+            "Extract the key 1098-T figures, especially payments received and scholarships or grants, before finalizing any education-credit review."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -236,6 +263,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "tuition_payments": build_fact("tuition_payments", tuition_payments, tuition_payment_sources),
+        "scholarships_and_grants": build_fact(
+            "scholarships_and_grants",
+            scholarships_and_grants,
+            scholarship_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
             student_loan_interest,

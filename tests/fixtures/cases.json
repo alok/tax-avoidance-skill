@@ -167,6 +167,49 @@
       "line_20": 1800
     }
   },
+  "education_credit_1098t_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 74000,
+            "federal_withholding": 7800
+          }
+        },
+        {
+          "id": "tuition-1098t",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://tuition-1098t",
+          "fields": {
+            "payments_received": 9200,
+            "scholarships_or_grants": 2500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 6900
+      },
+      "user_request": "Gather my W-2 and 1098-T and tell me what is missing for the education-credit review."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "provide the education credit amount",
+      "tuition": 9200,
+      "scholarships": 2500
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
