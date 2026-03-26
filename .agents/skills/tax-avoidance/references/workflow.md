@@ -19,7 +19,7 @@ For a plain Codex app user:
 2. Check Gmail and Google Drive access.
 3. Search for likely forms before asking the user to browse.
 4. Build a document inventory with source, doc type, and confidence.
-5. Ask only the missing questions needed for supported lines.
+5. Ask only the missing questions needed for supported lines, including safe household/dependent facts when credits may apply.
 6. Normalize everything into structured facts.
 7. Assemble the artifact set.
 8. Flag unsupported complexity and illegal requests explicitly.
@@ -41,6 +41,7 @@ For a plain Codex app user:
 
 - Ask for filing status only after document collection begins.
 - Ask one question at a time when the answer changes supported-line output.
+- For dependents, collect only safe scaffolding such as relationship, birth year, months in home, support-test status, and whether a TIN exists. Never request or store the full SSN in this workflow.
 - Prefer targeted clarifications over generic tax questionnaires.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.

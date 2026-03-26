@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    household_summary = normalized.get("household_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,32 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_rows = [
+        [
+            dependent.get("label", "Unknown"),
+            dependent.get("relationship", "unspecified"),
+            str(dependent.get("birth_year") or "TBD"),
+            str(dependent.get("age_end_of_tax_year") or "TBD"),
+            str(dependent.get("months_in_home") or "TBD"),
+            dependent.get("has_tin", "unknown"),
+            dependent.get("support_test", "unknown"),
+            money(dependent.get("childcare_expenses")),
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
+    dependent_follow_up_lines: list[str] = []
+    if household_summary.get("dependent_count"):
+        dependent_follow_up_lines.append(
+            "Dependent intake is preserved as safe household scaffolding only. Do not include full SSNs in this workflow."
+        )
+        if fact_value(normalized, "child_tax_credit") == 0.0 and not fact_sources(normalized, "child_tax_credit"):
+            dependent_follow_up_lines.append(
+                "Child tax credit is not applied yet. Confirm eligibility facts and provide the amount explicitly before using it in the draft package."
+            )
+    if not dependent_follow_up_lines:
+        dependent_follow_up_lines = ["- None"]
+    else:
+        dependent_follow_up_lines = [f"- {item}" for item in dependent_follow_up_lines]
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +377,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured: {household_summary.get('dependent_count', 0)}",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Birth Year", "Age", "Months In Home", "TIN On File", "Support Test", "Childcare Expenses"],
+            dependent_rows or [["None", "None", "None", "None", "None", "None", "None", "$0.00"]],
+        ),
+        "",
+        *dependent_follow_up_lines,
         "",
         "## State Follow-Up",
         "",

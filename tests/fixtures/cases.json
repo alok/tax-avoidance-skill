@@ -395,6 +395,66 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "dependent_intake_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "household": {
+        "dependents": [
+          {
+            "label": "Ava",
+            "relationship": "daughter",
+            "birth_year": 2018,
+            "months_in_home": 12,
+            "has_tin": true,
+            "support_test": true,
+            "childcare_expenses": 3200
+          },
+          {
+            "label": "Noah",
+            "relationship": "son",
+            "months_in_home": 12,
+            "notes": "Need to confirm SSN card and support test."
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-parent-a",
+          "fields": {
+            "wages": 99000,
+            "federal_withholding": 12000
+          }
+        },
+        {
+          "id": "w2-parent-b",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-parent-b",
+          "fields": {
+            "wages": 41000,
+            "federal_withholding": 4200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Keep track of my dependent details and tell me what is still missing before any child credit is applied."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 2
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

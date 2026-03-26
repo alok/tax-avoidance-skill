@@ -32,6 +32,60 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def tri_state_label(value: Any) -> str:
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if value in (None, ""):
+        return "unknown"
+    normalized = str(value).strip().lower()
+    if normalized in {"yes", "y", "true"}:
+        return "yes"
+    if normalized in {"no", "n", "false"}:
+        return "no"
+    return "unknown"
+
+
+def optional_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def normalize_dependent(dependent: dict[str, Any], tax_year: int, index: int) -> dict[str, Any]:
+    birth_year = optional_int(dependent.get("birth_year"))
+    months_in_home = optional_int(dependent.get("months_in_home"))
+
+    childcare_expenses_raw = dependent.get("childcare_expenses")
+    childcare_expenses = safe_float(childcare_expenses_raw) if childcare_expenses_raw not in (None, "") else None
+
+    age = tax_year - birth_year if birth_year is not None else None
+    relation = str(dependent.get("relationship") or "").strip()
+    label = str(
+        dependent.get("label")
+        or dependent.get("nickname")
+        or dependent.get("first_name")
+        or dependent.get("name")
+        or f"Dependent {index}"
+    ).strip()
+
+    return {
+        "label": label,
+        "relationship": relation or "unspecified",
+        "birth_year": birth_year,
+        "age_end_of_tax_year": age,
+        "months_in_home": months_in_home,
+        "full_time_student": tri_state_label(dependent.get("full_time_student")),
+        "disabled": tri_state_label(dependent.get("disabled")),
+        "has_tin": tri_state_label(dependent.get("has_tin")),
+        "support_test": tri_state_label(dependent.get("support_test")),
+        "childcare_expenses": childcare_expenses,
+        "notes": str(dependent.get("notes") or "").strip(),
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +93,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -121,6 +176,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    dependents = [
+        normalize_dependent(dependent, tax_year, index)
+        for index, dependent in enumerate(household.get("dependents", []), start=1)
+    ]
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -179,6 +239,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if dependents:
+        if "child_tax_credit" not in answers:
+            missing_items.append(
+                "Review household dependent eligibility and provide the child tax credit amount to use in the draft package, or explicitly confirm that no child tax credit should be applied."
+            )
+        for dependent in dependents:
+            label = dependent["label"]
+            if dependent.get("birth_year") is None:
+                missing_items.append(f"Add a birth year for {label} to support dependent and child-credit review.")
+            if dependent.get("months_in_home") is None:
+                missing_items.append(f"Confirm how many months {label} lived in the home during the tax year.")
+            if dependent.get("has_tin") == "unknown":
+                missing_items.append(
+                    f"Confirm whether {label} has a valid SSN or ITIN. Do not include the full number in this workflow."
+                )
+            if dependent.get("support_test") == "unknown":
+                missing_items.append(
+                    f"Confirm whether {label} meets the support test for dependent treatment in the draft package."
+                )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -289,6 +368,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "dependents": dependents,
+            "dependent_count": len(dependents),
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

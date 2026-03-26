@@ -6,9 +6,10 @@
 - Filing status: single or married filing jointly
 - Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, Social Security income
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
-- Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
+- Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review, and household/dependent scaffolding for child-credit follow-up
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
+- Safe household intake for dependents: relationship, birth year, months in home, support-test status, TIN-present yes/no, and childcare-expense placeholders
 
 ## Supported Documents
 
@@ -25,6 +26,7 @@
 ## Unsupported In V1
 
 - automated state tax calculations
+- final eligibility determination for dependent or child-related credits
 - rental properties
 - K-1 partnership or S corp income
 - options, RSUs, ESPP, or QSBS

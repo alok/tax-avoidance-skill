@@ -5,6 +5,19 @@
     "gmail": true,
     "google_drive": true
   },
+  "household": {
+    "dependents": [
+      {
+        "label": "Sample Child",
+        "relationship": "daughter",
+        "birth_year": 2017,
+        "months_in_home": 12,
+        "has_tin": true,
+        "support_test": true,
+        "childcare_expenses": 2400.0
+      }
+    ]
+  },
   "documents": [
     {
       "id": "sample-1099-nec",
