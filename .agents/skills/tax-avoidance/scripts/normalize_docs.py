@@ -32,6 +32,28 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def append_interview_question(
+    questions: list[dict[str, Any]],
+    seen_titles: set[str],
+    *,
+    title: str,
+    prompt: str,
+    source_refs: list[str],
+    answer_keys: list[str],
+) -> None:
+    if title in seen_titles:
+        return
+    seen_titles.add(title)
+    questions.append(
+        {
+            "title": title,
+            "prompt": prompt,
+            "source_refs": source_refs,
+            "answer_keys": answer_keys,
+        }
+    )
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -166,6 +188,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    interview_questions: list[dict[str, Any]] = []
+    seen_question_titles: set[str] = set()
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -187,6 +211,74 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+
+    document_type_refs: dict[str, list[str]] = {}
+    for document in documents:
+        doc_type = str(document.get("doc_type") or "").strip()
+        if not doc_type:
+            continue
+        source_ref = document.get("source_ref") or "unknown source"
+        refs = document_type_refs.setdefault(doc_type, [])
+        if source_ref not in refs:
+            refs.append(source_ref)
+
+    if document_type_refs.get("1098-E") and "student_loan_interest_deduction" not in answers:
+        append_interview_question(
+            interview_questions,
+            seen_question_titles,
+            title="Student Loan Interest Follow-Up",
+            prompt="1098-E documents were found. Confirm the deductible student loan interest amount to carry into the draft return package.",
+            source_refs=document_type_refs["1098-E"],
+            answer_keys=["student_loan_interest_deduction"],
+        )
+    if document_type_refs.get("5498") and "ira_contribution_deduction" not in answers:
+        append_interview_question(
+            interview_questions,
+            seen_question_titles,
+            title="IRA Deduction Follow-Up",
+            prompt="5498 documents were found. Confirm whether the IRA contributions are deductible for this return and provide the deductible amount rather than assuming the full contribution qualifies.",
+            source_refs=document_type_refs["5498"],
+            answer_keys=["ira_contribution_deduction"],
+        )
+    if document_type_refs.get("1098-T") and "education_credit" not in answers:
+        append_interview_question(
+            interview_questions,
+            seen_question_titles,
+            title="Education Credit Follow-Up",
+            prompt="1098-T documents were found. Gather qualified education expenses, scholarships, and student eligibility details before estimating any education credit.",
+            source_refs=document_type_refs["1098-T"],
+            answer_keys=["education_credit"],
+        )
+    if document_type_refs.get("1098") and "deduction_amount" not in answers:
+        append_interview_question(
+            interview_questions,
+            seen_question_titles,
+            title="Mortgage Interest Deduction Path",
+            prompt="1098 mortgage-interest documents were found. Decide whether the return should use the standard deduction or itemize, then provide the deduction amount used in the draft package.",
+            source_refs=document_type_refs["1098"],
+            answer_keys=["deduction_amount"],
+        )
+    if charitable_cash > 0.0 and "deduction_amount" not in answers:
+        append_interview_question(
+            interview_questions,
+            seen_question_titles,
+            title="Charitable Deduction Path",
+            prompt=f"Donation receipts totaling ${charitable_cash:,.2f} were found. Confirm whether those gifts should affect an itemized-deduction workflow before changing the draft deduction amount.",
+            source_refs=document_type_refs.get("Donation Receipt", []),
+            answer_keys=["deduction_amount"],
+        )
+    if document_type_refs.get("SSA-1099"):
+        append_interview_question(
+            interview_questions,
+            seen_question_titles,
+            title="Social Security Taxability Review",
+            prompt="SSA-1099 documents were found. Review the taxable portion of Social Security benefits with the rest of the household income before relying on the draft federal totals.",
+            source_refs=document_type_refs["SSA-1099"],
+            answer_keys=[],
+        )
+    for question in interview_questions:
+        if question["prompt"] not in missing_items:
+            missing_items.append(question["prompt"])
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -291,6 +383,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "interview_questions": interview_questions,
         "facts": facts,
     }
     return normalized

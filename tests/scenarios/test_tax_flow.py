@@ -88,11 +88,28 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "document_driven_interview_follow_up",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_document_driven_interview_follow_up(self) -> None:
+        normalized, artifacts = self.run_case("document_driven_interview_follow_up")
+        self.assertEqual(normalized["status"], "ok")
+        interview_questions = normalized["interview_questions"]
+        self.assertEqual(len(interview_questions), 5)
+        self.assertIn("Student Loan Interest Follow-Up", artifacts["tax-dossier.md"])
+        self.assertIn("Education Credit Follow-Up", artifacts["tax-dossier.md"])
+        self.assertIn("IRA Deduction Follow-Up", artifacts["tax-dossier.md"])
+        self.assertIn("Mortgage Interest Deduction Path", artifacts["tax-dossier.md"])
+        self.assertIn("Charitable Deduction Path", artifacts["tax-dossier.md"])
+        self.assertIn("sources: drive://1098-e", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

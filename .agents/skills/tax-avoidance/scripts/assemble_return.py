@@ -285,6 +285,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
+    interview_rows = [
+        [
+            question.get("title", "Untitled"),
+            question.get("prompt", ""),
+            ", ".join(question.get("answer_keys", [])) or "None",
+            ", ".join(question.get("source_refs", [])) or "None",
+        ]
+        for question in normalized.get("interview_questions", [])
+    ]
     candidate_expense_rows = [
         [
             expense.get("document_date") or "unknown",
@@ -341,6 +350,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Interview Follow-Up",
+        "",
+        make_markdown_table(
+            ["Topic", "Prompt", "Answer Keys", "Source References"],
+            interview_rows or [["None", "No targeted follow-up questions.", "None", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",
@@ -410,6 +426,16 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:
         lines.append("- None")
+
+    if normalized.get("interview_questions"):
+        lines.extend(["", "## Interview Follow-Up", ""])
+        for question in normalized["interview_questions"]:
+            answer_keys = ", ".join(question.get("answer_keys", [])) or "none"
+            source_refs = ", ".join(question.get("source_refs", [])) or "none"
+            lines.append(
+                f"- {question.get('title', 'Untitled')}: {question.get('prompt', '')} "
+                f"(answer keys: {answer_keys}; sources: {source_refs})"
+            )
 
     if normalized.get("unsupported_reasons"):
         lines.extend(["", "## Unsupported Complexity", ""])
