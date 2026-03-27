@@ -167,6 +167,48 @@
       "line_20": 1800
     }
   },
+  "education_credit_1098t_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent",
+          "fields": {
+            "wages": 102000,
+            "federal_withholding": 12000
+          }
+        },
+        {
+          "id": "1098t-student-a",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-student-a",
+          "fields": {
+            "student_name": "Student A",
+            "payments_received": 12400,
+            "scholarships_or_grants": 5000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 11800
+      },
+      "user_request": "Help me review whether we can claim a tuition credit."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Review the 1098-T tuition statements"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

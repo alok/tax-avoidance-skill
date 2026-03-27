@@ -295,6 +295,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    education_summary = normalized.get("education_summary", {})
+    education_rows = [
+        [
+            form.get("id") or "unknown",
+            form.get("student_name") or "Unknown",
+            money(form.get("payments_received")),
+            money(form.get("scholarships_or_grants")),
+            form.get("source_ref") or "unknown",
+        ]
+        for form in education_summary.get("forms", [])
+    ]
+    education_follow_up_lines = [f"- {item}" for item in education_summary.get("follow_up", [])] or ["- None"]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -350,6 +362,19 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Education Credit Review",
+        "",
+        f"- 1098-T statements found: {len(education_summary.get('forms', []))}",
+        f"- Documented tuition payments: {money(education_summary.get('documented_payments'))}",
+        f"- Documented scholarships or grants: {money(education_summary.get('documented_scholarships'))}",
+        "",
+        make_markdown_table(
+            ["ID", "Student", "Payments", "Scholarships/Grants", "Source"],
+            education_rows or [["None", "None", "$0.00", "$0.00", "None"]],
+        ),
+        "",
+        *education_follow_up_lines,
         "",
         "## State Follow-Up",
         "",

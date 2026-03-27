@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_fields,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -71,6 +72,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"1098-E"},
         "student_loan_interest",
+    )
+    education_payments, education_payments_sources = aggregate_numeric_fields(
+        documents,
+        {"1098-T"},
+        ["payments_received", "qualified_expenses"],
+    )
+    education_scholarships, education_scholarship_sources = aggregate_numeric_fields(
+        documents,
+        {"1098-T"},
+        ["scholarships_or_grants", "scholarships_grants"],
     )
     expense_documents_for_year = [
         document
@@ -183,10 +194,28 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    education_documents = [document for document in documents if document.get("doc_type") == "1098-T"]
+    education_follow_up: list[str] = []
+    if education_documents:
+        if "education_credit" not in answers:
+            education_follow_up.append(
+                "Review the 1098-T tuition statements and confirm whether an education credit should be claimed."
+            )
+        if education_payments > 0.0:
+            education_follow_up.append(
+                f"Confirm how much of the documented 1098-T tuition payments totaling ${education_payments:,.2f} was paid out of pocket and not already covered by tax-free assistance."
+            )
+        if education_scholarships > 0.0:
+            education_follow_up.append(
+                f"Confirm whether the documented scholarships or grants totaling ${education_scholarships:,.2f} reduced the expenses eligible for an education credit."
+            )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    for note in education_follow_up:
+        if note not in missing_items:
+            missing_items.append(note)
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -241,6 +270,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             student_loan_interest,
             student_loan_interest_sources,
         ),
+        "education_payments": build_fact("education_payments", education_payments, education_payments_sources),
+        "education_scholarships": build_fact(
+            "education_scholarships",
+            education_scholarships,
+            education_scholarship_sources,
+        ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
@@ -289,6 +324,28 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "education_summary": {
+            "forms": [
+                {
+                    "id": document.get("id"),
+                    "source_ref": document.get("source_ref"),
+                    "source_type": document.get("source_type"),
+                    "student_name": document.get("fields", {}).get("student_name"),
+                    "payments_received": safe_float(
+                        document.get("fields", {}).get("payments_received")
+                        or document.get("fields", {}).get("qualified_expenses")
+                    ),
+                    "scholarships_or_grants": safe_float(
+                        document.get("fields", {}).get("scholarships_or_grants")
+                        or document.get("fields", {}).get("scholarships_grants")
+                    ),
+                }
+                for document in education_documents
+            ],
+            "documented_payments": education_payments,
+            "documented_scholarships": education_scholarships,
+            "follow_up": education_follow_up,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
