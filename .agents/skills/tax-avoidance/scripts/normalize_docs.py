@@ -104,6 +104,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_contributions, ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -177,6 +182,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 5498 IRA contributions totaling ${ira_contributions:,.2f} and confirm how much is deductible for the draft return."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -216,6 +225,107 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+
+    deduction_credit_review: list[dict[str, Any]] = []
+    if ira_contributions > 0.0:
+        deduction_credit_review.append(
+            {
+                "slug": "ira_contributions",
+                "title": "IRA Contributions",
+                "amount": ira_contributions,
+                "status": "needs_review" if "ira_contribution_deduction" not in answers else "confirmed",
+                "summary": (
+                    "Form 5498 contribution evidence is present, but IRA deductibility still depends on eligibility and plan coverage."
+                    if "ira_contribution_deduction" not in answers
+                    else "IRA deduction amount was confirmed separately and is included in the draft adjustments."
+                ),
+                "sources": ira_contribution_sources,
+                "rule_keys": ["ira_contribution_deduction"],
+            }
+        )
+    if student_loan_interest > 0.0:
+        deduction_credit_review.append(
+            {
+                "slug": "student_loan_interest",
+                "title": "Student Loan Interest",
+                "amount": student_loan_interest,
+                "status": "included",
+                "summary": "1098-E evidence is present and the amount is included in draft adjustments to income.",
+                "sources": student_loan_interest_sources,
+                "rule_keys": ["student_loan_interest_deduction"],
+            }
+        )
+    if mortgage_interest > 0.0:
+        deduction_credit_review.append(
+            {
+                "slug": "mortgage_interest",
+                "title": "Mortgage Interest",
+                "amount": mortgage_interest,
+                "status": "needs_review" if "deduction_amount" not in answers else "preserved",
+                "summary": (
+                    "1098 mortgage-interest evidence is present. Compare itemizing against the standard deduction before using it in the draft."
+                    if "deduction_amount" not in answers
+                    else "1098 mortgage-interest evidence is preserved for itemized-deduction review and not auto-applied over the chosen deduction amount."
+                ),
+                "sources": mortgage_interest_sources,
+                "rule_keys": ["mortgage_interest"],
+            }
+        )
+    if charitable_cash > 0.0:
+        deduction_credit_review.append(
+            {
+                "slug": "charitable_cash",
+                "title": "Charitable Contributions",
+                "amount": charitable_cash,
+                "status": "needs_review" if "deduction_amount" not in answers else "preserved",
+                "summary": (
+                    "Donation receipts are present. Compare itemizing against the standard deduction before using them in the draft."
+                    if "deduction_amount" not in answers
+                    else "Donation receipts are preserved for itemized-deduction review and not auto-applied over the chosen deduction amount."
+                ),
+                "sources": charitable_sources,
+                "rule_keys": ["charitable_cash"],
+            }
+        )
+    credit_fact_specs = [
+        ("education_credit", "Education Credit", education_credit, education_credit_sources, ["education_credit"]),
+        (
+            "clean_vehicle_credit",
+            "Clean Vehicle Credit",
+            clean_vehicle_credit,
+            clean_vehicle_credit_sources,
+            ["clean_vehicle_credit"],
+        ),
+        (
+            "clean_energy_credit",
+            "Clean Energy Credit",
+            clean_energy_credit,
+            clean_energy_credit_sources,
+            ["clean_energy_credit"],
+        ),
+        ("child_tax_credit", "Child Tax Credit", child_tax_credit, child_tax_credit_sources, []),
+        (
+            "other_nonrefundable_credits",
+            "Other Nonrefundable Credits",
+            other_nonrefundable_credits,
+            other_credit_sources,
+            [],
+        ),
+    ]
+    for slug, title, amount, sources, rule_keys in credit_fact_specs:
+        if amount <= 0.0:
+            continue
+        deduction_credit_review.append(
+            {
+                "slug": slug,
+                "title": title,
+                "amount": amount,
+                "status": "included",
+                "summary": "The confirmed credit amount is included in the draft federal credit total.",
+                "sources": sources,
+                "rule_keys": rule_keys,
+            }
+        )
 
     status = "ok"
     if illegal_reasons:
@@ -291,6 +401,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "deduction_credit_review": deduction_credit_review,
         "facts": facts,
     }
     return normalized

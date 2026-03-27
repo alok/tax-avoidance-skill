@@ -167,6 +167,62 @@
       "line_20": 1800
     }
   },
+  "deduction_credit_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        },
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 7800
+          }
+        },
+        {
+          "id": "donation-bundle",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-bundle",
+          "fields": {
+            "cash_donations": 600
+          }
+        },
+        {
+          "id": "student-1098e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://student-1098e",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        }
+      ],
+      "answers": {
+        "education_credit": 1200,
+        "tax_before_credits": 5000
+      },
+      "user_request": "Surface the deduction and credit items I still need to review."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

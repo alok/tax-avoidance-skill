@@ -316,6 +316,22 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_credit_rows = []
+    for item in normalized.get("deduction_credit_review", []):
+        sources = ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "TBD"
+        rule_titles = ", ".join(
+            source["title"] for source in rule_citations(*item.get("rule_keys", []))
+        ) or "TBD"
+        deduction_credit_rows.append(
+            [
+                item.get("title", "Unknown"),
+                money(item.get("amount")),
+                item.get("status", "unknown"),
+                item.get("summary", ""),
+                sources,
+                rule_titles,
+            ]
+        )
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +365,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction And Credit Review",
+        "",
+        make_markdown_table(
+            ["Item", "Amount", "Status", "Summary", "Document Sources", "Rule Sources"],
+            deduction_credit_rows or [["None", "$0.00", "none", "No deduction or credit review items yet.", "None", "None"]],
         ),
         "",
         "## State Follow-Up",

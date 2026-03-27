@@ -122,6 +122,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_deduction_credit_review(self) -> None:
+        normalized, artifacts = self.run_case("deduction_credit_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Deduction And Credit Review", artifacts["tax-dossier.md"])
+        self.assertIn("IRA Contributions", artifacts["tax-dossier.md"])
+        self.assertIn("needs_review", artifacts["tax-dossier.md"])
+        self.assertIn("Student Loan Interest", artifacts["tax-dossier.md"])
+        self.assertIn("included", artifacts["tax-dossier.md"])
+        self.assertIn("Education Credit", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498 IRA contributions totaling $6,500.00", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
