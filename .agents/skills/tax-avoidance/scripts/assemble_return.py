@@ -215,6 +215,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             + fact_sources(normalized, "other_nonrefundable_credits"),
             "rule_citations": rule_citations(
                 "education_credit",
+                "child_tax_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
             ),
@@ -316,6 +317,19 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_rows = [
+        [
+            dependent.get("name") or "Unknown",
+            dependent.get("relationship") or "Unknown",
+            dependent.get("date_of_birth") or "Unknown",
+            dependent.get("tin_last4") or "Missing",
+            str(dependent.get("months_lived_with_taxpayer"))
+            if dependent.get("months_lived_with_taxpayer") is not None
+            else "Unknown",
+            "yes" if dependent.get("qualifies_for_child_tax_credit") else "no",
+        ]
+        for dependent in normalized.get("dependents", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +355,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Dependent Intake",
+        "",
+        make_markdown_table(
+            ["Name", "Relationship", "Date of Birth", "Masked TIN Last 4", "Months With Taxpayer", "Child Credit Flag"],
+            dependent_rows or [["None", "None", "None", "None", "None", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",

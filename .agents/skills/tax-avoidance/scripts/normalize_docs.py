@@ -32,6 +32,51 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def normalize_dependents(raw_dependents: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
+    normalized_dependents: list[dict[str, Any]] = []
+    missing_items: list[str] = []
+
+    for index, dependent in enumerate(raw_dependents, start=1):
+        relationship = str(dependent.get("relationship", "")).strip()
+        dependent_name = str(dependent.get("name", "")).strip() or f"Dependent {index}"
+        months_lived = dependent.get("months_lived_with_taxpayer")
+        try:
+            months_lived_value = int(months_lived) if months_lived not in (None, "") else None
+        except (TypeError, ValueError):
+            months_lived_value = None
+
+        tin_last4 = "".join(ch for ch in str(dependent.get("tin_last4", "")).strip() if ch.isdigit())[-4:]
+        normalized = {
+            "name": dependent_name,
+            "relationship": relationship or "unspecified",
+            "date_of_birth": str(dependent.get("date_of_birth", "")).strip() or None,
+            "tin_last4": tin_last4 or None,
+            "months_lived_with_taxpayer": months_lived_value,
+            "is_full_time_student": bool(dependent.get("is_full_time_student")),
+            "is_disabled": bool(dependent.get("is_disabled")),
+            "provided_own_support": bool(dependent.get("provided_own_support")),
+            "claimed_elsewhere": bool(dependent.get("claimed_elsewhere")),
+            "qualifies_for_child_tax_credit": bool(dependent.get("qualifies_for_child_tax_credit")),
+        }
+        normalized_dependents.append(normalized)
+
+        missing_fields: list[str] = []
+        if normalized["relationship"] == "unspecified":
+            missing_fields.append("relationship")
+        if normalized["date_of_birth"] is None:
+            missing_fields.append("date of birth")
+        if normalized["months_lived_with_taxpayer"] is None:
+            missing_fields.append("months lived with taxpayer")
+        if normalized["tin_last4"] is None:
+            missing_fields.append("masked TIN last 4")
+        if missing_fields:
+            missing_items.append(
+                f"Complete dependent details for {dependent_name}: {', '.join(missing_fields)}."
+            )
+
+    return normalized_dependents, missing_items
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +84,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    dependents, dependent_missing_items = normalize_dependents(payload.get("dependents", []))
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -187,6 +233,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if child_tax_credit > 0.0 and not dependents:
+        missing_items.append(
+            "Add each qualifying child with date of birth, relationship, masked TIN last 4, and months lived with taxpayer before treating any child tax credit as ready."
+        )
+    if dependents and child_tax_credit == 0.0 and "child_tax_credit" not in answers:
+        missing_items.append(
+            "Review whether any listed dependent qualifies for the child tax credit or credit for other dependents."
+        )
+    for item in dependent_missing_items:
+        if item not in missing_items:
+            missing_items.append(item)
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -290,6 +347,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "dependents": dependents,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

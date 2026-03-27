@@ -167,6 +167,58 @@
       "line_20": 1800
     }
   },
+  "child_tax_credit_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "dependents": [
+        {
+          "name": "Child One",
+          "relationship": "child",
+          "date_of_birth": "2018-04-09",
+          "tin_last4": "4321",
+          "months_lived_with_taxpayer": 12,
+          "qualifies_for_child_tax_credit": true
+        }
+      ],
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 9200
+          }
+        },
+        {
+          "id": "w2-parent-b",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent-b",
+          "fields": {
+            "wages": 41000,
+            "federal_withholding": 3900
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 9600,
+        "child_tax_credit": 2000
+      },
+      "user_request": "Draft my family return and keep the child-credit intake facts visible."
+    },
+    "expect": {
+      "status": "ok",
+      "line_20": 2000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
@@ -226,6 +278,42 @@
     "expect": {
       "status": "ok",
       "missing": "Provide deductible business expenses"
+    }
+  },
+  "child_tax_credit_missing_dependent_details": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "dependents": [
+        {
+          "name": "Kid Example"
+        }
+      ],
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent",
+          "fields": {
+            "wages": 64000,
+            "federal_withholding": 7100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 5200
+      },
+      "user_request": "Help me figure out if my kid changes the return."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Complete dependent details"
     }
   },
   "schedule_c_candidate_expenses": {

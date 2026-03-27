@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "child_tax_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -121,6 +122,21 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_child_tax_credit_dependents(self) -> None:
+        normalized, artifacts = self.run_case("child_tax_credit_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(len(normalized["dependents"]), 1)
+        self.assertEqual(normalized["dependents"][0]["tin_last4"], "4321")
+        self.assertIn("Dependent Intake", artifacts["tax-dossier.md"])
+        self.assertIn("Child One", artifacts["tax-dossier.md"])
+        self.assertIn("$2,000.00", artifacts["federal-lines.md"])
+
+    def test_child_tax_credit_missing_dependent_details(self) -> None:
+        normalized, artifacts = self.run_case("child_tax_credit_missing_dependent_details")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Complete dependent details for Kid Example", artifacts["missing-items.md"])
+        self.assertIn("Review whether any listed dependent qualifies", artifacts["missing-items.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
