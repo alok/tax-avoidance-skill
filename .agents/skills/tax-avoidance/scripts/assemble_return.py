@@ -39,6 +39,16 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def fact_present(normalized: dict[str, Any], key: str) -> bool:
+    fact = normalized["facts"].get(key, {})
+    return bool(fact.get("is_explicit")) or bool(fact.get("sources")) or bool(fact.get("value"))
+
+
+def present_value(normalized: dict[str, Any], key: str) -> float | None:
+    value = fact_value(normalized, key)
+    return value if fact_present(normalized, key) else None
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -47,9 +57,9 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
-    has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
+    has_business_expenses = fact_present(normalized, "business_expenses")
     net_profit = None
-    if nonemployee_compensation and has_business_expenses:
+    if fact_present(normalized, "nonemployee_compensation") and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
     total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
@@ -62,7 +72,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     agi = total_income - adjustments_total
     deduction_amount = fact_value(normalized, "deduction_amount")
     qbi_deduction = fact_value(normalized, "qbi_deduction")
-    taxable_income = max(agi - deduction_amount - qbi_deduction, 0.0) if deduction_amount else None
+    taxable_income = max(agi - deduction_amount - qbi_deduction, 0.0) if fact_present(normalized, "deduction_amount") else None
 
     tax_before_credits = fact_value(normalized, "tax_before_credits")
     nonrefundable_credits = (
@@ -72,7 +82,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         + fact_value(normalized, "child_tax_credit")
         + fact_value(normalized, "other_nonrefundable_credits")
     )
-    total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
+    total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if fact_present(normalized, "tax_before_credits") else None
 
     withholding = fact_value(normalized, "federal_withholding")
     other_payments = fact_value(normalized, "other_payments")
@@ -91,7 +101,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Schedule C",
             "line": "1",
             "label": "Gross receipts or sales",
-            "value": nonemployee_compensation or None,
+            "value": present_value(normalized, "nonemployee_compensation"),
             "sources": fact_sources(normalized, "nonemployee_compensation"),
             "rule_citations": rule_citations("nonemployee_compensation", "schedule_c"),
         },
@@ -99,7 +109,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Schedule C",
             "line": "28",
             "label": "Total expenses",
-            "value": business_expenses if has_business_expenses else None,
+            "value": present_value(normalized, "business_expenses"),
             "sources": fact_sources(normalized, "business_expenses"),
             "rule_citations": rule_citations("business_expenses", "schedule_c"),
         },
@@ -115,7 +125,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "1a",
             "label": "Wages, salaries, tips",
-            "value": wages or None,
+            "value": present_value(normalized, "wages"),
             "sources": fact_sources(normalized, "wages"),
             "rule_citations": rule_citations("wages"),
         },
@@ -123,7 +133,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "2b",
             "label": "Taxable interest",
-            "value": interest or None,
+            "value": present_value(normalized, "taxable_interest"),
             "sources": fact_sources(normalized, "taxable_interest"),
             "rule_citations": rule_citations("taxable_interest"),
         },
@@ -131,7 +141,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "3b",
             "label": "Ordinary dividends",
-            "value": dividends or None,
+            "value": present_value(normalized, "ordinary_dividends"),
             "sources": fact_sources(normalized, "ordinary_dividends"),
             "rule_citations": rule_citations("ordinary_dividends"),
         },
@@ -139,7 +149,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "7",
             "label": "Capital gain or loss",
-            "value": capital_gains or None,
+            "value": present_value(normalized, "capital_gains"),
             "sources": fact_sources(normalized, "capital_gains"),
             "rule_citations": rule_citations("capital_gains"),
         },
@@ -161,7 +171,14 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "10",
             "label": "Adjustments to income",
-            "value": adjustments_total or None,
+            "value": adjustments_total if any(
+                fact_present(normalized, key)
+                for key in (
+                    "ira_contribution_deduction",
+                    "hsa_deduction",
+                    "student_loan_interest_deduction",
+                )
+            ) else None,
             "sources": fact_sources(normalized, "ira_contribution_deduction")
             + fact_sources(normalized, "hsa_deduction")
             + fact_sources(normalized, "student_loan_interest_deduction"),
@@ -183,7 +200,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "12",
             "label": "Standard or itemized deduction",
-            "value": deduction_amount or None,
+            "value": present_value(normalized, "deduction_amount"),
             "sources": fact_sources(normalized, "deduction_amount"),
             "rule_citations": [],
         },
@@ -199,7 +216,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "16",
             "label": "Tax",
-            "value": tax_before_credits or None,
+            "value": present_value(normalized, "tax_before_credits"),
             "sources": fact_sources(normalized, "tax_before_credits"),
             "rule_citations": [],
         },
@@ -207,7 +224,16 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "20",
             "label": "Other credits",
-            "value": nonrefundable_credits or None,
+            "value": nonrefundable_credits if any(
+                fact_present(normalized, key)
+                for key in (
+                    "education_credit",
+                    "clean_vehicle_credit",
+                    "clean_energy_credit",
+                    "child_tax_credit",
+                    "other_nonrefundable_credits",
+                )
+            ) else None,
             "sources": fact_sources(normalized, "education_credit")
             + fact_sources(normalized, "clean_vehicle_credit")
             + fact_sources(normalized, "clean_energy_credit")
@@ -231,7 +257,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "25a",
             "label": "Federal income tax withheld from Forms W-2",
-            "value": withholding or None,
+            "value": present_value(normalized, "federal_withholding"),
             "sources": fact_sources(normalized, "federal_withholding"),
             "rule_citations": rule_citations("federal_withholding"),
         },
@@ -239,7 +265,10 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
-            "value": total_payments or None,
+            "value": total_payments if any(
+                fact_present(normalized, key)
+                for key in ("federal_withholding", "other_payments")
+            ) else None,
             "sources": fact_sources(normalized, "federal_withholding") + fact_sources(normalized, "other_payments"),
             "rule_citations": rule_citations("federal_withholding"),
         },

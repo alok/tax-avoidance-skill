@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Preserves explicit zero answers in the draft package, so a contractor flow can cleanly show `business_expenses: 0` instead of treating it as missing.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -73,6 +74,14 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 ```
 
 That should create the same four standard artifacts in `output/example-run/`.
+
+For a no-expense contractor path, this public sample keeps the Schedule C skeleton intact while explicitly confirming zero expenses:
+
+```bash
+uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
+  --input examples/contractor-zero-expenses-input.json \
+  --out-dir output/zero-expense-example-run
+```
 
 ## Install In Claude Cowork
 

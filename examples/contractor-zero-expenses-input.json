@@ -1,0 +1,25 @@
+{
+  "tax_year": 2025,
+  "filing_status": "single",
+  "connectors": {
+    "gmail": false,
+    "google_drive": false
+  },
+  "documents": [
+    {
+      "id": "sample-1099-nec-no-expenses",
+      "doc_type": "1099-NEC",
+      "source_type": "upload",
+      "source_ref": "upload://sample-1099-nec-no-expenses",
+      "fields": {
+        "nonemployee_compensation": 24000.0
+      }
+    }
+  ],
+  "answers": {
+    "business_expenses": 0.0,
+    "deduction_amount": 15000.0,
+    "tax_before_credits": 2600.0
+  },
+  "user_request": "Build a sample contractor return package and treat business expenses as zero."
+}

@@ -28,8 +28,9 @@ def build_fact(
     key: str,
     value: float,
     sources: list[dict[str, Any]],
+    is_explicit: bool,
 ) -> dict[str, Any]:
-    return {"key": key, "value": value, "sources": sources}
+    return {"key": key, "value": value, "sources": sources, "is_explicit": is_explicit}
 
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -43,31 +44,31 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
 
-    wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
-    withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
-    nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
+    wages, wages_sources, wages_explicit = aggregate_numeric(documents, {"W-2"}, "wages")
+    withholding, withholding_sources, withholding_explicit = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    nonemployee_compensation, nonemployee_compensation_sources, nonemployee_compensation_explicit = aggregate_numeric(
         documents,
         {"1099-NEC"},
         "nonemployee_compensation",
     )
-    interest, interest_sources = aggregate_numeric(documents, {"1099-INT"}, "interest_income")
-    dividends, dividends_sources = aggregate_numeric(documents, {"1099-DIV"}, "ordinary_dividends")
-    capital_gains, capital_gains_sources = aggregate_numeric(
+    interest, interest_sources, interest_explicit = aggregate_numeric(documents, {"1099-INT"}, "interest_income")
+    dividends, dividends_sources, dividends_explicit = aggregate_numeric(documents, {"1099-DIV"}, "ordinary_dividends")
+    capital_gains, capital_gains_sources, capital_gains_explicit = aggregate_numeric(
         documents,
         {"1099-B", "1099-DIV"},
         "capital_gains",
     )
-    social_security, social_security_sources = aggregate_numeric(
+    social_security, social_security_sources, social_security_explicit = aggregate_numeric(
         documents,
         {"SSA-1099"},
         "benefits",
     )
-    mortgage_interest, mortgage_interest_sources = aggregate_numeric(
+    mortgage_interest, mortgage_interest_sources, mortgage_interest_explicit = aggregate_numeric(
         documents,
         {"1098"},
         "mortgage_interest",
     )
-    student_loan_interest, student_loan_interest_sources = aggregate_numeric(
+    student_loan_interest, student_loan_interest_sources, student_loan_interest_explicit = aggregate_numeric(
         documents,
         {"1098-E"},
         "student_loan_interest",
@@ -81,7 +82,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             or str(document.get("document_date")).startswith(str(tax_year))
         )
     ]
-    candidate_business_expenses, candidate_expense_sources = aggregate_numeric(
+    candidate_business_expenses, candidate_expense_sources, candidate_business_expenses_explicit = aggregate_numeric(
         expense_documents_for_year,
         {"Expense Receipt"},
         "amount",
@@ -99,24 +100,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         for document in expense_documents_for_year
         if safe_float(document.get("fields", {}).get("amount")) != 0.0
     ]
-    charitable_cash, charitable_sources = aggregate_numeric(
+    charitable_cash, charitable_sources, charitable_cash_explicit = aggregate_numeric(
         documents,
         {"Donation Receipt"},
         "cash_donations",
     )
 
-    ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
-    hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
-    business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
-    deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
-    qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
-    tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
-    other_payments, other_payments_sources = answer_fact(answers, "other_payments")
-    education_credit, education_credit_sources = answer_fact(answers, "education_credit")
-    clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
-    clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
-    child_tax_credit, child_tax_credit_sources = answer_fact(answers, "child_tax_credit")
-    other_nonrefundable_credits, other_credit_sources = answer_fact(
+    ira_deduction, ira_sources, ira_explicit = answer_fact(answers, "ira_contribution_deduction")
+    hsa_deduction, hsa_sources, hsa_explicit = answer_fact(answers, "hsa_deduction")
+    business_expenses, business_expense_sources, business_expenses_explicit = answer_fact(answers, "business_expenses")
+    deduction_amount, deduction_sources, deduction_amount_explicit = answer_fact(answers, "deduction_amount")
+    qbi_deduction, qbi_sources, qbi_explicit = answer_fact(answers, "qbi_deduction")
+    tax_before_credits, tax_before_credits_sources, tax_before_credits_explicit = answer_fact(answers, "tax_before_credits")
+    other_payments, other_payments_sources, other_payments_explicit = answer_fact(answers, "other_payments")
+    education_credit, education_credit_sources, education_credit_explicit = answer_fact(answers, "education_credit")
+    clean_vehicle_credit, clean_vehicle_credit_sources, clean_vehicle_credit_explicit = answer_fact(answers, "clean_vehicle_credit")
+    clean_energy_credit, clean_energy_credit_sources, clean_energy_credit_explicit = answer_fact(answers, "clean_energy_credit")
+    child_tax_credit, child_tax_credit_sources, child_tax_credit_explicit = answer_fact(answers, "child_tax_credit")
+    other_nonrefundable_credits, other_credit_sources, other_nonrefundable_credits_explicit = answer_fact(
         answers,
         "other_nonrefundable_credits",
     )
@@ -224,44 +225,63 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         status = "unsupported"
 
     facts = {
-        "wages": build_fact("wages", wages, wages_sources),
+        "wages": build_fact("wages", wages, wages_sources, wages_explicit),
         "nonemployee_compensation": build_fact(
             "nonemployee_compensation",
             nonemployee_compensation,
             nonemployee_compensation_sources,
+            nonemployee_compensation_explicit,
         ),
-        "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
-        "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
-        "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
-        "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
-        "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
-        "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources, withholding_explicit),
+        "taxable_interest": build_fact("taxable_interest", interest, interest_sources, interest_explicit),
+        "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources, dividends_explicit),
+        "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources, capital_gains_explicit),
+        "social_security_benefits": build_fact(
+            "social_security_benefits",
+            social_security,
+            social_security_sources,
+            social_security_explicit,
+        ),
+        "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources, mortgage_interest_explicit),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+            student_loan_interest_explicit,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
             candidate_expense_sources,
+            candidate_business_expenses_explicit,
         ),
-        "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
-        "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
-        "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
-        "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
-        "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
-        "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
-        "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
-        "other_payments": build_fact("other_payments", other_payments, other_payments_sources),
-        "education_credit": build_fact("education_credit", education_credit, education_credit_sources),
-        "clean_vehicle_credit": build_fact("clean_vehicle_credit", clean_vehicle_credit, clean_vehicle_credit_sources),
-        "clean_energy_credit": build_fact("clean_energy_credit", clean_energy_credit, clean_energy_credit_sources),
-        "child_tax_credit": build_fact("child_tax_credit", child_tax_credit, child_tax_credit_sources),
+        "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources, charitable_cash_explicit),
+        "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources, ira_explicit),
+        "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources, hsa_explicit),
+        "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources, business_expenses_explicit),
+        "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources, deduction_amount_explicit),
+        "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources, qbi_explicit),
+        "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources, tax_before_credits_explicit),
+        "other_payments": build_fact("other_payments", other_payments, other_payments_sources, other_payments_explicit),
+        "education_credit": build_fact("education_credit", education_credit, education_credit_sources, education_credit_explicit),
+        "clean_vehicle_credit": build_fact(
+            "clean_vehicle_credit",
+            clean_vehicle_credit,
+            clean_vehicle_credit_sources,
+            clean_vehicle_credit_explicit,
+        ),
+        "clean_energy_credit": build_fact(
+            "clean_energy_credit",
+            clean_energy_credit,
+            clean_energy_credit_sources,
+            clean_energy_credit_explicit,
+        ),
+        "child_tax_credit": build_fact("child_tax_credit", child_tax_credit, child_tax_credit_sources, child_tax_credit_explicit),
         "other_nonrefundable_credits": build_fact(
             "other_nonrefundable_credits",
             other_nonrefundable_credits,
             other_credit_sources,
+            other_nonrefundable_credits_explicit,
         ),
     }
 

@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER = REPO_ROOT / ".agents/skills/tax-avoidance/scripts/run_tax_flow.py"
 FIXTURES = REPO_ROOT / "tests/fixtures/cases.json"
 EXAMPLE_INPUT = REPO_ROOT / "examples/contractor-and-investment-input.json"
+ZERO_EXPENSE_EXAMPLE_INPUT = REPO_ROOT / "examples/contractor-zero-expenses-input.json"
 
 
 class TaxFlowTest(unittest.TestCase):
@@ -51,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_zero_expenses",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -140,6 +142,20 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_zero_expense_example_input_smoke(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir) / "out"
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(ZERO_EXPENSE_EXAMPLE_INPUT), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+            federal_lines = (out_dir / "federal-lines.md").read_text(encoding="utf-8")
+            missing_items = (out_dir / "missing-items.md").read_text(encoding="utf-8")
+            self.assertIn("Schedule C | 28 | Total expenses | $0.00", federal_lines)
+            self.assertIn("Schedule C | 31 | Net profit or loss | $24,000.00", federal_lines)
+            self.assertNotIn("Provide deductible business expenses", missing_items)
 
 
 if __name__ == "__main__":

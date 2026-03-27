@@ -228,6 +228,38 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "schedule_c_zero_expenses": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-main",
+          "fields": {
+            "nonemployee_compensation": 24000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 0,
+        "deduction_amount": 15000,
+        "tax_before_credits": 2600
+      },
+      "user_request": "Prepare my contractor taxes and treat business expenses as zero."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_1": 24000.0,
+      "schedule_c_line_31": 24000.0
+    }
+  },
   "schedule_c_candidate_expenses": {
     "input": {
       "tax_year": 2025,
