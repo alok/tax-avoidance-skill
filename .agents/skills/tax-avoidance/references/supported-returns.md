@@ -35,3 +35,8 @@
 ## Behavior On Unsupported Cases
 
 Preserve the gathered facts, create `missing-items.md`, and state clearly that the flow is outside the supported simple-return envelope.
+
+## Review Notes
+
+- Form 5498 is used as intake evidence for IRA contribution review.
+- The workflow should ask the user to confirm the deductible IRA amount instead of assuming the reported contribution is fully deductible.

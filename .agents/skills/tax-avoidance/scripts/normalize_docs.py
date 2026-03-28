@@ -106,6 +106,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
+    ira_contributions_reported, ira_reported_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
@@ -177,6 +182,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if ira_contributions_reported > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Form 5498 reports IRA contributions totaling ${ira_contributions_reported:,.2f}. Confirm how much is deductible for 2025 instead of assuming the full amount."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -247,6 +256,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_reported_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),

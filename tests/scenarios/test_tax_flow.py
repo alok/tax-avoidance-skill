@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "ira_5498_review_signal",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -114,6 +115,13 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Follow-Up", artifacts["tax-dossier.md"])
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
+
+    def test_ira_5498_review_signal(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_review_signal")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 6500.0)
+        self.assertIn("Form 5498 reported IRA contributions: $6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("Confirm how much is deductible for 2025", artifacts["missing-items.md"])
 
     def test_state_allocations(self) -> None:
         normalized, artifacts = self.run_case("state_allocations")

@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -350,6 +351,11 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Review Signals",
+        "",
+        f"- Form 5498 reported IRA contributions: {money(ira_contributions_reported) if ira_contributions_reported else '$0.00'}",
+        "- Use Form 5498 as intake evidence only. Confirm the deductible IRA amount separately before applying it to Form 1040.",
         "",
         "## State Follow-Up",
         "",
