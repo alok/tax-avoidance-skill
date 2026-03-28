@@ -395,6 +395,99 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "dependent_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "household": {
+        "dependents": [
+          {
+            "label": "Child A",
+            "relationship": "daughter",
+            "birth_year": 2018,
+            "months_lived_with_taxpayer": 12,
+            "ssn_on_file": true,
+            "claimed_elsewhere": false,
+            "childcare_expenses": 3200.0,
+            "childcare_provider_statement": true
+          },
+          {
+            "label": "Parent B",
+            "relationship": "parent",
+            "birth_year": 1956,
+            "months_lived_with_taxpayer": 12,
+            "ssn_on_file": true,
+            "claimed_elsewhere": false
+          }
+        ],
+        "filing_notes": [
+          "One household member may qualify only for the other-dependent workflow."
+        ]
+      },
+      "documents": [
+        {
+          "id": "joint-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://joint-w2",
+          "fields": {
+            "wages": 142000,
+            "federal_withholding": 18000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 14500,
+        "child_tax_credit": 2000
+      },
+      "user_request": "Track my dependents in the draft package without storing sensitive IDs."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
+  "dependent_missing_inputs": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "household": {
+        "dependents": [
+          {
+            "months_lived_with_taxpayer": 12
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "single-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://single-w2",
+          "fields": {
+            "wages": 76000,
+            "federal_withholding": 9100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7200
+      },
+      "user_request": "Keep track of my kid in the return package and tell me what follow-up is still needed."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

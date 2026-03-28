@@ -122,6 +122,24 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_household_summary(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household")
+        self.assertEqual(normalized["status"], "ok")
+        dependent_summary = normalized["dependent_summary"]
+        self.assertEqual(dependent_summary["count"], 2)
+        self.assertEqual(dependent_summary["possible_under_17_count"], 1)
+        self.assertEqual(dependent_summary["possible_other_dependent_count"], 1)
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Child A", artifacts["tax-dossier.md"])
+        self.assertIn("Parent B", artifacts["tax-dossier.md"])
+
+    def test_incomplete_dependent_intake(self) -> None:
+        normalized, artifacts = self.run_case("dependent_missing_inputs")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Dependent 1: add the birth year or age band", artifacts["missing-items.md"])
+        self.assertIn("Review dependent credit eligibility before finalizing line 20", artifacts["missing-items.md"])
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

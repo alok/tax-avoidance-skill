@@ -20,7 +20,9 @@ from tax_flow_common import (  # noqa: E402
     load_json,
     normalize_state_code,
     resolve_state_support,
+    safe_bool,
     safe_float,
+    safe_int,
 )
 
 
@@ -32,6 +34,86 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def normalize_dependents(payload: dict[str, Any], tax_year: int) -> dict[str, Any]:
+    household = payload.get("household", {})
+    dependents = household.get("dependents", [])
+    summary_dependents: list[dict[str, Any]] = []
+    missing_items: list[str] = []
+
+    for index, dependent in enumerate(dependents, start=1):
+        label = str(
+            dependent.get("label")
+            or dependent.get("nickname")
+            or dependent.get("first_name")
+            or f"Dependent {index}"
+        )
+        birth_year = safe_int(dependent.get("birth_year"))
+        age_end_of_year = tax_year - birth_year if birth_year else None
+        months_lived_with_taxpayer = safe_int(dependent.get("months_lived_with_taxpayer"))
+        relationship = str(dependent.get("relationship") or "TBD")
+        ssn_on_file = safe_bool(dependent.get("ssn_on_file"))
+        claimed_elsewhere = safe_bool(dependent.get("claimed_elsewhere"))
+        childcare_expenses = safe_float(dependent.get("childcare_expenses"))
+
+        if relationship == "TBD":
+            missing_items.append(f"{label}: confirm the dependent relationship for credit screening.")
+        if birth_year is None:
+            missing_items.append(f"{label}: add the birth year or age band for dependent-credit screening.")
+        if months_lived_with_taxpayer is None:
+            missing_items.append(f"{label}: confirm how many months the dependent lived with you in {tax_year}.")
+        if ssn_on_file is None:
+            missing_items.append(
+                f"{label}: confirm whether a valid SSN or ITIN will be available before filing."
+            )
+        if claimed_elsewhere is None:
+            missing_items.append(
+                f"{label}: confirm whether another taxpayer can claim this dependent."
+            )
+        if childcare_expenses > 0.0 and not dependent.get("childcare_provider_statement"):
+            missing_items.append(
+                f"{label}: gather child-care provider name, EIN/SSN, and total care payments if you want to evaluate care-related credits."
+            )
+
+        summary_dependents.append(
+            {
+                "label": label,
+                "relationship": relationship,
+                "birth_year": birth_year,
+                "age_end_of_tax_year": age_end_of_year,
+                "months_lived_with_taxpayer": months_lived_with_taxpayer,
+                "ssn_on_file": ssn_on_file,
+                "claimed_elsewhere": claimed_elsewhere,
+                "childcare_expenses": childcare_expenses or 0.0,
+                "notes": list(dependent.get("notes", [])),
+            }
+        )
+
+    possible_under_17 = sum(
+        1
+        for dependent in summary_dependents
+        if dependent.get("age_end_of_tax_year") is not None and dependent["age_end_of_tax_year"] < 17
+    )
+    possible_older_dependents = sum(
+        1
+        for dependent in summary_dependents
+        if dependent.get("age_end_of_tax_year") is not None and dependent["age_end_of_tax_year"] >= 17
+    )
+
+    if summary_dependents and "child_tax_credit" not in payload.get("answers", {}):
+        missing_items.append(
+            "Review dependent credit eligibility before finalizing line 20. Confirm which dependents have valid SSNs/ITINs and whether any other taxpayer can claim them."
+        )
+
+    return {
+        "count": len(summary_dependents),
+        "dependents": summary_dependents,
+        "possible_under_17_count": possible_under_17,
+        "possible_other_dependent_count": possible_older_dependents,
+        "filing_notes": list(household.get("filing_notes", [])),
+        "missing_items": missing_items,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +121,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    dependent_summary = normalize_dependents(payload, tax_year)
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -187,6 +270,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    for item in dependent_summary["missing_items"]:
+        if item not in missing_items:
+            missing_items.append(item)
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -290,6 +376,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "dependent_summary": dependent_summary,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

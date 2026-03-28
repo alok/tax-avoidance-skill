@@ -351,6 +351,41 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
         "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured: {normalized.get('dependent_summary', {}).get('count', 0)}",
+        f"- Under-17 age-band signals: {normalized.get('dependent_summary', {}).get('possible_under_17_count', 0)}",
+        f"- Other dependent signals: {normalized.get('dependent_summary', {}).get('possible_other_dependent_count', 0)}",
+        "",
+        make_markdown_table(
+            [
+                "Label",
+                "Relationship",
+                "Birth Year",
+                "Age End Of Year",
+                "Months In Home",
+                "SSN/ITIN On File",
+                "Claimed Elsewhere",
+                "Childcare Expenses",
+            ],
+            [
+                [
+                    dependent.get("label", "Unknown"),
+                    dependent.get("relationship", "TBD"),
+                    str(dependent.get("birth_year") or "TBD"),
+                    str(dependent.get("age_end_of_tax_year") or "TBD"),
+                    str(dependent.get("months_lived_with_taxpayer") or "TBD"),
+                    "Yes" if dependent.get("ssn_on_file") is True else "No" if dependent.get("ssn_on_file") is False else "TBD",
+                    "Yes" if dependent.get("claimed_elsewhere") is True else "No" if dependent.get("claimed_elsewhere") is False else "TBD",
+                    money(dependent.get("childcare_expenses")),
+                ]
+                for dependent in normalized.get("dependent_summary", {}).get("dependents", [])
+            ]
+            or [["None", "None", "None", "None", "None", "None", "None", "$0.00"]],
+        ),
+        "",
+        *([f"- {note}" for note in normalized.get("dependent_summary", {}).get("filing_notes", [])] or ["- None"]),
+        "",
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",

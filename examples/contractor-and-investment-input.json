@@ -5,6 +5,26 @@
     "gmail": true,
     "google_drive": true
   },
+  "household": {
+    "dependents": [
+      {
+        "label": "Child A",
+        "relationship": "daughter",
+        "birth_year": 2018,
+        "months_lived_with_taxpayer": 12,
+        "ssn_on_file": true,
+        "claimed_elsewhere": false,
+        "childcare_expenses": 3200.0,
+        "childcare_provider_statement": true,
+        "notes": [
+          "Dependent uses a nickname label only in the sample payload."
+        ]
+      }
+    ],
+    "filing_notes": [
+      "Review child-related credits separately before final filing."
+    ]
+  },
   "documents": [
     {
       "id": "sample-1099-nec",

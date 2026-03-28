@@ -38,6 +38,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
     },
+    "child_tax_credit": {
+        "title": "Instructions for Schedule 8812 (Credits for Qualifying Children and Other Dependents)",
+        "url": "https://www.irs.gov/instructions/i1040s8",
+    },
     "clean_vehicle_credit": {
         "title": "IRS Clean vehicle and energy credits",
         "url": "https://www.irs.gov/credits-deductions/clean-vehicle-and-energy-credits",
@@ -303,3 +307,31 @@ def resolve_state_support(code: str | None) -> dict[str, str] | None:
         "nonresident_form": "Unknown",
         "source_url": "",
     }
+
+
+def safe_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    text = str(value).strip()
+    if not text:
+        return None
+    return int(float(text))
+
+
+def safe_bool(value: Any) -> bool | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in {"true", "yes", "y", "1"}:
+        return True
+    if text in {"false", "no", "n", "0"}:
+        return False
+    return None
