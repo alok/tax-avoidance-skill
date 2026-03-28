@@ -55,6 +55,24 @@
         "amount": 48.0,
         "vendor": "GitHub"
       }
+    },
+    {
+      "id": "sample-q1-estimated-payment",
+      "doc_type": "1040-ES",
+      "source_type": "upload",
+      "source_ref": "upload://sample-q1-estimated-payment",
+      "fields": {
+        "estimated_tax_payment": 1200.0
+      }
+    },
+    {
+      "id": "sample-extension-payment",
+      "doc_type": "4868",
+      "source_type": "upload",
+      "source_ref": "upload://sample-extension-payment",
+      "fields": {
+        "extension_payment": 600.0
+      }
     }
   ],
   "answers": {

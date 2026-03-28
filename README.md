@@ -28,6 +28,7 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Carries common federal tax payments from public-safe documents such as `1040-ES` estimated payments and `4868` extension payments into the draft payment totals.
 
 ## Scope
 
@@ -96,7 +97,7 @@ Primary command:
 3. Capture resident-state and work-state context as early as possible.
 4. Build a document inventory and ask the minimum remaining interview questions.
 5. Normalize extracted facts into `return-data.json`.
-6. Assemble a prefilled federal line map and a human-readable dossier.
+6. Assemble a prefilled federal line map, payment summary, and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.
 8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
 
