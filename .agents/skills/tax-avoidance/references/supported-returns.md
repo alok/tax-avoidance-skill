@@ -6,6 +6,7 @@
 - Filing status: single or married filing jointly
 - Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, Social Security income
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
+- Federal payment coverage: W-2 withholding, `1040-ES` estimated tax payments, and `4868` extension payments
 - Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
@@ -19,6 +20,8 @@
 - 1098
 - 1098-E
 - 5498
+- 1040-ES payment records
+- 4868 extension payment records
 - SSA-1099
 - donation receipts
 

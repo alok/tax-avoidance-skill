@@ -75,6 +75,8 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
 
     withholding = fact_value(normalized, "federal_withholding")
+    estimated_tax_payments = fact_value(normalized, "estimated_tax_payments")
+    extension_payments = fact_value(normalized, "extension_payments")
     other_payments = fact_value(normalized, "other_payments")
     total_payments = withholding + other_payments
 
@@ -236,6 +238,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "rule_citations": rule_citations("federal_withholding"),
         },
         {
+            "form": "Payment Summary",
+            "line": "Estimated",
+            "label": "Estimated tax payments",
+            "value": estimated_tax_payments or None,
+            "sources": fact_sources(normalized, "estimated_tax_payments"),
+            "rule_citations": rule_citations("estimated_tax_payments"),
+        },
+        {
+            "form": "Payment Summary",
+            "line": "Extension",
+            "label": "Extension payment",
+            "value": extension_payments or None,
+            "sources": fact_sources(normalized, "extension_payments"),
+            "rule_citations": rule_citations("extension_payments"),
+        },
+        {
             "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
@@ -280,6 +298,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    estimated_tax_payments = fact_value(normalized, "estimated_tax_payments")
+    extension_payments = fact_value(normalized, "extension_payments")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -350,6 +370,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Federal Payment Coverage",
+        "",
+        f"- Estimated tax payments found: {money(estimated_tax_payments) if estimated_tax_payments else '$0.00'}",
+        f"- Extension payments found: {money(extension_payments) if extension_payments else '$0.00'}",
+        f"- Total additional federal payments beyond W-2 withholding: {money(fact_value(normalized, 'other_payments')) if fact_value(normalized, 'other_payments') else '$0.00'}",
         "",
         "## State Follow-Up",
         "",

@@ -563,6 +563,58 @@
       "unsupported": "Equity compensation"
     }
   },
+  "federal_tax_payments": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 110000,
+            "federal_withholding": 12000
+          }
+        },
+        {
+          "id": "q1-estimate",
+          "doc_type": "1040-ES",
+          "source_type": "upload",
+          "source_ref": "upload://q1-estimate",
+          "fields": {
+            "estimated_tax_payment": 1500
+          }
+        },
+        {
+          "id": "extension",
+          "doc_type": "4868",
+          "source_type": "upload",
+          "source_ref": "upload://extension",
+          "fields": {
+            "extension_payment": 800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 15000
+      },
+      "user_request": "Include my estimated payments and extension payment in the draft package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_25a": 12000,
+      "line_33": 14300,
+      "estimated_payments": 1500,
+      "extension_payments": 800
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

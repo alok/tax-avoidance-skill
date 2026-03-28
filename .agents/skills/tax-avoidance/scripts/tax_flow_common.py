@@ -10,6 +10,11 @@ WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 RULE_SOURCES: dict[str, dict[str, str]] = {
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "estimated_tax_payments": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "extension_payments": {
+        "title": "Form 4868, Application for Automatic Extension of Time To File U.S. Individual Income Tax Return",
+        "url": "https://www.irs.gov/forms-pubs/about-form-4868",
+    },
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
@@ -132,6 +137,14 @@ def aggregate_numeric(
     doc_types: set[str],
     field_name: str,
 ) -> tuple[float, list[dict[str, Any]]]:
+    return aggregate_numeric_fields(documents, doc_types, (field_name,))
+
+
+def aggregate_numeric_fields(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: tuple[str, ...],
+) -> tuple[float, list[dict[str, Any]]]:
     def source_rank(document: dict[str, Any]) -> tuple[int, int]:
         content_status = document.get("content_status", "")
         status_score = {
@@ -140,8 +153,16 @@ def aggregate_numeric(
             "unreadable_encrypted_attachment": 2,
             "portal_notice_only": 1,
         }.get(content_status, 0)
-        value_score = 1 if safe_float(document.get("fields", {}).get(field_name)) != 0.0 else 0
+        value_score = 1 if document_value(document)[1] != 0.0 else 0
         return (value_score, status_score)
+
+    def document_value(document: dict[str, Any]) -> tuple[str | None, float]:
+        fields = document.get("fields", {})
+        for field_name in field_names:
+            value = safe_float(fields.get(field_name))
+            if value != 0.0:
+                return field_name, value
+        return None, 0.0
 
     grouped_documents: list[dict[str, Any]] = []
     dedupe_groups: dict[str, list[dict[str, Any]]] = {}
@@ -161,7 +182,7 @@ def aggregate_numeric(
     sources: list[dict[str, Any]] = []
     for document in grouped_documents:
         dedupe_key = document.get("dedupe_key")
-        value = safe_float(document.get("fields", {}).get(field_name))
+        field_name, value = document_value(document)
         if value == 0.0:
             continue
         total += value
@@ -172,7 +193,7 @@ def aggregate_numeric(
                 "source_type": document.get("source_type"),
                 "source_ref": document.get("source_ref"),
                 "dedupe_key": dedupe_key,
-                "field": field_name,
+                "field": field_name or field_names[0],
                 "value": value,
             }
         )

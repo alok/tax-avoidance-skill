@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_fields,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -104,6 +105,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    estimated_tax_payments, estimated_tax_payment_sources = aggregate_numeric_fields(
+        documents,
+        {"1040-ES", "Estimated Tax Payment"},
+        ("estimated_tax_payment", "payment_amount"),
+    )
+    extension_payments, extension_payment_sources = aggregate_numeric_fields(
+        documents,
+        {"4868", "Extension Payment"},
+        ("extension_payment", "payment_amount"),
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -111,7 +122,13 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
-    other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    answered_other_payments, answered_other_payments_sources = answer_fact(answers, "other_payments")
+    other_payments = estimated_tax_payments + extension_payments + answered_other_payments
+    other_payments_sources = (
+        estimated_tax_payment_sources
+        + extension_payment_sources
+        + answered_other_payments_sources
+    )
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
@@ -245,6 +262,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "candidate_business_expenses",
             candidate_business_expenses,
             candidate_expense_sources,
+        ),
+        "estimated_tax_payments": build_fact(
+            "estimated_tax_payments",
+            estimated_tax_payments,
+            estimated_tax_payment_sources,
+        ),
+        "extension_payments": build_fact(
+            "extension_payments",
+            extension_payments,
+            extension_payment_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
