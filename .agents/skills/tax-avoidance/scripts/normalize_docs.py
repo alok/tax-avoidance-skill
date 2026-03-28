@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_fields,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -45,6 +46,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    estimated_tax_doc_payments, estimated_tax_doc_sources = aggregate_numeric_fields(
+        documents,
+        {"1040-ES Payment", "Estimated Tax Payment"},
+        ("payment_amount", "amount"),
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -111,6 +117,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
+    estimated_tax_answer_payments, estimated_tax_answer_sources = answer_fact(answers, "estimated_tax_payments")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
@@ -179,6 +186,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if (
+        estimated_tax_doc_payments == 0.0
+        and estimated_tax_answer_payments == 0.0
+        and (
+            nonemployee_compensation > 0.0
+            or interest > 0.0
+            or dividends > 0.0
+            or capital_gains != 0.0
+        )
+    ):
+        missing_items.append(
+            "Confirm whether you made any 2025 estimated tax payments or extension payments so Form 1040 payments are complete."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -223,6 +243,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     elif unsupported_reasons:
         status = "unsupported"
 
+    estimated_tax_payments = estimated_tax_doc_payments
+    estimated_tax_payment_sources = estimated_tax_doc_sources
+    if estimated_tax_payments == 0.0 and estimated_tax_answer_payments != 0.0:
+        estimated_tax_payments = estimated_tax_answer_payments
+        estimated_tax_payment_sources = estimated_tax_answer_sources
+
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
         "nonemployee_compensation": build_fact(
@@ -253,6 +279,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
         "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
         "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
+        "estimated_tax_payments": build_fact(
+            "estimated_tax_payments",
+            estimated_tax_payments,
+            estimated_tax_payment_sources,
+        ),
         "other_payments": build_fact("other_payments", other_payments, other_payments_sources),
         "education_credit": build_fact("education_credit", education_credit, education_credit_sources),
         "clean_vehicle_credit": build_fact("clean_vehicle_credit", clean_vehicle_credit, clean_vehicle_credit_sources),

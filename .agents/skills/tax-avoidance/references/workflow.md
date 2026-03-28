@@ -20,9 +20,10 @@ For a plain Codex app user:
 3. Search for likely forms before asking the user to browse.
 4. Build a document inventory with source, doc type, and confidence.
 5. Ask only the missing questions needed for supported lines.
-6. Normalize everything into structured facts.
-7. Assemble the artifact set.
-8. Flag unsupported complexity and illegal requests explicitly.
+6. Preserve documented estimated tax payments separately from generic payment credits.
+7. Normalize everything into structured facts.
+8. Assemble the artifact set.
+9. Flag unsupported complexity and illegal requests explicitly.
 
 ## Connector Priority
 
@@ -42,5 +43,6 @@ For a plain Codex app user:
 - Ask for filing status only after document collection begins.
 - Ask one question at a time when the answer changes supported-line output.
 - Prefer targeted clarifications over generic tax questionnaires.
+- Ask contractor and investment households whether they made quarterly estimated or extension payments if that evidence is missing.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.

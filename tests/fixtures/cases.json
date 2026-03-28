@@ -199,6 +199,76 @@
       "schedule_c_line_31": 89658.47
     }
   },
+  "estimated_tax_payments": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-main",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-main",
+          "fields": {
+            "nonemployee_compensation": 84000
+          }
+        },
+        {
+          "id": "q1-estimated",
+          "doc_type": "1040-ES Payment",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://q1-estimated",
+          "fields": {
+            "payment_amount": 1700
+          }
+        },
+        {
+          "id": "q2-estimated",
+          "doc_type": "1040-ES Payment",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://q2-estimated",
+          "fields": {
+            "amount": 1700
+          }
+        },
+        {
+          "id": "q3-estimated",
+          "doc_type": "Estimated Tax Payment",
+          "source_type": "google_drive",
+          "source_ref": "drive://q3-estimated",
+          "fields": {
+            "payment_amount": 1700
+          }
+        },
+        {
+          "id": "q4-estimated",
+          "doc_type": "Estimated Tax Payment",
+          "source_type": "google_drive",
+          "source_ref": "drive://q4-estimated",
+          "fields": {
+            "amount": 1700
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 12000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 11800
+      },
+      "user_request": "Use my contractor docs and quarterly estimated payments to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_26": 6800,
+      "line_33": 6800,
+      "schedule_c_line_1": 84000,
+      "schedule_c_line_31": 72000
+    }
+  },
   "schedule_c_missing_expenses": {
     "input": {
       "tax_year": 2025,

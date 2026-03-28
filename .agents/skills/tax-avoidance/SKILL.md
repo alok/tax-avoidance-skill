@@ -23,6 +23,7 @@ Supported:
 - Wage, contractor, and investment income
 - Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
+- estimated tax payment capture from 1040-ES style confirmations, receipts, or vouchers
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows
 
 Unsupported by default:
@@ -48,11 +49,12 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
 3. Search for likely tax documents using opinionated queries rather than asking the user to browse manually.
 4. Build a document inventory that names each candidate document, source, and confidence.
 5. Ask only the missing interview questions needed to assemble the supported return.
-6. Write an input JSON payload and run the deterministic script:
+6. Preserve documented estimated tax payments separately from generic payment credits when the source material supports them.
+7. Write an input JSON payload and run the deterministic script:
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
-7. Return the artifact set:
+8. Return the artifact set:
    `tax-dossier.md`, `return-data.json`, `federal-lines.md`, and `missing-items.md`
-8. Summarize:
+9. Summarize:
    legal planning moves,
    candidate business expenses,
    unsupported or risky items,

@@ -8,6 +8,7 @@
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
 - Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
+- Estimated tax payment capture for quarterly 1040-ES-style payments when documented
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
 
 ## Supported Documents
@@ -20,6 +21,7 @@
 - 1098-E
 - 5498
 - SSA-1099
+- 1040-ES payment confirmations or equivalent estimated-tax receipts
 - donation receipts
 
 ## Unsupported In V1

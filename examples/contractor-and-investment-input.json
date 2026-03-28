@@ -55,6 +55,24 @@
         "amount": 48.0,
         "vendor": "GitHub"
       }
+    },
+    {
+      "id": "sample-q1-estimated",
+      "doc_type": "1040-ES Payment",
+      "source_type": "upload",
+      "source_ref": "upload://sample-q1-estimated",
+      "fields": {
+        "payment_amount": 1200.0
+      }
+    },
+    {
+      "id": "sample-q2-estimated",
+      "doc_type": "Estimated Tax Payment",
+      "source_type": "upload",
+      "source_ref": "upload://sample-q2-estimated",
+      "fields": {
+        "amount": 1200.0
+      }
     }
   ],
   "answers": {
