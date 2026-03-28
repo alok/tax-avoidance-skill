@@ -563,6 +563,45 @@
       "unsupported": "Equity compensation"
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-part-time",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use my Social Security and wage docs to draft the return package."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

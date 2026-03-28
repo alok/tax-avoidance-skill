@@ -5,6 +5,7 @@
 - 2025 federal individual returns
 - Filing status: single or married filing jointly
 - Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, Social Security income
+- Social Security benefits are preserved conservatively: line `6a` can be populated from `SSA-1099`, while line `6b` stays review-only until the taxable portion is known
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
 - Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
