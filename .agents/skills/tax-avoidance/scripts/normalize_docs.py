@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_fields,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -104,6 +105,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    estimated_tax_payments, estimated_tax_payment_sources = aggregate_numeric_fields(
+        documents,
+        {"Estimated Tax Payment", "1040-ES Confirmation"},
+        ("payment_amount", "estimated_tax_payment", "amount"),
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -111,6 +117,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
+    answer_estimated_tax_payments, answer_estimated_tax_payment_sources = answer_fact(
+        answers,
+        "estimated_tax_payments",
+    )
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
@@ -120,6 +130,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+
+    estimated_tax_payments += answer_estimated_tax_payments
+    estimated_tax_payment_sources.extend(answer_estimated_tax_payment_sources)
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -183,6 +196,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    has_estimated_tax_sources = bool(estimated_tax_payment_sources)
+    has_non_w2_income = nonemployee_compensation > 0.0 or interest > 0.0 or dividends > 0.0 or capital_gains > 0.0
+    if has_non_w2_income and not has_estimated_tax_sources and "estimated_tax_payments" not in answers:
+        missing_items.append(
+            "Confirm whether any 2025 federal estimated tax payments or prior-year overpayments applied to 2025 should be included on Form 1040 line 26."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -231,6 +250,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             nonemployee_compensation_sources,
         ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "estimated_tax_payments": build_fact(
+            "estimated_tax_payments",
+            estimated_tax_payments,
+            estimated_tax_payment_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),

@@ -59,6 +59,7 @@
   ],
   "answers": {
     "business_expenses": 9000.0,
+    "estimated_tax_payments": 3200.0,
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
