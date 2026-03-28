@@ -104,6 +104,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_contributions_reported, ira_contributions_reported_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -183,6 +188,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    if ira_contributions_reported > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review IRA deduction eligibility for the reported Form 5498 contributions totaling ${ira_contributions_reported:,.2f} before populating Form 1040 adjustments."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -245,6 +254,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "candidate_business_expenses",
             candidate_business_expenses,
             candidate_expense_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contributions_reported_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),

@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -294,6 +295,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             expense.get("source_ref") or "unknown",
         ]
         for expense in normalized.get("candidate_expense_documents", [])
+    ]
+    ira_contribution_rows = [
+        [
+            source.get("doc_id", "unknown"),
+            money(source.get("value")),
+            source.get("source_ref", "unknown"),
+        ]
+        for source in fact_sources(normalized, "ira_contributions_reported")
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -349,6 +358,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## IRA Contribution Signals",
+        "",
+        f"- Form 5498 documents report IRA contributions totaling {money(ira_contributions_reported) if ira_contributions_reported else '$0.00'}.",
+        "- Keep these as review-only intake signals until deduction eligibility is confirmed.",
+        "",
+        make_markdown_table(
+            ["Document ID", "Reported Contribution", "Source"],
+            ira_contribution_rows or [["None", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",

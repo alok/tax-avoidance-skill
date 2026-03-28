@@ -463,6 +463,46 @@
       "missing": "Download the actual Consolidated 1099"
     }
   },
+  "ira_5498_review_signal": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 14500
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 13600
+      },
+      "user_request": "Gather my tax docs and flag anything else I need to confirm."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 98000
+    }
+  },
   "duplicate_doc_sources": {
     "input": {
       "tax_year": 2025,
