@@ -167,6 +167,38 @@
       "line_20": 1800
     }
   },
+  "social_security_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18400
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 6200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use my SSA-1099 and draft the federal return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18400,
+      "line_6b": 6200
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
@@ -461,6 +493,36 @@
     "expect": {
       "status": "ok",
       "missing": "Download the actual Consolidated 1099"
+    }
+  },
+  "social_security_needs_taxable_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-review",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-review",
+          "fields": {
+            "benefits": 18400
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use my Social Security statement and show me what still needs review."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm how much of the SSA-1099 benefits are taxable"
     }
   },
   "duplicate_doc_sources": {

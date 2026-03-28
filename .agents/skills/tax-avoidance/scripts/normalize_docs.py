@@ -62,6 +62,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"SSA-1099"},
         "benefits",
     )
+    taxable_social_security, taxable_social_security_sources = answer_fact(
+        answers,
+        "taxable_social_security_benefits",
+    )
     mortgage_interest, mortgage_interest_sources = aggregate_numeric(
         documents,
         {"1098"},
@@ -183,6 +187,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    if social_security > 0.0 and "taxable_social_security_benefits" not in answers:
+        missing_items.append(
+            "Confirm how much of the SSA-1099 benefits are taxable for Form 1040 line 6b, or leave Social Security income marked for review."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -235,6 +243,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "taxable_social_security_benefits": build_fact(
+            "taxable_social_security_benefits",
+            taxable_social_security,
+            taxable_social_security_sources,
+        ),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",

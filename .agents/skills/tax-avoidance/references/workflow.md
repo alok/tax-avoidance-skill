@@ -37,6 +37,12 @@ For a plain Codex app user:
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
 
+## Social Security Review
+
+- When an `SSA-1099` is present, preserve the gross benefits on Form 1040 line `6a`.
+- Only place an amount on line `6b` after the taxable Social Security figure has been confirmed.
+- Until that taxable figure is confirmed, keep the return in review mode and add a missing-item prompt instead of folding gross benefits into total income.
+
 ## Interview Principles
 
 - Ask for filing status only after document collection begins.

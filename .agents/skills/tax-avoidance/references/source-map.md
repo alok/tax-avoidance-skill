@@ -5,6 +5,7 @@ Use IRS or Treasury sources for all substantive tax guidance. Use Wikipedia only
 ## Primary IRS Sources
 
 - [Publication 17](https://www.irs.gov/publications/p17): baseline individual return rules and filing overview
+- [Publication 915](https://www.irs.gov/publications/p915): Social Security and equivalent railroad retirement benefits
 - [Publication 334](https://www.irs.gov/publications/p334): self-employment and Schedule C guidance
 - [Publication 505](https://www.irs.gov/publications/p505): withholding and estimated tax
 - [Publication 590-A](https://www.irs.gov/publications/p590a): IRA contribution rules
