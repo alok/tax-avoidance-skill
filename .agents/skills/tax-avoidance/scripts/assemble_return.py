@@ -39,6 +39,41 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def deduction_review_rows(normalized: dict[str, Any]) -> list[list[str]]:
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+
+    return [
+        [
+            "Chosen deduction amount",
+            money(deduction_amount) if deduction_amount else "TBD",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "deduction_amount")) or "TBD",
+            "User-selected deduction path for the draft package.",
+        ],
+        [
+            "Student loan interest",
+            money(student_loan_interest) if student_loan_interest else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "student_loan_interest_deduction"))
+            or "None",
+            "Adjustment signal already included in Form 1040 line 10 when present.",
+        ],
+        [
+            "Mortgage interest support docs",
+            money(mortgage_interest) if mortgage_interest else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "mortgage_interest")) or "None",
+            "Itemized-deduction support; review before changing the line 12 deduction choice.",
+        ],
+        [
+            "Charitable cash support docs",
+            money(charitable_cash) if charitable_cash else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "charitable_cash")) or "None",
+            "Itemized-deduction support; keep receipts and review before changing the line 12 deduction choice.",
+        ],
+    ]
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -316,6 +351,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_rows = deduction_review_rows(normalized)
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +377,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        "- Mortgage-interest and charitable-giving documents stay as support signals until the deduction path is confirmed.",
+        "",
+        make_markdown_table(
+            ["Category", "Amount", "Sources", "Review Note"],
+            deduction_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",
