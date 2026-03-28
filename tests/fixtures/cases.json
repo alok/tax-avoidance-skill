@@ -84,6 +84,46 @@
       "line_25a": 14800
     }
   },
+  "ira_5498_tracking": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 12500
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 13500
+      },
+      "user_request": "Gather my documents and build the draft package."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_contributions_reported": 6500
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,

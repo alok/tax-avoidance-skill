@@ -22,6 +22,12 @@
 - SSA-1099
 - donation receipts
 
+## Safe Review Rules For Contribution Documents
+
+- Preserve `5498` IRA contribution totals in the normalized output and dossier.
+- Do not automatically treat every reported IRA contribution as deductible.
+- Ask for the deductible IRA amount when the source documents show contributions but the return draft still lacks a confirmed deduction figure.
+
 ## Unsupported In V1
 
 - automated state tax calculations

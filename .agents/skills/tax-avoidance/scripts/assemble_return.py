@@ -280,6 +280,24 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    retirement_tracking_rows = [
+        [
+            "Form 5498 reported IRA contributions",
+            money(ira_contributions_reported) if ira_contributions_reported else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contributions_reported"))
+            or "None",
+            "Tracked from source documents; not auto-applied as a deduction.",
+        ],
+        [
+            "IRA deduction used in draft package",
+            money(ira_deduction) if ira_deduction else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contribution_deduction"))
+            or "None",
+            "Only apply after confirming IRA deductibility.",
+        ],
+    ]
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -349,6 +367,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Retirement Contribution Tracking",
+        "",
+        make_markdown_table(
+            ["Tracked Item", "Amount", "Sources", "Review Note"],
+            retirement_tracking_rows,
         ),
         "",
         "## State Follow-Up",
