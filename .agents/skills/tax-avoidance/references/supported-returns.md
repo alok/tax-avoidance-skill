@@ -9,6 +9,7 @@
 - Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
+- SSA-1099 intake with the gross benefit preserved on Form 1040 line 6a and the taxable line 6b left for review unless the taxable amount is confirmed
 
 ## Supported Documents
 

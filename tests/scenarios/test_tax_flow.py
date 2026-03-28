@@ -64,6 +64,12 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
+                if "line_9" in expected:
+                    self.assertIn(f"${expected['line_9']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -121,6 +127,20 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_social_security_review_paths(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("taxable Social Security amount", artifacts["missing-items.md"])
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $18,000.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 9 | Total income | $75,000.00 |", artifacts["federal-lines.md"])
+
+        normalized, artifacts = self.run_case("social_security_taxable_amount")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $18,000.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | $9,400.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 9 | Total income | $84,400.00 |", artifacts["federal-lines.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
