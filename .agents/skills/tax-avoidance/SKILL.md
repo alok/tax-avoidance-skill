@@ -55,6 +55,7 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
 8. Summarize:
    legal planning moves,
    candidate business expenses,
+   candidate IRA deductions that still need confirmation,
    unsupported or risky items,
    missing items,
    and professional-review escalations.

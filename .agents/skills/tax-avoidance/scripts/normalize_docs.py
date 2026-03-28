@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    candidate_ira_contributions, candidate_ira_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -104,6 +109,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    candidate_ira_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "traditional_ira_contributions": safe_float(document.get("fields", {}).get("traditional_ira_contributions")),
+            "roth_ira_contributions": safe_float(document.get("fields", {}).get("roth_ira_contributions")),
+        }
+        for document in documents
+        if document.get("doc_type") == "5498"
+        and (
+            safe_float(document.get("fields", {}).get("traditional_ira_contributions")) != 0.0
+            or safe_float(document.get("fields", {}).get("roth_ira_contributions")) != 0.0
+        )
+    ]
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -187,6 +207,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if candidate_ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 5498 traditional IRA contributions totaling ${candidate_ira_contributions:,.2f} and confirm the deductible amount before applying any IRA deduction."
+        )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -246,6 +270,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_business_expenses,
             candidate_expense_sources,
         ),
+        "candidate_traditional_ira_contributions": build_fact(
+            "candidate_traditional_ira_contributions",
+            candidate_ira_contributions,
+            candidate_ira_sources,
+        ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
@@ -291,6 +320,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "candidate_ira_documents": candidate_ira_documents,
         "facts": facts,
     }
     return normalized

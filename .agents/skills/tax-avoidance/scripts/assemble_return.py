@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    candidate_ira_contributions = fact_value(normalized, "candidate_traditional_ira_contributions")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -294,6 +295,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             expense.get("source_ref") or "unknown",
         ]
         for expense in normalized.get("candidate_expense_documents", [])
+    ]
+    candidate_ira_rows = [
+        [
+            ira_document.get("id") or "unknown",
+            money(ira_document.get("traditional_ira_contributions")),
+            money(ira_document.get("roth_ira_contributions")),
+            ira_document.get("source_ref") or "unknown",
+        ]
+        for ira_document in normalized.get("candidate_ira_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -349,6 +359,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Candidate IRA Contributions",
+        "",
+        f"- Found Form 5498 traditional IRA contributions totaling {money(candidate_ira_contributions) if candidate_ira_contributions else '$0.00'} that still need deductible-amount review before they affect Form 1040 line 10.",
+        "",
+        make_markdown_table(
+            ["Document", "Traditional IRA", "Roth IRA", "Source"],
+            candidate_ira_rows or [["None", "$0.00", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",
