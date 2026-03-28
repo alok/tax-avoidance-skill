@@ -563,6 +563,55 @@
       "unsupported": "Equity compensation"
     }
   },
+  "deduction_scaffold_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 9800
+          }
+        },
+        {
+          "id": "food-bank-donation",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://food-bank-donation",
+          "fields": {
+            "cash_donations": 2500
+          }
+        },
+        {
+          "id": "loan-interest",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://loan-interest",
+          "fields": {
+            "student_loan_interest": 1600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 10000,
+        "tax_before_credits": 7200
+      },
+      "user_request": "Use the deduction documents you found and draft my return package."
+    },
+    "expect": {
+      "status": "ok",
+      "known_itemized_deductions": 12300,
+      "student_loan_interest": 1600
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

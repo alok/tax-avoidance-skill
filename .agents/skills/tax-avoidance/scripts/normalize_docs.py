@@ -120,6 +120,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    known_itemized_deductions = mortgage_interest + charitable_cash
+    known_adjustments_total = ira_deduction + hsa_deduction + student_loan_interest
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -177,6 +179,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if (
+        deduction_amount > 0.0
+        and known_itemized_deductions > 0.0
+        and deduction_amount < known_itemized_deductions
+    ):
+        missing_items.append(
+            f"The selected deduction amount of ${deduction_amount:,.2f} is lower than the currently documented mortgage-interest and charitable evidence of ${known_itemized_deductions:,.2f}. Confirm whether the draft should use the standard deduction or whether the itemized-deduction inputs are incomplete."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -292,6 +302,22 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
+        "deduction_summary": {
+            "mortgage_interest": mortgage_interest,
+            "mortgage_interest_sources": mortgage_interest_sources,
+            "charitable_cash": charitable_cash,
+            "charitable_cash_sources": charitable_sources,
+            "known_itemized_deductions": known_itemized_deductions,
+            "student_loan_interest": student_loan_interest,
+            "student_loan_interest_sources": student_loan_interest_sources,
+            "ira_contribution_deduction": ira_deduction,
+            "ira_sources": ira_sources,
+            "hsa_deduction": hsa_deduction,
+            "hsa_sources": hsa_sources,
+            "known_adjustments_total": known_adjustments_total,
+            "selected_deduction_amount": deduction_amount,
+            "selected_deduction_sources": deduction_sources,
+        },
     }
     return normalized
 

@@ -316,6 +316,81 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_rows = [
+        [
+            "Mortgage interest evidence",
+            money(deduction_summary.get("mortgage_interest")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in deduction_summary.get("mortgage_interest_sources", [])
+            )
+            or "None",
+            "Itemized deduction evidence only",
+        ],
+        [
+            "Charitable cash evidence",
+            money(deduction_summary.get("charitable_cash")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in deduction_summary.get("charitable_cash_sources", [])
+            )
+            or "None",
+            "Itemized deduction evidence only",
+        ],
+        [
+            "Known itemized subtotal",
+            money(deduction_summary.get("known_itemized_deductions")),
+            "Derived from observed 1098 and donation records",
+            "Compare against the selected deduction",
+        ],
+        [
+            "Selected deduction amount",
+            money(deduction_summary.get("selected_deduction_amount")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in deduction_summary.get("selected_deduction_sources", [])
+            )
+            or "None",
+            "Current deduction used in the draft return",
+        ],
+        [
+            "Student loan interest adjustment",
+            money(deduction_summary.get("student_loan_interest")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in deduction_summary.get("student_loan_interest_sources", [])
+            )
+            or "None",
+            "Above-the-line adjustment evidence",
+        ],
+        [
+            "IRA contribution adjustment",
+            money(deduction_summary.get("ira_contribution_deduction")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in deduction_summary.get("ira_sources", [])
+            )
+            or "None",
+            "Above-the-line adjustment evidence",
+        ],
+        [
+            "HSA adjustment",
+            money(deduction_summary.get("hsa_deduction")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in deduction_summary.get("hsa_sources", [])
+            )
+            or "None",
+            "Above-the-line adjustment evidence",
+        ],
+        [
+            "Known adjustment subtotal",
+            money(deduction_summary.get("known_adjustments_total")),
+            "Derived from observed adjustment inputs",
+            "Feeds Form 1040 line 10",
+        ],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +424,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction And Adjustment Scaffold",
+        "",
+        "- Mortgage-interest and charitable rows are evidence only. They do not automatically override the chosen deduction path.",
+        "- Student-loan, IRA, and HSA rows show currently gathered above-the-line adjustment inputs.",
+        "",
+        make_markdown_table(
+            ["Input", "Amount", "Sources", "How It Is Used"],
+            deduction_rows,
         ),
         "",
         "## State Follow-Up",
