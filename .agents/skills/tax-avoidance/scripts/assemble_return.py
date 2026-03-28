@@ -316,6 +316,43 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_summary = normalized.get("deduction_summary", {})
+    selected_deduction_amount = deduction_summary.get("selected_deduction_amount")
+    itemized_candidate = float(deduction_summary.get("itemized_deductions_candidate", 0.0) or 0.0)
+    itemized_components = deduction_summary.get("itemized_components", [])
+    itemized_component_rows = [
+        [
+            component.get("label", "Unknown"),
+            money(component.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in component.get("sources", [])) or "TBD",
+        ]
+        for component in itemized_components
+        if float(component.get("value", 0.0) or 0.0) > 0.0
+    ]
+    deduction_notes: list[str] = []
+    if selected_deduction_amount is None:
+        deduction_notes.append("The draft deduction amount is still missing.")
+        if itemized_candidate > 0.0:
+            deduction_notes.append(
+                f"Observed itemized-support documents currently total {money(itemized_candidate)} and should be compared against the standard deduction before finalizing line 12."
+            )
+    else:
+        deduction_notes.append(
+            f"The draft package currently uses a deduction amount of {money(selected_deduction_amount)} from the interview answers."
+        )
+        if itemized_candidate > 0.0:
+            if float(selected_deduction_amount) > itemized_candidate:
+                deduction_notes.append(
+                    f"Observed itemized-support documents total {money(itemized_candidate)}, so the selected deduction amount is higher than the currently documented itemized support."
+                )
+            elif float(selected_deduction_amount) < itemized_candidate:
+                deduction_notes.append(
+                    f"Observed itemized-support documents total {money(itemized_candidate)}, which is higher than the selected deduction amount and merits review."
+                )
+            else:
+                deduction_notes.append("The selected deduction amount matches the currently observed itemized-support documents.")
+        else:
+            deduction_notes.append("No mortgage-interest or charitable-receipt itemized signals were found in the current document set.")
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +378,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        *[f"- {note}" for note in deduction_notes],
+        "",
+        make_markdown_table(
+            ["Itemized Signal", "Amount", "Document Sources"],
+            itemized_component_rows or [["None observed", "$0.00", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",

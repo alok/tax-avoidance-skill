@@ -104,6 +104,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_deductions_candidate = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -176,7 +177,13 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if itemized_deductions_candidate > 0.0:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"Current itemized-support signals total ${itemized_deductions_candidate:,.2f}."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -288,6 +295,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     "withholding": totals["withholding"],
                 }
                 for code, totals in sorted(state_allocation_totals.items())
+            ],
+        },
+        "deduction_summary": {
+            "selected_deduction_amount": deduction_amount if "deduction_amount" in answers else None,
+            "selected_deduction_source": "user_answer" if "deduction_amount" in answers else "missing",
+            "itemized_deductions_candidate": itemized_deductions_candidate,
+            "itemized_components": [
+                {
+                    "key": "mortgage_interest",
+                    "label": "Mortgage interest",
+                    "value": mortgage_interest,
+                    "sources": mortgage_interest_sources,
+                },
+                {
+                    "key": "charitable_cash",
+                    "label": "Charitable cash donations",
+                    "value": charitable_cash,
+                    "sources": charitable_sources,
+                },
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,

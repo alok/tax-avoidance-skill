@@ -536,6 +536,54 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "itemized_deduction_signals": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 12400
+          }
+        },
+        {
+          "id": "donation-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-1",
+          "fields": {
+            "cash_donations": 1800
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9400
+      },
+      "user_request": "Draft my return package and tell me what is missing."
+    },
+    "expect": {
+      "status": "ok",
+      "itemized_deductions_candidate": 14200
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,
