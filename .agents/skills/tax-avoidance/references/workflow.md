@@ -42,5 +42,6 @@ For a plain Codex app user:
 - Ask for filing status only after document collection begins.
 - Ask one question at a time when the answer changes supported-line output.
 - Prefer targeted clarifications over generic tax questionnaires.
+- When an SSA-1099 is present, preserve the gross benefit amount on Form 1040 line 6a but ask for the taxable line 6b amount instead of inferring it from the gross benefits.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.

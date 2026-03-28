@@ -167,6 +167,69 @@
       "line_20": 1800
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Draft my return package from the Social Security form you found."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Provide the taxable Social Security benefits amount"
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 7900,
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Draft my return package from the Social Security form and known taxable amount."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600,
+      "line_6b": 7900,
+      "line_9": 7900
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
