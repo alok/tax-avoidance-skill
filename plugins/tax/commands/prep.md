@@ -30,6 +30,7 @@ Run the shared Tax Avoidance workflow for a normal person who wants to use Claud
    and `missing-items.md`
 7. Clearly separate:
    legal planning moves,
+   education-credit review items,
    unsupported complexity,
    illegal requests,
    and professional-review items.

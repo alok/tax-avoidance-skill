@@ -67,6 +67,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
+    qualified_tuition, qualified_tuition_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "qualified_tuition",
+    )
+    scholarships_grants, scholarships_grants_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "scholarships_grants",
+    )
     student_loan_interest, student_loan_interest_sources = aggregate_numeric(
         documents,
         {"1098-E"},
@@ -183,6 +193,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    if qualified_tuition > 0.0 and "education_credit" not in answers:
+        missing_items.append(
+            "A 1098-T was found. Review the student's qualified tuition, scholarships, and enrollment eligibility before deciding whether to claim an education credit."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -236,6 +250,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "qualified_tuition": build_fact("qualified_tuition", qualified_tuition, qualified_tuition_sources),
+        "scholarships_grants": build_fact(
+            "scholarships_grants",
+            scholarships_grants,
+            scholarships_grants_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
             student_loan_interest,
