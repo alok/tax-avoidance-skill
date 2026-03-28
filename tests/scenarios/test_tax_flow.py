@@ -73,6 +73,24 @@ class TaxFlowTest(unittest.TestCase):
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
 
+    def test_dependent_intake_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household_missing_inputs")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["household_summary"]["dependent_count"], 1)
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Kid A", artifacts["tax-dossier.md"])
+        self.assertIn("Full SSNs are intentionally excluded", artifacts["tax-dossier.md"])
+        self.assertIn("Next Interview Questions", artifacts["missing-items.md"])
+        self.assertIn("Review child tax credit or credit for other dependents eligibility", artifacts["missing-items.md"])
+
+    def test_dependent_household_ready(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household_ready")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("$2,000.00", artifacts["federal-lines.md"])
+        self.assertIn("Kid B", artifacts["tax-dossier.md"])
+        self.assertIn("No", artifacts["tax-dossier.md"])
+        self.assertNotIn("Review child tax credit or credit for other dependents eligibility", artifacts["missing-items.md"])
+
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
         self.assertEqual(normalized["status"], "ok")

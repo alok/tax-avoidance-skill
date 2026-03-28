@@ -563,6 +563,91 @@
       "unsupported": "Equity compensation"
     }
   },
+  "dependent_household_missing_inputs": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 72000,
+            "federal_withholding": 8600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 6400,
+        "has_dependents": true
+      },
+      "household": {
+        "dependents": [
+          {
+            "label": "Kid A",
+            "relationship": "child",
+            "birth_year": 2019
+          }
+        ]
+      },
+      "user_request": "Prepare a draft return and tell me what household details are still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "interview": "Review child tax credit"
+    }
+  },
+  "dependent_household_ready": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent-a",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 11000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 7800,
+        "child_tax_credit": 2000
+      },
+      "household": {
+        "dependents": [
+          {
+            "label": "Kid B",
+            "relationship": "child",
+            "birth_year": 2017,
+            "months_in_home": 12,
+            "has_tax_id": true,
+            "claimed_elsewhere": false
+          }
+        ]
+      },
+      "user_request": "Assemble our joint return package with the dependent info we already have."
+    },
+    "expect": {
+      "status": "ok",
+      "line_20": 2000
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

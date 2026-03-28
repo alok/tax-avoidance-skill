@@ -285,6 +285,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
+    interview_lines = [f"- {item}" for item in normalized.get("interview_questions", [])] or ["- None"]
     candidate_expense_rows = [
         [
             expense.get("document_date") or "unknown",
@@ -316,6 +317,23 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    household_summary = normalized.get("household_summary", {})
+    household_note_lines = [f"- {item}" for item in household_summary.get("notes", [])] or ["- None"]
+    dependent_rows = [
+        [
+            dependent.get("label", ""),
+            dependent.get("relationship") or "TBD",
+            str(dependent.get("birth_year") or "TBD"),
+            str(dependent.get("months_in_home") or "TBD"),
+            "Yes" if dependent.get("has_tax_id") is True else "No" if dependent.get("has_tax_id") is False else "TBD",
+            "Yes"
+            if dependent.get("claimed_elsewhere") is True
+            else "No"
+            if dependent.get("claimed_elsewhere") is False
+            else "TBD",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +368,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured: {household_summary.get('dependent_count', 0)}",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Birth Year", "Months In Home", "Has SSN/ITIN", "Claimed Elsewhere"],
+            dependent_rows or [["None", "None", "None", "None", "None", "None"]],
+        ),
+        "",
+        *household_note_lines,
+        "",
+        "## Next Interview Questions",
+        "",
+        *interview_lines,
         "",
         "## State Follow-Up",
         "",
@@ -410,6 +443,10 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:
         lines.append("- None")
+
+    if normalized.get("interview_questions"):
+        lines.extend(["", "## Next Interview Questions", ""])
+        lines.extend(f"- {item}" for item in normalized["interview_questions"])
 
     if normalized.get("unsupported_reasons"):
         lines.extend(["", "## Unsupported Complexity", ""])

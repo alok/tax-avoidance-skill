@@ -32,6 +32,100 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def safe_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def safe_bool(value: Any) -> bool | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return value
+    lowered = str(value).strip().lower()
+    if lowered in {"true", "yes", "y", "1"}:
+        return True
+    if lowered in {"false", "no", "n", "0"}:
+        return False
+    return None
+
+
+def normalize_dependents(payload: dict[str, Any], tax_year: int) -> list[dict[str, Any]]:
+    household = payload.get("household", {})
+    raw_dependents = household.get("dependents", [])
+    dependents: list[dict[str, Any]] = []
+    for index, dependent in enumerate(raw_dependents, start=1):
+        birth_year = safe_int(dependent.get("birth_year"))
+        months_in_home = safe_int(dependent.get("months_in_home"))
+        care_expenses = safe_float(dependent.get("care_expenses"))
+        education_expenses = safe_float(dependent.get("education_expenses"))
+        label = (
+            dependent.get("label")
+            or dependent.get("name")
+            or dependent.get("nickname")
+            or dependent.get("id")
+            or f"Dependent {index}"
+        )
+        age = tax_year - birth_year if birth_year else None
+        dependents.append(
+            {
+                "label": str(label),
+                "relationship": dependent.get("relationship", ""),
+                "birth_year": birth_year,
+                "age_at_year_end": age,
+                "months_in_home": months_in_home,
+                "has_tax_id": safe_bool(dependent.get("has_tax_id")),
+                "claimed_elsewhere": safe_bool(dependent.get("claimed_elsewhere")),
+                "care_expenses": care_expenses,
+                "education_expenses": education_expenses,
+            }
+        )
+    return dependents
+
+
+def build_interview_questions(
+    payload: dict[str, Any],
+    dependents: list[dict[str, Any]],
+) -> list[str]:
+    answers = payload.get("answers", {})
+    questions: list[str] = []
+    has_dependents = bool(answers.get("has_dependents")) or bool(dependents)
+
+    if has_dependents and not dependents:
+        questions.append(
+            "List each dependent with a safe label, relationship, birth year, months lived in the home, whether they have an SSN or ITIN, and whether another taxpayer may claim them. Do not include full SSNs in this payload."
+        )
+
+    for dependent in dependents:
+        label = dependent["label"]
+        if not dependent.get("relationship"):
+            questions.append(f"Confirm {label}'s relationship to the taxpayer.")
+        if dependent.get("birth_year") is None:
+            questions.append(f"Add {label}'s birth year so child-credit and dependent review can be scoped safely.")
+        if dependent.get("months_in_home") is None:
+            questions.append(f"Confirm how many months {label} lived in the taxpayer's home during the tax year.")
+        if dependent.get("has_tax_id") is None:
+            questions.append(f"Confirm whether {label} has a valid SSN or ITIN for filing, without including the full number.")
+        if dependent.get("claimed_elsewhere") is None:
+            questions.append(f"Confirm whether another taxpayer may claim {label} on a 2025 return.")
+
+    if dependents and "child_tax_credit" not in answers:
+        questions.append(
+            "Review child tax credit or credit for other dependents eligibility, then enter only the draft credit amount you want reflected in the package."
+        )
+
+    if any((dependent.get("care_expenses") or 0.0) > 0.0 for dependent in dependents):
+        questions.append(
+            "Dependent-care expenses were noted. Preserve those amounts and provider documents separately because this flow does not yet compute the child and dependent care credit."
+        )
+
+    return list(dict.fromkeys(questions))
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +133,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    dependents = normalize_dependents(payload, tax_year)
+    interview_questions = build_interview_questions(payload, dependents)
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -192,6 +288,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    if interview_questions:
+        missing_items.append("Complete the dependent and household follow-up questions before finalizing household-related credits.")
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -290,6 +388,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "household_summary": {
+            "dependents": dependents,
+            "dependent_count": len(dependents),
+            "notes": (
+                ["Full SSNs are intentionally excluded from this artifact set. Track only safe labels and filing-readiness flags here."]
+                if dependents
+                else []
+            ),
+        },
+        "interview_questions": interview_questions,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }
