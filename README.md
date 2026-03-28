@@ -28,6 +28,7 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Preserves safe dependent and household context so a future child-credit or dependent-care review stays visible without storing full SSNs or pretending eligibility is resolved.
 
 ## Scope
 
@@ -74,6 +75,8 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 
 That should create the same four standard artifacts in `output/example-run/`.
 
+The example input now includes a safe public `household.dependents` block. Use booleans like `tin_available` instead of placing a real SSN or ITIN in the artifact inputs.
+
 ## Install In Claude Cowork
 
 This repo also ships a Cowork plugin wrapper:
@@ -95,7 +98,7 @@ Primary command:
 2. Search for likely tax documents using fixed, opinionated queries instead of asking the user to browse manually.
 3. Capture resident-state and work-state context as early as possible.
 4. Build a document inventory and ask the minimum remaining interview questions.
-5. Normalize extracted facts into `return-data.json`.
+5. Normalize extracted facts plus safe household scaffolding into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.
 8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
@@ -110,5 +113,6 @@ Primary command:
 
 - This project does **not** e-file.
 - This project does **not** give personalized legal advice.
+- This project does **not** store full SSNs or ITINs in its public-safe example and artifact scaffolding.
 - Illegal requests such as hiding income, concealing ownership, or skipping required reporting must be refused and redirected to lawful compliance.
 - If a portal notice exists but the actual form does not, the workflow should stop and ask for the downloadable PDF or the line-item figures.

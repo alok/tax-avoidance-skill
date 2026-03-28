@@ -20,6 +20,7 @@ For a plain Codex app user:
 3. Search for likely forms before asking the user to browse.
 4. Build a document inventory with source, doc type, and confidence.
 5. Ask only the missing questions needed for supported lines.
+   Preserve dependent context in a safe `household.dependents` block when relevant, and never place a real SSN or ITIN in the artifact payload.
 6. Normalize everything into structured facts.
 7. Assemble the artifact set.
 8. Flag unsupported complexity and illegal requests explicitly.
@@ -42,5 +43,6 @@ For a plain Codex app user:
 - Ask for filing status only after document collection begins.
 - Ask one question at a time when the answer changes supported-line output.
 - Prefer targeted clarifications over generic tax questionnaires.
+- If the user has dependents, capture only the minimum review fields needed for public-safe child-credit follow-up: relationship, birth year, months in home, support, and whether a filing-ready TIN exists.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.

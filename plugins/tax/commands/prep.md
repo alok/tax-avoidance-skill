@@ -21,6 +21,7 @@ Run the shared Tax Avoidance workflow for a normal person who wants to use Claud
 2. Check whether Gmail and Google Drive are connected.
 3. Search for likely tax documents and build an inventory.
 4. Ask only the missing questions required for a supported return.
+   If the user has dependents, preserve only safe review fields such as relationship, birth year, and `tin_available`, not the full SSN or ITIN.
 5. Write an input JSON payload and run the shared deterministic flow:
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
 6. Return:

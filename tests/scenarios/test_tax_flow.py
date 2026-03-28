@@ -122,6 +122,16 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_household_review(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household_review")
+        self.assertEqual(normalized["status"], "ok")
+        household = normalized["household_summary"]
+        self.assertEqual(household["dependent_count"], 2)
+        self.assertIn("Household And Dependent Context", artifacts["tax-dossier.md"])
+        self.assertIn("Potential child tax credit review", artifacts["tax-dossier.md"])
+        self.assertIn("do not store the full number", artifacts["missing-items.md"])
+        self.assertIn("child_tax_credit amount", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

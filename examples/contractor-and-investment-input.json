@@ -5,6 +5,19 @@
     "gmail": true,
     "google_drive": true
   },
+  "household": {
+    "dependents": [
+      {
+        "nickname": "Ava",
+        "relationship": "daughter",
+        "birth_year": 2018,
+        "months_lived_with_taxpayer": 12,
+        "supported_by_taxpayer": true,
+        "tin_available": true,
+        "notes": "Safe public example only; no SSN stored."
+      }
+    ]
+  },
   "documents": [
     {
       "id": "sample-1099-nec",

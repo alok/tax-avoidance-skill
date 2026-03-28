@@ -32,6 +32,49 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def normalize_dependent(
+    raw_dependent: dict[str, Any],
+    tax_year: int,
+) -> dict[str, Any]:
+    birth_year_raw = raw_dependent.get("birth_year")
+    birth_year = None
+    if birth_year_raw not in (None, ""):
+        birth_year = int(birth_year_raw)
+
+    age_at_year_end = None
+    if birth_year is not None:
+        age_at_year_end = tax_year - birth_year
+
+    months_lived_with_taxpayer = raw_dependent.get("months_lived_with_taxpayer")
+    if months_lived_with_taxpayer not in (None, ""):
+        months_lived_with_taxpayer = int(months_lived_with_taxpayer)
+    else:
+        months_lived_with_taxpayer = None
+
+    review_bucket = "Dependent review"
+    if age_at_year_end is not None:
+        if age_at_year_end < 17:
+            review_bucket = "Potential child tax credit review"
+        else:
+            review_bucket = "Potential other dependent credit review"
+
+    return {
+        "nickname": raw_dependent.get("nickname") or raw_dependent.get("name") or "Dependent",
+        "relationship": raw_dependent.get("relationship") or "unknown",
+        "birth_year": birth_year,
+        "age_at_year_end": age_at_year_end,
+        "months_lived_with_taxpayer": months_lived_with_taxpayer,
+        "tin_available": bool(raw_dependent.get("tin_available")),
+        "supported_by_taxpayer": raw_dependent.get("supported_by_taxpayer"),
+        "full_time_student": raw_dependent.get("full_time_student"),
+        "permanently_disabled": raw_dependent.get("permanently_disabled"),
+        "childcare_expenses": safe_float(raw_dependent.get("childcare_expenses")),
+        "childcare_provider_tax_id_available": raw_dependent.get("childcare_provider_tax_id_available"),
+        "review_bucket": review_bucket,
+        "notes": raw_dependent.get("notes", ""),
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +82,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -121,6 +165,37 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    dependents = [
+        normalize_dependent(raw_dependent, int(tax_year))
+        for raw_dependent in household.get("dependents", [])
+        if isinstance(raw_dependent, dict)
+    ]
+    dependent_follow_up: list[str] = []
+    for dependent in dependents:
+        name = dependent["nickname"]
+        if dependent["relationship"] == "unknown":
+            dependent_follow_up.append(f"Confirm {name}'s relationship to the taxpayer.")
+        if dependent["birth_year"] is None:
+            dependent_follow_up.append(
+                f"Confirm {name}'s birth year so the return package can keep age-based credit review visible."
+            )
+        if dependent["months_lived_with_taxpayer"] is None:
+            dependent_follow_up.append(
+                f"Confirm how many months {name} lived with the taxpayer during {tax_year}."
+            )
+        if dependent["supported_by_taxpayer"] is None:
+            dependent_follow_up.append(
+                f"Confirm whether the taxpayer provided more than half of {name}'s support."
+            )
+        if not dependent["tin_available"]:
+            dependent_follow_up.append(
+                f"Confirm whether {name} has a filing-ready SSN, ITIN, or ATIN; do not store the full number in this public artifact."
+            )
+        if dependent["childcare_expenses"] > 0.0 and dependent["childcare_provider_tax_id_available"] is not True:
+            dependent_follow_up.append(
+                f"Confirm childcare provider tax ID details for {name} before treating childcare expenses as credit-ready."
+            )
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -179,6 +254,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if dependents and "child_tax_credit" not in answers:
+        missing_items.append(
+            "Review dependent-credit eligibility and provide a draft child_tax_credit amount, or leave the child-related credit lines flagged for review."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -188,6 +267,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
     for note in state_follow_up:
+        if note not in missing_items:
+            missing_items.append(note)
+    for note in dependent_follow_up:
         if note not in missing_items:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
@@ -289,6 +371,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "dependent_count": len(dependents),
+            "dependents": dependents,
+            "follow_up": dependent_follow_up,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

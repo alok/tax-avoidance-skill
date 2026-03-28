@@ -316,6 +316,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    household_summary = normalized.get("household_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("nickname", "Dependent"),
+            dependent.get("relationship", "unknown"),
+            str(dependent.get("birth_year") or "unknown"),
+            str(dependent.get("months_lived_with_taxpayer") or "unknown"),
+            "Yes" if dependent.get("tin_available") else "No",
+            dependent.get("review_bucket", "Dependent review"),
+            dependent.get("notes") or "",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
+    household_follow_up_lines = [f"- {item}" for item in household_summary.get("follow_up", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -367,6 +381,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ),
         "",
         *state_follow_up_lines,
+        "",
+        "## Household And Dependent Context",
+        "",
+        f"- Dependents captured: {household_summary.get('dependent_count', 0)}",
+        "- Full SSNs or ITINs are intentionally not stored in these public-safe artifacts.",
+        "",
+        make_markdown_table(
+            ["Nickname", "Relationship", "Birth Year", "Months In Home", "TIN Ready", "Review Bucket", "Notes"],
+            dependent_rows or [["None", "None", "None", "None", "No", "None", "None"]],
+        ),
+        "",
+        *household_follow_up_lines,
         "",
         "## Missing Items",
         "",

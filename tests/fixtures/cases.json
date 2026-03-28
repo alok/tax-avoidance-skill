@@ -167,6 +167,58 @@
       "line_20": 1800
     }
   },
+  "dependent_household_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "household": {
+        "dependents": [
+          {
+            "nickname": "Maya",
+            "relationship": "daughter",
+            "birth_year": 2017,
+            "months_lived_with_taxpayer": 12,
+            "supported_by_taxpayer": true,
+            "tin_available": true,
+            "childcare_expenses": 3200.0,
+            "childcare_provider_tax_id_available": false,
+            "notes": "Preschool aftercare"
+          },
+          {
+            "nickname": "Leo",
+            "relationship": "son",
+            "months_lived_with_taxpayer": 12,
+            "tin_available": false
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 126000,
+            "federal_withholding": 14200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 11400
+      },
+      "user_request": "Keep household and dependent context visible without asking me for full SSNs."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 2
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

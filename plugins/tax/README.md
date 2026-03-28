@@ -8,7 +8,7 @@ This plugin shares the same workflow and legality framing as the canonical Codex
 - not tax evasion
 - simple U.S. federal individual returns only
 - connector-first discovery, explicit upload fallback for real PDFs
+- safe household and dependent scaffolding without storing full SSNs in the artifact payload
 - prefilled federal return package, not e-filing
 
 If Gmail or Google Drive integrations cannot provide the actual attachment content, stop and ask the user to upload the PDF instead of pretending the content was ingested.
-
