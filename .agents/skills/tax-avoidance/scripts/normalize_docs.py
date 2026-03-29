@@ -10,6 +10,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from tax_flow_common import (  # noqa: E402
+    STANDARD_DEDUCTION_BY_STATUS,
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
@@ -104,6 +105,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_deduction_signals_total = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -120,6 +122,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    standard_deduction = STANDARD_DEDUCTION_BY_STATUS.get(payload.get("filing_status", ""))
+    deduction_strategy = "user_provided" if "deduction_amount" in answers else "undetermined"
+    if deduction_amount == 0.0 and "deduction_amount" not in answers and standard_deduction is not None:
+        deduction_amount = standard_deduction
+        deduction_sources = [
+            {
+                "source_type": "system_rule",
+                "source_ref": f"rule:standard_deduction:{payload.get('filing_status', '')}",
+                "field": "deduction_amount",
+                "value": deduction_amount,
+            }
+        ]
+        deduction_strategy = "standard_defaulted"
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -175,10 +190,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
-    if deduction_amount == 0.0 and "deduction_amount" not in answers:
+    if deduction_amount == 0.0 and "deduction_amount" not in answers and standard_deduction is None:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if deduction_strategy == "standard_defaulted" and itemized_deduction_signals_total > 0.0:
+        missing_items.append(
+            f"Known itemized-deduction signals total ${itemized_deduction_signals_total:,.2f}. The 2025 standard deduction of ${deduction_amount:,.2f} is being used until you confirm whether to itemize."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -289,6 +308,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "standard_deduction": standard_deduction,
+            "itemized_signals_total": itemized_deduction_signals_total,
+            "mortgage_interest": mortgage_interest,
+            "charitable_cash": charitable_cash,
+            "selected_deduction": deduction_amount,
+            "strategy": deduction_strategy,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

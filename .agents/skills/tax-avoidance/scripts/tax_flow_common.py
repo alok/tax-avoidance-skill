@@ -8,6 +8,7 @@ WIKIPEDIA_AVOIDANCE = "https://en.wikipedia.org/wiki/Tax_avoidance"
 WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 
 RULE_SOURCES: dict[str, dict[str, str]] = {
+    "standard_deduction": {"title": "IRS Publication 501 (2025)", "url": "https://www.irs.gov/pub/irs-prior/p501--2025.pdf"},
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
@@ -102,6 +103,11 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+
+STANDARD_DEDUCTION_BY_STATUS: dict[str, float] = {
+    "single": 15750.0,
+    "married_filing_jointly": 31500.0,
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:

@@ -39,6 +39,13 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def deduction_rule_citations(normalized: dict[str, Any]) -> list[dict[str, str]]:
+    sources = fact_sources(normalized, "deduction_amount")
+    if any(source.get("source_type") == "system_rule" for source in sources):
+        return rule_citations("standard_deduction")
+    return []
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -185,7 +192,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Standard or itemized deduction",
             "value": deduction_amount or None,
             "sources": fact_sources(normalized, "deduction_amount"),
-            "rule_citations": [],
+            "rule_citations": deduction_rule_citations(normalized),
         },
         {
             "form": "Form 1040",
@@ -295,6 +302,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_summary = normalized.get("deduction_summary", {})
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -341,6 +349,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Decision",
+        "",
+        f"- Selected deduction for the draft package: {money(deduction_summary.get('selected_deduction'))}",
+        f"- 2025 standard deduction for this filing status: {money(deduction_summary.get('standard_deduction'))}",
+        f"- Known itemized-deduction signals from gathered docs: {money(deduction_summary.get('itemized_signals_total'))}",
+        f"- Strategy: {deduction_summary.get('strategy') or 'undetermined'}",
+        "",
+        make_markdown_table(
+            ["Signal", "Amount"],
+            [
+                ["Mortgage interest", money(deduction_summary.get("mortgage_interest"))],
+                ["Charitable cash", money(deduction_summary.get("charitable_cash"))],
+            ],
+        ),
         "",
         "## Candidate Business Expenses",
         "",

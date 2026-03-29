@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "default_standard_deduction",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -66,12 +67,22 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "line_12" in expected:
+                    self.assertIn(f"${expected['line_12']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_standard_deduction_defaulting(self) -> None:
+        normalized, artifacts = self.run_case("default_standard_deduction")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_summary"]["strategy"], "standard_defaulted")
+        self.assertEqual(normalized["deduction_summary"]["selected_deduction"], 15750.0)
+        self.assertIn("2025 standard deduction for this filing status: $15,750.00", artifacts["tax-dossier.md"])
+        self.assertNotIn("Choose the deduction path", artifacts["missing-items.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")

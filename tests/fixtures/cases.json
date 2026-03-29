@@ -228,6 +228,38 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "default_standard_deduction": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-default-standard",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-default-standard",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 11000
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9800
+      },
+      "user_request": "Use the forms you found and draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 88000,
+      "line_25a": 11000,
+      "line_12": 15750
+    }
+  },
   "schedule_c_candidate_expenses": {
     "input": {
       "tax_year": 2025,
