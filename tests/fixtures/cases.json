@@ -563,6 +563,85 @@
       "unsupported": "Equity compensation"
     }
   },
+  "student_loan_interest_requires_confirmation": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11000
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1850
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Draft my return package from the tax forms you found."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
+  "student_loan_interest_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11000
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1850
+          }
+        }
+      ],
+      "answers": {
+        "student_loan_interest_deduction": 1200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Draft my return package from the tax forms you found."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

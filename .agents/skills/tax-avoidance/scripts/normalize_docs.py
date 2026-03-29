@@ -67,7 +67,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
-    student_loan_interest, student_loan_interest_sources = aggregate_numeric(
+    reported_student_loan_interest, reported_student_loan_interest_sources = aggregate_numeric(
         documents,
         {"1098-E"},
         "student_loan_interest",
@@ -107,6 +107,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
+    student_loan_interest_deduction, student_loan_interest_deduction_sources = answer_fact(
+        answers,
+        "student_loan_interest_deduction",
+    )
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
@@ -179,6 +183,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if reported_student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        missing_items.append(
+            f"A 1098-E reports ${reported_student_loan_interest:,.2f} of student loan interest. Confirm the deductible amount explicitly before applying it, because MAGI and filing-status limits may reduce or eliminate the deduction."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -236,10 +244,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "reported_student_loan_interest": build_fact(
+            "reported_student_loan_interest",
+            reported_student_loan_interest,
+            reported_student_loan_interest_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
-            student_loan_interest,
-            student_loan_interest_sources,
+            student_loan_interest_deduction,
+            student_loan_interest_deduction_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",

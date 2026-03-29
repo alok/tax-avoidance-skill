@@ -316,6 +316,27 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_signal_rows = [
+        [
+            "1098 mortgage interest",
+            money(fact_value(normalized, "mortgage_interest")),
+            "Not applied automatically; use it to decide whether itemizing is appropriate.",
+        ],
+        [
+            "Donation receipts",
+            money(fact_value(normalized, "charitable_cash")),
+            "Not applied automatically; confirm deductible cash gifts and substantiation.",
+        ],
+        [
+            "1098-E reported interest",
+            money(fact_value(normalized, "reported_student_loan_interest")),
+            (
+                f"Applied deduction: {money(fact_value(normalized, 'student_loan_interest_deduction'))}."
+                if fact_value(normalized, "student_loan_interest_deduction") > 0.0
+                else "Not applied automatically; confirm the deductible amount before using it."
+            ),
+        ],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +370,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Signals",
+        "",
+        make_markdown_table(
+            ["Signal", "Observed Amount", "Workflow Treatment"],
+            deduction_signal_rows,
         ),
         "",
         "## State Follow-Up",
