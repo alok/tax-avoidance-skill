@@ -102,6 +102,13 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
 
+    def test_schedule_c_zero_expenses(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_zero_expenses")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("$0.00", artifacts["federal-lines.md"])
+        self.assertIn("$20,000.00", artifacts["federal-lines.md"])
+        self.assertNotIn("Provide deductible business expenses", artifacts["missing-items.md"])
+
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
         self.assertEqual(normalized["status"], "ok")
