@@ -22,6 +22,11 @@
 - SSA-1099
 - donation receipts
 
+## Social Security Handling
+
+- `SSA-1099` gross benefits flow through to Form 1040 line `6a`.
+- Taxable Social Security benefits for Form 1040 line `6b` must come from the user's worksheet result or reviewed software output; the public deterministic flow does not guess that taxability from partial facts.
+
 ## Unsupported In V1
 
 - automated state tax calculations

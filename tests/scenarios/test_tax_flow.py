@@ -50,7 +50,9 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "ssa1099_household",
             "schedule_c_contractor",
+            "schedule_c_zero_expenses",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -64,12 +66,18 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
+                if "schedule_c_line_28" in expected:
+                    self.assertIn(f"${expected['schedule_c_line_28']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
 
@@ -88,11 +96,43 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_social_security_missing_taxable_amount(self) -> None:
+        normalized, artifacts = self.run_case("ssa1099_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertNotIn("Social Security benefits worksheet", artifacts["missing-items.md"])
+
+        payload = self.cases["ssa1099_household"]["input"].copy()
+        payload["answers"] = {
+            key: value
+            for key, value in payload["answers"].items()
+            if key != "taxable_social_security_benefits"
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_path = temp_path / "input.json"
+            out_dir = temp_path / "out"
+            input_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(input_path), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+            missing_items = (out_dir / "missing-items.md").read_text(encoding="utf-8")
+            federal_lines = (out_dir / "federal-lines.md").read_text(encoding="utf-8")
+
+        self.assertIn("Social Security benefits worksheet", missing_items)
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $24,000.00 |", federal_lines)
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", federal_lines)
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

@@ -167,6 +167,38 @@
       "line_20": 1800
     }
   },
+  "ssa1099_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 13200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use my SSA-1099 to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 24000,
+      "line_6b": 13200
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
@@ -197,6 +229,39 @@
       "status": "ok",
       "schedule_c_line_1": 108000.0,
       "schedule_c_line_31": 89658.47
+    }
+  },
+  "schedule_c_zero_expenses": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-zero-expenses",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-zero-expenses",
+          "fields": {
+            "nonemployee_compensation": 12000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 0,
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Treat my contractor expenses as zero and draft the package."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_1": 12000.0,
+      "schedule_c_line_28": 0.0,
+      "schedule_c_line_31": 12000.0
     }
   },
   "schedule_c_missing_expenses": {
