@@ -48,6 +48,7 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "w2_single",
             "mfj_common_deductions",
+            "ira_5498_review",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -79,6 +80,14 @@ class TaxFlowTest(unittest.TestCase):
         notes = "\n".join(normalized["connector_notes"])
         self.assertIn("Upload fallback is active", notes)
         self.assertIn("upload://upload-w2", artifacts["tax-dossier.md"])
+
+    def test_ira_5498_review(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 6500)
+        self.assertIn("Form 5498 traditional IRA contributions totaling $6,500.00", artifacts["missing-items.md"])
+        self.assertIn("## IRA Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("drive://ira-5498", artifacts["tax-dossier.md"])
 
     def test_unsupported_cases(self) -> None:
         for name in ("unsupported_complex_equity",):

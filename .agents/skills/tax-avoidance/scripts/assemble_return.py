@@ -280,6 +280,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    ira_contribution_sources = ", ".join(
+        src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contributions_reported")
+    ) or "None"
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -350,6 +354,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## IRA Contribution Review",
+        "",
+        f"- Form 5498 contributions reported: {money(ira_contributions_reported) if ira_contributions_reported else '$0.00'}",
+        f"- Current deductible IRA amount applied to Form 1040 line 10: {money(fact_value(normalized, 'ira_contribution_deduction')) if fact_sources(normalized, 'ira_contribution_deduction') else '$0.00'}",
+        f"- Source references: {ira_contribution_sources}",
+        "- Deductibility still requires review; do not apply the full 5498 amount automatically without confirming the deductible traditional IRA amount for the return.",
         "",
         "## State Follow-Up",
         "",
