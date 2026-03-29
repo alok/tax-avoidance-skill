@@ -316,6 +316,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    interview_rows = [
+        [
+            str(question.get("priority", "")),
+            "Yes" if question.get("blocker") else "No",
+            question.get("prompt", ""),
+            question.get("why_needed", ""),
+            "; ".join(question.get("source_hints", [])) or "None",
+        ]
+        for question in normalized.get("interview_questions", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -368,6 +378,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *state_follow_up_lines,
         "",
+        "## Next Questions",
+        "",
+        make_markdown_table(
+            ["Priority", "Blocker", "Prompt", "Why It Matters", "Source Hints"],
+            interview_rows or [["None", "No", "No remaining intake questions.", "The current draft has no queued follow-up questions.", "None"]],
+        ),
+        "",
         "## Missing Items",
         "",
         *missing_lines,
@@ -408,6 +425,16 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     lines = ["# Missing Items", ""]
     if normalized.get("missing_items"):
         lines.extend(f"- {item}" for item in normalized["missing_items"])
+    else:
+        lines.append("- None")
+
+    lines.extend(["", "## Intake Queue", ""])
+    if normalized.get("interview_questions"):
+        for question in normalized["interview_questions"]:
+            blocker = "blocker" if question.get("blocker") else "follow-up"
+            lines.append(
+                f"- [P{question.get('priority')}] ({blocker}) {question.get('prompt')} Why: {question.get('why_needed')}"
+            )
     else:
         lines.append("- None")
 

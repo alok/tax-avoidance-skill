@@ -32,6 +32,32 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def add_interview_question(
+    questions: list[dict[str, Any]],
+    seen_ids: set[str],
+    *,
+    question_id: str,
+    priority: int,
+    prompt: str,
+    why_needed: str,
+    blocker: bool,
+    source_hints: list[str] | None = None,
+) -> None:
+    if question_id in seen_ids:
+        return
+    questions.append(
+        {
+            "id": question_id,
+            "priority": priority,
+            "prompt": prompt,
+            "why_needed": why_needed,
+            "blocker": blocker,
+            "source_hints": source_hints or [],
+        }
+    )
+    seen_ids.add(question_id)
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -166,6 +192,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    interview_questions: list[dict[str, Any]] = []
+    seen_question_ids: set[str] = set()
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -173,25 +201,109 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     }
     if not payload.get("filing_status"):
         missing_items.append("Confirm the filing status for the return.")
+        add_interview_question(
+            interview_questions,
+            seen_question_ids,
+            question_id="filing_status",
+            priority=10,
+            prompt="What filing status should this 2025 federal return use: single or married filing jointly?",
+            why_needed="The filing status determines whether the return is supported and affects deduction and line calculations.",
+            blocker=True,
+            source_hints=["Ask the taxpayer directly before drafting Form 1040 lines."],
+        )
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
+        add_interview_question(
+            interview_questions,
+            seen_question_ids,
+            question_id="document_source",
+            priority=10,
+            prompt="Can you connect Gmail or Google Drive now, or upload at least one actual tax PDF to start the return package?",
+            why_needed="The workflow cannot build a reliable document inventory or prefilled draft without at least one source document.",
+            blocker=True,
+            source_hints=["Preferred sources: Gmail, Google Drive, or direct PDF upload."],
+        )
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        add_interview_question(
+            interview_questions,
+            seen_question_ids,
+            question_id="deduction_amount",
+            priority=20,
+            prompt="What deduction amount should the draft use for 2025: standard deduction or a confirmed itemized total?",
+            why_needed="Form 1040 taxable income cannot be drafted without a deduction amount.",
+            blocker=True,
+            source_hints=["If itemizing, gather the underlying support before locking the amount."],
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+        add_interview_question(
+            interview_questions,
+            seen_question_ids,
+            question_id="tax_before_credits",
+            priority=30,
+            prompt="Do you have a tax-before-credits figure to plug into the draft, or should Form 1040 tax lines stay marked for review?",
+            why_needed="Refund and amount-owed estimates depend on the pre-credit tax figure in this simplified flow.",
+            blocker=False,
+            source_hints=["Leave blank if you want the package to stay in review mode for tax computation."],
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
+        )
+        add_interview_question(
+            interview_questions,
+            seen_question_ids,
+            question_id="business_expenses",
+            priority=20,
+            prompt="What deductible business expenses should be applied to the 1099-NEC work, or should the draft treat business expenses as zero?",
+            why_needed="Schedule C net profit should not be drafted from gross receipts alone if deductible expenses still need confirmation.",
+            blocker=True,
+            source_hints=["Use receipts, bookkeeping totals, or an explicit zero-expense confirmation."],
         )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+        add_interview_question(
+            interview_questions,
+            seen_question_ids,
+            question_id="candidate_business_expenses",
+            priority=25,
+            prompt=f"Should the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} be included in Schedule C, excluded, or reviewed one by one?",
+            why_needed="Receipts are surfaced as candidates only and should not become deductions without confirmation.",
+            blocker=False,
+            source_hints=[
+                "Review the candidate expense table in the dossier.",
+                "Confirm whether each vendor was actually business-related.",
+            ],
+        )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
+    if state_allocation_totals and not resident_state:
+        add_interview_question(
+            interview_questions,
+            seen_question_ids,
+            question_id="resident_state",
+            priority=20,
+            prompt="Which state was your resident state for the 2025 return?",
+            why_needed="State withholding and sourcing details are present, but resident-state context is still missing.",
+            blocker=False,
+            source_hints=["Use the W-2 state boxes or the taxpayer's year-end residence."],
+        )
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+        add_interview_question(
+            interview_questions,
+            seen_question_ids,
+            question_id="capital_gains_summary",
+            priority=20,
+            prompt="What net capital gain or loss summary should the draft use from the 1099-B support documents?",
+            why_needed="The simplified flow supports summarized capital gains, but it still needs the net figure.",
+            blocker=True,
+            source_hints=["Use a broker gain/loss summary or a reviewed 1099-B worksheet total."],
+        )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -203,19 +315,61 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 f"Download the actual {doc_type} from {source_ref}; the current source is only a portal or availability notice."
             )
+            add_interview_question(
+                interview_questions,
+                seen_question_ids,
+                question_id=f"upload:{document.get('id', source_ref)}",
+                priority=10,
+                prompt=f"Please upload or fetch the actual {doc_type} from {source_ref} instead of the portal notice.",
+                why_needed="A portal notice does not provide the underlying tax form values needed for the draft package.",
+                blocker=True,
+                source_hints=["Use the downloadable PDF or the official account statement."],
+            )
         elif content_status == "unreadable_encrypted_attachment":
             missing_items.append(
                 f"Open or upload the actual {doc_type} from {source_ref}; the attachment exists but its contents were not readable in this workflow."
+            )
+            add_interview_question(
+                interview_questions,
+                seen_question_ids,
+                question_id=f"decrypt:{document.get('id', source_ref)}",
+                priority=10,
+                prompt=f"Can you upload an unlocked copy of the {doc_type} from {source_ref} or share the needed figures manually?",
+                why_needed="The workflow found the attachment but could not read the tax form contents.",
+                blocker=True,
+                source_hints=["Unlocked PDF preferred; manual line-item entry is second best."],
             )
         elif content_status == "metadata_only":
             if document.get("fields"):
                 missing_items.append(
                     f"Confirm the extracted {doc_type} details from {source_ref} against the actual filed form or PDF before using them in a return draft."
                 )
+                add_interview_question(
+                    interview_questions,
+                    seen_question_ids,
+                    question_id=f"confirm:{document.get('id', source_ref)}",
+                    priority=15,
+                    prompt=f"Can you confirm the extracted {doc_type} details from {source_ref} against the actual form or PDF?",
+                    why_needed="The workflow only has metadata-level extraction for this document and needs user confirmation before relying on it.",
+                    blocker=False,
+                    source_hints=["Open the actual PDF and verify the captured line items."],
+                )
             else:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+                add_interview_question(
+                    interview_questions,
+                    seen_question_ids,
+                    question_id=f"contents:{document.get('id', source_ref)}",
+                    priority=10,
+                    prompt=f"Please provide the actual contents for the {doc_type} from {source_ref}.",
+                    why_needed="Only metadata is available, so the workflow does not yet have usable tax values.",
+                    blocker=True,
+                    source_hints=["Upload the PDF or enter the line-item figures manually."],
+                )
+
+    interview_questions.sort(key=lambda item: (item["priority"], item["id"]))
 
     status = "ok"
     if illegal_reasons:
@@ -276,6 +430,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "interview_questions": interview_questions,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

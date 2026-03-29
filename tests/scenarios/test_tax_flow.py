@@ -94,6 +94,23 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
 
+    def test_interview_queue_for_incomplete_schedule_c(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
+        prompts = [question["prompt"] for question in normalized["interview_questions"]]
+        self.assertEqual(normalized["interview_questions"][0]["id"], "business_expenses")
+        self.assertIn("What deductible business expenses should be applied", prompts[0])
+        self.assertIn("candidate business-expense receipts totaling $371.89", artifacts["missing-items.md"])
+        self.assertIn("## Next Questions", artifacts["tax-dossier.md"])
+        self.assertIn("Should the candidate business-expense receipts totaling $371.89", artifacts["tax-dossier.md"])
+
+    def test_interview_queue_for_metadata_only_docs(self) -> None:
+        normalized, artifacts = self.run_case("metadata_only_tax_docs")
+        question_ids = {question["id"] for question in normalized["interview_questions"]}
+        self.assertIn("decrypt:baif-1099-nec", question_ids)
+        self.assertIn("upload:wealthfront-portal", question_ids)
+        self.assertIn("Please upload or fetch the actual Consolidated 1099", artifacts["missing-items.md"])
+        self.assertIn("Can you upload an unlocked copy of the 1099-NEC", artifacts["tax-dossier.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

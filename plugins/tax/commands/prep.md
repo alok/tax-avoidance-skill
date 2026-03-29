@@ -28,6 +28,7 @@ Run the shared Tax Avoidance workflow for a normal person who wants to use Claud
    `return-data.json`,
    `federal-lines.md`,
    and `missing-items.md`
+   with the deterministic intake queue surfaced in the dossier and missing-items output
 7. Clearly separate:
    legal planning moves,
    unsupported complexity,
