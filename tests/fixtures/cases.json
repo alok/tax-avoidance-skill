@@ -167,6 +167,71 @@
       "line_20": 1800
     }
   },
+  "deduction_signal_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11200
+          }
+        },
+        {
+          "id": "mortgage-interest",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 8400
+          }
+        },
+        {
+          "id": "student-loan-interest",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-e",
+          "fields": {
+            "student_loan_interest": 1200
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-receipt",
+          "fields": {
+            "cash_donations": 600
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-ira",
+          "fields": {
+            "ira_contributions": 3500
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9700
+      },
+      "user_request": "Use my forms to draft the return package and tell me what still needs review."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

@@ -26,6 +26,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `federal-lines.md`
   - `missing-items.md`
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
+- Surfaces deduction and adjustment signals from forms like `1098`, `1098-E`, `5498`, and donation receipts so the interview can ask for only the remaining review decisions.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
 
@@ -97,7 +98,7 @@ Primary command:
 4. Build a document inventory and ask the minimum remaining interview questions.
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
-7. Surface likely business-expense receipts separately from confirmed deductible expenses.
+7. Surface likely business-expense receipts separately from confirmed deductible expenses, and separately flag deduction-review signals that still need a decision.
 8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
 
 ## Repository Layout

@@ -295,6 +295,28 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_signal_rows = [
+        [
+            "Student loan interest",
+            money(fact_value(normalized, "student_loan_interest_deduction")),
+            "Observed from Form 1098-E support and included as an adjustment signal.",
+        ],
+        [
+            "Mortgage interest",
+            money(fact_value(normalized, "mortgage_interest")),
+            "Observed from Form 1098 support as an itemized-deduction signal.",
+        ],
+        [
+            "Charitable cash gifts",
+            money(fact_value(normalized, "charitable_cash")),
+            "Observed from donation receipts as an itemized-deduction signal.",
+        ],
+        [
+            "IRA contribution evidence",
+            money(fact_value(normalized, "ira_contribution_basis")),
+            "Observed from Form 5498 support and held for deductible-amount review.",
+        ],
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +371,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction And Adjustment Signals",
+        "",
+        make_markdown_table(
+            ["Signal", "Amount", "Review Notes"],
+            deduction_signal_rows,
         ),
         "",
         "## State Follow-Up",

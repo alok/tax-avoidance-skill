@@ -88,7 +88,12 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "deduction_signal_scaffolding",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
@@ -140,6 +145,15 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_deduction_signal_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("deduction_signal_scaffolding")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Deduction And Adjustment Signals", artifacts["tax-dossier.md"])
+        self.assertIn("IRA contribution evidence", artifacts["tax-dossier.md"])
+        self.assertIn("$3,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("Review itemized-deduction signals", artifacts["missing-items.md"])
+        self.assertIn("Form 5498 IRA contribution evidence totaling $3,500.00", artifacts["missing-items.md"])
 
 
 if __name__ == "__main__":

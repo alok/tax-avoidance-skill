@@ -104,6 +104,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_contribution_basis, ira_contribution_basis_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -177,8 +182,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if mortgage_interest > 0.0 or charitable_cash > 0.0:
+        if "deduction_amount" not in answers:
+            missing_items.append(
+                f"Review itemized-deduction signals before choosing the deduction amount: mortgage interest {mortgage_interest:,.2f} and charitable cash gifts {charitable_cash:,.2f} were observed from source documents."
+            )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if ira_contribution_basis > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 5498 IRA contribution evidence totaling ${ira_contribution_basis:,.2f} and confirm the deductible IRA amount before applying it to the draft package."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -247,6 +261,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "ira_contribution_basis": build_fact(
+            "ira_contribution_basis",
+            ira_contribution_basis,
+            ira_contribution_basis_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
