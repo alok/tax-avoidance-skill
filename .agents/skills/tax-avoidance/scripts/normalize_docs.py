@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_fields,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -72,6 +73,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contribution_evidence, ira_contribution_evidence_sources = aggregate_numeric_fields(
+        documents,
+        {"5498"},
+        ["traditional_ira_contributions", "ira_contributions"],
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -120,6 +126,52 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+
+    deduction_review_items: list[dict[str, Any]] = []
+    if mortgage_interest > 0.0:
+        deduction_review_items.append(
+            {
+                "key": "mortgage_interest",
+                "label": "Mortgage interest from Form 1098",
+                "amount": mortgage_interest,
+                "applied_in_draft": False,
+                "review_note": "Use this to compare standard versus itemized deductions before finalizing line 12.",
+                "sources": mortgage_interest_sources,
+            }
+        )
+    if charitable_cash > 0.0:
+        deduction_review_items.append(
+            {
+                "key": "charitable_cash",
+                "label": "Cash charitable giving receipts",
+                "amount": charitable_cash,
+                "applied_in_draft": False,
+                "review_note": "Donation receipts are preserved for itemized-deduction review and substantiation.",
+                "sources": charitable_sources,
+            }
+        )
+    if student_loan_interest > 0.0:
+        deduction_review_items.append(
+            {
+                "key": "student_loan_interest_deduction",
+                "label": "Student loan interest from Form 1098-E",
+                "amount": student_loan_interest,
+                "applied_in_draft": True,
+                "review_note": "The draft currently carries this into adjustments; confirm phaseout eligibility before filing.",
+                "sources": student_loan_interest_sources,
+            }
+        )
+    if ira_contribution_evidence > 0.0:
+        deduction_review_items.append(
+            {
+                "key": "ira_contribution_evidence",
+                "label": "Traditional IRA contribution evidence from Form 5498",
+                "amount": ira_contribution_evidence,
+                "applied_in_draft": False,
+                "review_note": "Form 5498 shows contribution evidence, but deductibility still depends on the household facts for the year.",
+                "sources": ira_contribution_evidence_sources,
+            }
+        )
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -177,8 +229,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if mortgage_interest > 0.0 or charitable_cash > 0.0:
+            missing_items.append(
+                "Review the observed mortgage-interest and donation documents to decide whether standard or itemized deductions should be used."
+            )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if ira_contribution_evidence > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            "Review the Form 5498 contribution evidence and confirm how much of the traditional IRA contribution is deductible for this return."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -290,6 +350,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "deduction_review": deduction_review_items,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

@@ -316,6 +316,29 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_rule_titles = {
+        "mortgage_interest": RULE_SOURCES["mortgage_interest"]["title"],
+        "charitable_cash": RULE_SOURCES["charitable_cash"]["title"],
+        "student_loan_interest_deduction": RULE_SOURCES["student_loan_interest_deduction"]["title"],
+        "ira_contribution_evidence": RULE_SOURCES["ira_contribution_deduction"]["title"],
+    }
+    deduction_rule_links = {
+        "mortgage_interest": RULE_SOURCES["mortgage_interest"]["url"],
+        "charitable_cash": RULE_SOURCES["charitable_cash"]["url"],
+        "student_loan_interest_deduction": RULE_SOURCES["student_loan_interest_deduction"]["url"],
+        "ira_contribution_evidence": RULE_SOURCES["ira_contribution_deduction"]["url"],
+    }
+    deduction_review_rows = [
+        [
+            item.get("label", "Unknown"),
+            money(item.get("amount")),
+            "Yes" if item.get("applied_in_draft") else "No",
+            ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "TBD",
+            f"[{deduction_rule_titles.get(item.get('key', ''), 'IRS guidance')}]({deduction_rule_links.get(item.get('key', ''), RULE_SOURCES['mortgage_interest']['url'])})",
+            item.get("review_note", ""),
+        ]
+        for item in normalized.get("deduction_review", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +372,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Review",
+        "",
+        make_markdown_table(
+            ["Review Item", "Amount", "Applied In Draft", "Source Evidence", "IRS Source", "Review Note"],
+            deduction_review_rows
+            or [["None", "$0.00", "No", "None", "None", "No deduction-review documents were observed."]],
         ),
         "",
         "## State Follow-Up",
