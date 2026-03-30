@@ -93,12 +93,15 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+                self.assertIn("Next Questions", artifacts["missing-items.md"])
+                self.assertTrue(normalized["interview_questions"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")
         self.assertIn("$371.89", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
+        self.assertIn("Should the candidate business-expense receipts totaling $371.89 be applied to Schedule C?", artifacts["tax-dossier.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
 
@@ -111,6 +114,7 @@ class TaxFlowTest(unittest.TestCase):
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")
         self.assertEqual(normalized["status"], "ok")
+        self.assertIn("## Next Questions", artifacts["tax-dossier.md"])
         self.assertIn("State Follow-Up", artifacts["tax-dossier.md"])
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])

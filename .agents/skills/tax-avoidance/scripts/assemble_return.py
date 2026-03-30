@@ -295,6 +295,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    interview_question_rows = [
+        [
+            str(item.get("priority", "")),
+            item.get("prompt", ""),
+            item.get("reason", ""),
+            ", ".join(item.get("affects", [])) or "None",
+        ]
+        for item in normalized.get("interview_questions", [])
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +358,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Next Questions",
+        "",
+        make_markdown_table(
+            ["Priority", "Question", "Why It Matters", "Affects"],
+            interview_question_rows or [["None", "None", "None", "None"]],
         ),
         "",
         "## State Follow-Up",
@@ -410,6 +426,13 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:
         lines.append("- None")
+
+    interview_questions = normalized.get("interview_questions", [])
+    if interview_questions:
+        lines.extend(["", "## Next Questions", ""])
+        for item in interview_questions:
+            affects = ", ".join(item.get("affects", [])) or "None"
+            lines.append(f"- [Priority {item.get('priority')}] {item.get('prompt')} ({affects})")
 
     if normalized.get("unsupported_reasons"):
         lines.extend(["", "## Unsupported Complexity", ""])
