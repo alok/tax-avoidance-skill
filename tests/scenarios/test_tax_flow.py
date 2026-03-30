@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "student_loan_and_clean_energy_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -64,8 +65,12 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_10" in expected:
+                    self.assertIn(f"${expected['line_10']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "line_22" in expected:
+                    self.assertIn(f"${expected['line_22']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
@@ -88,11 +93,34 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "itemized_docs_need_deduction_choice",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_supporting_inputs_section(self) -> None:
+        normalized, artifacts = self.run_case("student_loan_and_clean_energy_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("## Supporting Inputs", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest deduction", artifacts["tax-dossier.md"])
+        self.assertIn("Clean energy credit", artifacts["tax-dossier.md"])
+        self.assertIn("drive://1098e-servicer", artifacts["tax-dossier.md"])
+
+    def test_itemized_docs_prompt_deduction_choice(self) -> None:
+        normalized, artifacts = self.run_case("itemized_docs_need_deduction_choice")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn(
+            "Choose whether to take the standard deduction or itemize.",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("Mortgage interest", artifacts["tax-dossier.md"])
+        self.assertIn("Charitable cash gifts", artifacts["tax-dossier.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

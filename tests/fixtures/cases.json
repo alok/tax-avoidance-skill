@@ -167,6 +167,50 @@
       "line_20": 1800
     }
   },
+  "student_loan_and_clean_energy_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 9600
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1450
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800,
+        "clean_energy_credit": 1200
+      },
+      "user_request": "Use my wage and student loan forms to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 88000,
+      "line_10": 1450,
+      "line_20": 1200,
+      "line_22": 8600
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
@@ -319,6 +363,54 @@
     "expect": {
       "status": "ok",
       "candidate_total": 48.0
+    }
+  },
+  "itemized_docs_need_deduction_choice": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 132000,
+            "federal_withholding": 17000
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 9200
+          }
+        },
+        {
+          "id": "donation-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-1",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 16500
+      },
+      "user_request": "Gather my joint return docs and tell me what is still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Choose whether to take the standard deduction or itemize."
     }
   },
   "state_follow_up": {

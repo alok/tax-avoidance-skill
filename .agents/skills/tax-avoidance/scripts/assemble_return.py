@@ -39,6 +39,38 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def source_refs(sources: list[dict[str, Any]]) -> str:
+    refs = [source.get("source_ref", "unknown") for source in sources if source.get("source_ref")]
+    return ", ".join(refs) if refs else "TBD"
+
+
+def build_supporting_input_rows(normalized: dict[str, Any]) -> list[list[str]]:
+    supporting_inputs = [
+        ("student_loan_interest_deduction", "Student loan interest deduction", "Adjustment"),
+        ("ira_contribution_deduction", "IRA contribution deduction", "Adjustment"),
+        ("hsa_deduction", "HSA deduction", "Adjustment"),
+        ("mortgage_interest", "Mortgage interest", "Itemized-deduction input"),
+        ("charitable_cash", "Charitable cash gifts", "Itemized-deduction input"),
+        ("education_credit", "Education credit", "Credit"),
+        ("clean_vehicle_credit", "Clean vehicle credit", "Credit"),
+        ("clean_energy_credit", "Clean energy credit", "Credit"),
+        ("child_tax_credit", "Child tax credit", "Credit"),
+        ("other_nonrefundable_credits", "Other nonrefundable credits", "Credit"),
+        ("deduction_amount", "Chosen deduction amount", "Interview input"),
+        ("tax_before_credits", "Tax before credits", "Interview input"),
+        ("other_payments", "Other payments", "Payment"),
+    ]
+
+    rows: list[list[str]] = []
+    for key, label, category in supporting_inputs:
+        value = fact_value(normalized, key)
+        sources = fact_sources(normalized, key)
+        if value == 0.0 and not sources:
+            continue
+        rows.append([label, category, money(value), source_refs(sources)])
+    return rows
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -316,6 +348,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    supporting_input_rows = build_supporting_input_rows(normalized)
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +374,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Supporting Inputs",
+        "",
+        make_markdown_table(
+            ["Input", "Category", "Value", "Sources"],
+            supporting_input_rows or [["None", "None", "$0.00", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",
@@ -386,7 +426,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
 def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
     rows: list[list[str]] = []
     for item in line_items:
-        doc_sources = ", ".join(src.get("source_ref", "unknown") for src in item.get("sources", [])) or "TBD"
+        doc_sources = source_refs(item.get("sources", []))
         rule_sources = ", ".join(src["title"] for src in item.get("rule_citations", [])) or "TBD"
         rows.append(
             [
