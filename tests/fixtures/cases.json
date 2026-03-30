@@ -395,6 +395,41 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "state_inferred_from_allocations": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "sample-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://sample-w2",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 10200,
+            "state_allocations": [
+              { "state": "CA", "wages": 91000, "withholding": 4100 }
+            ]
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9900
+      },
+      "user_request": "Draft the federal package and preserve any state info you can infer from the forms."
+    },
+    "expect": {
+      "status": "ok",
+      "resident_state": "CA",
+      "resident_state_source": "single_state_allocation_inference"
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

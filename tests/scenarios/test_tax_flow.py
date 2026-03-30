@@ -122,6 +122,22 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_state_inferred_from_allocations(self) -> None:
+        normalized, artifacts = self.run_case("state_inferred_from_allocations")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["state_summary"]["resident_state"], "CA")
+        self.assertEqual(
+            normalized["state_summary"]["resident_state_source"],
+            "single_state_allocation_inference",
+        )
+        self.assertIn("Resident state: CA", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Resident state source: inferred from a single observed state allocation",
+            artifacts["tax-dossier.md"],
+        )
+        self.assertIn("California", artifacts["tax-dossier.md"])
+        self.assertIn("Resident state was inferred as California", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

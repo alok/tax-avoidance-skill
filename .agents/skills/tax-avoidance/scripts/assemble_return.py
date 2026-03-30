@@ -39,6 +39,14 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def state_source_label(source: str) -> str:
+    if source == "user_input":
+        return "provided explicitly"
+    if source == "single_state_allocation_inference":
+        return "inferred from a single observed state allocation"
+    return "not provided"
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -354,6 +362,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
+        f"- Resident state source: {state_source_label(state_summary.get('resident_state_source', ''))}",
         f"- Work states: {', '.join(state_summary.get('work_states', [])) or 'None provided'}",
         "",
         make_markdown_table(

@@ -122,6 +122,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     )
 
     resident_state = normalize_state_code(state.get("resident_state"))
+    resident_state_source = "user_input" if resident_state else ""
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
     for item in work_states_raw:
@@ -143,11 +144,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             if code not in work_states:
                 work_states.append(code)
 
+    if not resident_state and len(state_allocation_totals) == 1:
+        resident_state = next(iter(state_allocation_totals))
+        resident_state_source = "single_state_allocation_inference"
+        if resident_state not in work_states:
+            work_states.insert(0, resident_state)
+
     state_modules = [resolve_state_support(code) for code in work_states]
     state_modules = [module for module in state_modules if module is not None]
     state_follow_up: list[str] = []
     if resident_state:
         resident_module = resolve_state_support(resident_state)
+        if resident_module and resident_state_source == "single_state_allocation_inference":
+            state_follow_up.append(
+                f"Resident state was inferred as {resident_module['name']} from the only state allocation present on the tax documents. Confirm that inference before preparing the state return."
+            )
         if resident_module and resident_module["status"] == "planned":
             state_follow_up.append(
                 f"{resident_module['name']} state return support is planned but not yet automated. Preserve state withholding and source-income details."
@@ -278,6 +289,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "missing_items": missing_items,
         "state_summary": {
             "resident_state": resident_state,
+            "resident_state_source": resident_state_source,
             "work_states": work_states,
             "modules": state_modules,
             "follow_up": state_follow_up,

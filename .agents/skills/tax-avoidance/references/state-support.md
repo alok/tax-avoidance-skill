@@ -40,6 +40,7 @@ State-bearing tax documents may also include `state_allocations`:
 ## Current Behavior
 
 - render resident state and work states in the dossier
+- infer a likely resident state when exactly one state allocation appears on tax documents, then ask the user to confirm it
 - preserve state wage and withholding allocations when document fields provide them
 - attach state follow-up notes to `missing-items.md`
 - show module status for known states
