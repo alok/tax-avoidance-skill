@@ -167,6 +167,66 @@
       "line_20": 1800
     }
   },
+  "adjustment_fact_coverage": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-benefits",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-benefits",
+          "fields": {
+            "benefits": 18240
+          }
+        },
+        {
+          "id": "student-loan-interest",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-e",
+          "fields": {
+            "student_loan_interest": 1850
+          }
+        },
+        {
+          "id": "home-mortgage",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 7200
+          }
+        },
+        {
+          "id": "charity-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "upload",
+          "source_ref": "upload://charity-receipt",
+          "fields": {
+            "cash_donations": 600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use my Social Security, student loan, and donation records in the draft package."
+    },
+    "expect": {
+      "status": "ok",
+      "social_security_benefits": 18240,
+      "student_loan_interest": 1850,
+      "mortgage_interest": 7200,
+      "charitable_cash": 600
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

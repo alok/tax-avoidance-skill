@@ -21,6 +21,38 @@ from tax_flow_common import (  # noqa: E402
     summarize_fields,
 )
 
+FACT_METADATA = {
+    "wages": {"label": "Wages, salaries, tips", "rule_keys": ("wages",)},
+    "nonemployee_compensation": {"label": "1099-NEC nonemployee compensation", "rule_keys": ("nonemployee_compensation", "schedule_c")},
+    "federal_withholding": {"label": "Federal withholding", "rule_keys": ("federal_withholding",)},
+    "taxable_interest": {"label": "Taxable interest", "rule_keys": ("taxable_interest",)},
+    "ordinary_dividends": {"label": "Ordinary dividends", "rule_keys": ("ordinary_dividends",)},
+    "capital_gains": {"label": "Capital gains", "rule_keys": ("capital_gains",)},
+    "social_security_benefits": {"label": "Social Security benefits", "rule_keys": ("social_security_benefits",)},
+    "mortgage_interest": {"label": "Mortgage interest", "rule_keys": ("mortgage_interest",)},
+    "student_loan_interest_deduction": {
+        "label": "Student loan interest deduction input",
+        "rule_keys": ("student_loan_interest_deduction",),
+    },
+    "candidate_business_expenses": {
+        "label": "Candidate business expenses",
+        "rule_keys": ("business_expenses", "schedule_c"),
+    },
+    "charitable_cash": {"label": "Charitable cash contributions", "rule_keys": ("charitable_cash",)},
+    "ira_contribution_deduction": {"label": "IRA contribution deduction", "rule_keys": ("ira_contribution_deduction",)},
+    "hsa_deduction": {"label": "HSA deduction", "rule_keys": ("hsa_deduction",)},
+    "business_expenses": {"label": "Confirmed business expenses", "rule_keys": ("business_expenses", "schedule_c")},
+    "deduction_amount": {"label": "Deduction amount used in draft", "rule_keys": ()},
+    "qbi_deduction": {"label": "QBI deduction", "rule_keys": ()},
+    "tax_before_credits": {"label": "Tax before credits", "rule_keys": ()},
+    "other_payments": {"label": "Other payments and credits", "rule_keys": ()},
+    "education_credit": {"label": "Education credit", "rule_keys": ("education_credit",)},
+    "clean_vehicle_credit": {"label": "Clean vehicle credit", "rule_keys": ("clean_vehicle_credit",)},
+    "clean_energy_credit": {"label": "Clean energy credit", "rule_keys": ("clean_energy_credit",)},
+    "child_tax_credit": {"label": "Child tax credit", "rule_keys": ()},
+    "other_nonrefundable_credits": {"label": "Other nonrefundable credits", "rule_keys": ()},
+}
+
 
 def rule_citations(*keys: str) -> list[dict[str, str]]:
     citations: list[dict[str, str]] = []
@@ -37,6 +69,22 @@ def fact_value(normalized: dict[str, Any], key: str) -> float:
 
 def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
+
+
+def build_supporting_fact_rows(normalized: dict[str, Any]) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for key, metadata in FACT_METADATA.items():
+        fact = normalized["facts"].get(key, {})
+        value = float(fact.get("value", 0.0) or 0.0)
+        sources = list(fact.get("sources", []))
+        if value == 0.0 and not sources:
+            continue
+        doc_sources = ", ".join(src.get("source_ref", "unknown") for src in sources) or "TBD"
+        rule_sources = ", ".join(
+            citation["title"] for citation in rule_citations(*metadata["rule_keys"])
+        ) or "TBD"
+        rows.append([metadata["label"], money(value), doc_sources, rule_sources])
+    return rows
 
 
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
@@ -279,6 +327,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         [item["form"], item["line"], item["label"], money(item["value"])]
         for item in line_items
     ]
+    supporting_fact_rows = build_supporting_fact_rows(normalized)
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
@@ -342,6 +391,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
         "",
+        "## Supporting Facts",
+        "",
+        make_markdown_table(
+            ["Fact", "Value", "Document Sources", "Rule Sources"],
+            supporting_fact_rows or [["None", "$0.00", "None", "None"]],
+        ),
+        "",
         "## Candidate Business Expenses",
         "",
         f"- Found candidate expense receipts totaling {money(candidate_business_expenses) if candidate_business_expenses else '$0.00'} that are not yet applied to Schedule C.",
@@ -404,6 +460,36 @@ def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
     ) + "\n"
 
 
+def build_federal_lines_markdown_with_facts(normalized: dict[str, Any], line_items: list[dict[str, Any]]) -> str:
+    supporting_fact_rows = build_supporting_fact_rows(normalized)
+    sections = [
+        "# Federal Lines",
+        "",
+        make_markdown_table(
+            ["Form", "Line", "Label", "Value", "Document Sources", "Rule Sources"],
+            [
+                [
+                    item["form"],
+                    item["line"],
+                    item["label"],
+                    money(item["value"]),
+                    ", ".join(src.get("source_ref", "unknown") for src in item.get("sources", [])) or "TBD",
+                    ", ".join(src["title"] for src in item.get("rule_citations", [])) or "TBD",
+                ]
+                for item in line_items
+            ],
+        ),
+        "",
+        "## Supporting Facts Used In Draft",
+        "",
+        make_markdown_table(
+            ["Fact", "Value", "Document Sources", "Rule Sources"],
+            supporting_fact_rows or [["None", "$0.00", "None", "None"]],
+        ),
+    ]
+    return "\n".join(sections).strip() + "\n"
+
+
 def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     lines = ["# Missing Items", ""]
     if normalized.get("missing_items"):
@@ -425,7 +511,7 @@ def assemble_artifacts(normalized: dict[str, Any]) -> dict[str, Any]:
     line_items = build_line_items(normalized)
     return {
         "return-data.json": normalized,
-        "federal-lines.md": build_federal_lines_markdown(line_items),
+        "federal-lines.md": build_federal_lines_markdown_with_facts(normalized, line_items),
         "tax-dossier.md": build_dossier(normalized, line_items),
         "missing-items.md": build_missing_items_markdown(normalized),
     }

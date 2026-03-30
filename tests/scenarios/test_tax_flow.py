@@ -122,6 +122,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_supporting_fact_artifacts(self) -> None:
+        normalized, artifacts = self.run_case("adjustment_fact_coverage")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Supporting Facts", artifacts["tax-dossier.md"])
+        self.assertIn("Social Security benefits", artifacts["tax-dossier.md"])
+        self.assertIn("$18,240.00", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest deduction input", artifacts["federal-lines.md"])
+        self.assertIn("$1,850.00", artifacts["federal-lines.md"])
+        self.assertIn("Mortgage interest", artifacts["federal-lines.md"])
+        self.assertIn("$7,200.00", artifacts["federal-lines.md"])
+        self.assertIn("Charitable cash contributions", artifacts["federal-lines.md"])
+        self.assertIn("$600.00", artifacts["federal-lines.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
