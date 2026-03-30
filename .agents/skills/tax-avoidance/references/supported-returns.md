@@ -20,6 +20,8 @@
 - 1098-E
 - 5498
 - SSA-1099
+
+Social Security support is review-oriented: the workflow preserves gross benefits from `SSA-1099`, but the taxable portion still needs either an explicit line 6b amount or enough worksheet inputs to compute it safely.
 - donation receipts
 
 ## Unsupported In V1

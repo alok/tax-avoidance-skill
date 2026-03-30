@@ -536,6 +536,79 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "social_security_review_only": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Draft my return package with my Social Security statement."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Provide the taxable Social Security benefits amount"
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 24000
+          }
+        },
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 42000,
+            "federal_withholding": 4100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "taxable_social_security_benefits": 10200,
+        "tax_before_credits": 3800
+      },
+      "user_request": "Use my Social Security statement and wages to draft the federal package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 42000,
+      "line_6a": 24000,
+      "line_6b": 10200
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,
