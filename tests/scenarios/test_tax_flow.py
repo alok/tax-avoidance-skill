@@ -68,10 +68,16 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_33" in expected:
+                    self.assertIn(f"${expected['line_33']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "estimated_payments" in expected:
+                    self.assertIn(f"${expected['estimated_payments']:,.2f}", federal_lines)
+                if "extension_payments" in expected:
+                    self.assertIn(f"${expected['extension_payments']:,.2f}", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -121,6 +127,16 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_federal_tax_payments(self) -> None:
+        normalized, artifacts = self.run_case("federal_tax_payments")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["estimated_tax_payments"]["value"], 1500)
+        self.assertEqual(normalized["facts"]["extension_payments"]["value"], 800)
+        self.assertEqual(normalized["facts"]["other_payments"]["value"], 2300)
+        self.assertIn("Estimated tax payments found: $1,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("Extension payments found: $800.00", artifacts["tax-dossier.md"])
+        self.assertIn("$14,300.00", artifacts["federal-lines.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

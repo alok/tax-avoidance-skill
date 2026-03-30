@@ -395,6 +395,67 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "federal_tax_payments": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 12000
+          }
+        },
+        {
+          "id": "es-q1",
+          "doc_type": "1040-ES",
+          "source_type": "upload",
+          "source_ref": "upload://es-q1",
+          "fields": {
+            "estimated_tax_payment": 900
+          }
+        },
+        {
+          "id": "es-q2",
+          "doc_type": "Estimated Tax Payment",
+          "source_type": "upload",
+          "source_ref": "upload://es-q2",
+          "fields": {
+            "payment_amount": 600
+          }
+        },
+        {
+          "id": "extension",
+          "doc_type": "4868",
+          "source_type": "upload",
+          "source_ref": "upload://extension",
+          "fields": {
+            "extension_payment": 800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 14000
+      },
+      "user_request": "Keep my estimated and extension payments visible in the draft package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_25a": 12000,
+      "line_33": 14300,
+      "estimated_payments": 1500,
+      "extension_payments": 800
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

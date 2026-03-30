@@ -36,6 +36,7 @@ For a plain Codex app user:
 - Do not silently convert every receipt into a deduction. Surface them as candidate expenses with totals and source links, then ask the user to confirm inclusion.
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
+- Preserve estimated tax and extension payment records separately from withholding so Form 1040 payment totals stay reviewable.
 
 ## Interview Principles
 

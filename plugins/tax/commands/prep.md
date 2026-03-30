@@ -21,14 +21,15 @@ Run the shared Tax Avoidance workflow for a normal person who wants to use Claud
 2. Check whether Gmail and Google Drive are connected.
 3. Search for likely tax documents and build an inventory.
 4. Ask only the missing questions required for a supported return.
-5. Write an input JSON payload and run the shared deterministic flow:
+5. Preserve estimated tax and extension payments separately from wage withholding when those records are available.
+6. Write an input JSON payload and run the shared deterministic flow:
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
-6. Return:
+7. Return:
    `tax-dossier.md`,
    `return-data.json`,
    `federal-lines.md`,
    and `missing-items.md`
-7. Clearly separate:
+8. Clearly separate:
    legal planning moves,
    unsupported complexity,
    illegal requests,
