@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER = REPO_ROOT / ".agents/skills/tax-avoidance/scripts/run_tax_flow.py"
 FIXTURES = REPO_ROOT / "tests/fixtures/cases.json"
 EXAMPLE_INPUT = REPO_ROOT / "examples/contractor-and-investment-input.json"
+FAMILY_EXAMPLE_INPUT = REPO_ROOT / "examples/family-w2-and-dependent-input.json"
 
 
 class TaxFlowTest(unittest.TestCase):
@@ -122,6 +123,20 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_household_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household_scaffolding")
+        self.assertEqual(normalized["status"], "ok")
+        household_summary = normalized["household_summary"]
+        self.assertEqual(household_summary["dependent_count"], 2)
+        self.assertEqual(household_summary["child_care_expense_total"], 4200)
+        self.assertEqual(household_summary["dependents"][0]["tin_last4"], "6789")
+        self.assertEqual(household_summary["dependents"][1]["tin_last4"], "2468")
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("...6789", artifacts["tax-dossier.md"])
+        self.assertNotIn("123-45-6789", artifacts["tax-dossier.md"])
+        self.assertIn("Review each dependent for child-tax-credit eligibility", artifacts["missing-items.md"])
+        self.assertIn("months lived with the taxpayer", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -140,6 +155,21 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_family_example_smoke(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir) / "out"
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(FAMILY_EXAMPLE_INPUT), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+            normalized = json.loads((out_dir / "return-data.json").read_text(encoding="utf-8"))
+            dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
+            self.assertEqual(normalized["household_summary"]["dependent_count"], 2)
+            self.assertIn("Household And Dependents", dossier)
+            self.assertNotIn("123-45-6789", dossier)
+            self.assertIn("...6789", dossier)
 
 
 if __name__ == "__main__":

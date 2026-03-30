@@ -32,6 +32,57 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def extract_identifier_last4(value: Any) -> str:
+    if value in (None, ""):
+        return ""
+    digits = "".join(character for character in str(value) if character.isdigit())
+    return digits[-4:] if len(digits) >= 4 else ""
+
+
+def normalize_dependents(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    household = payload.get("household", {})
+    raw_dependents = household.get("dependents", [])
+    dependents: list[dict[str, Any]] = []
+    for index, dependent in enumerate(raw_dependents, start=1):
+        if not isinstance(dependent, dict):
+            continue
+        display_name = (
+            dependent.get("display_name")
+            or dependent.get("first_name")
+            or dependent.get("nickname")
+            or f"Dependent {index}"
+        )
+        age = dependent.get("age")
+        months_lived_with_taxpayer = dependent.get("months_lived_with_taxpayer")
+        child_care_expenses = safe_float(dependent.get("child_care_expenses"))
+        tin_last4 = extract_identifier_last4(
+            dependent.get("tin_last4")
+            or dependent.get("ssn_last4")
+            or dependent.get("itin_last4")
+            or dependent.get("ssn")
+            or dependent.get("itin")
+        )
+        dependents.append(
+            {
+                "display_name": str(display_name),
+                "relationship": str(dependent.get("relationship") or "unspecified"),
+                "age": int(age) if isinstance(age, (int, float)) else age,
+                "months_lived_with_taxpayer": (
+                    int(months_lived_with_taxpayer)
+                    if isinstance(months_lived_with_taxpayer, (int, float))
+                    else months_lived_with_taxpayer
+                ),
+                "full_time_student": bool(dependent.get("full_time_student")),
+                "disabled": bool(dependent.get("disabled")),
+                "has_valid_tin": bool(dependent.get("has_valid_tin")) or bool(tin_last4),
+                "tin_last4": tin_last4,
+                "child_care_expenses": child_care_expenses,
+                "notes": str(dependent.get("notes") or ""),
+            }
+        )
+    return dependents
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +90,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    dependents = normalize_dependents(payload)
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -190,6 +242,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
+    if dependents:
+        if "child_tax_credit" not in answers:
+            missing_items.append(
+                "Review each dependent for child-tax-credit eligibility and confirm whether any child tax credit should be applied."
+            )
+        if any(not dependent.get("has_valid_tin") for dependent in dependents):
+            missing_items.append(
+                "Confirm whether each dependent has a valid SSN or ITIN for credit eligibility. Preserve only the last four digits in this workflow."
+            )
+        if any(dependent.get("months_lived_with_taxpayer") in (None, "") for dependent in dependents):
+            missing_items.append(
+                "Add each dependent's months lived with the taxpayer during the tax year."
+            )
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
     for document in documents:
@@ -289,6 +354,13 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "dependents": dependents,
+            "dependent_count": len(dependents),
+            "child_care_expense_total": sum(
+                dependent.get("child_care_expenses", 0.0) for dependent in dependents
+            ),
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

@@ -563,6 +563,68 @@
       "unsupported": "Equity compensation"
     }
   },
+  "dependent_household_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-parent-a",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 12100
+          }
+        },
+        {
+          "id": "w2-parent-b",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-parent-b",
+          "fields": {
+            "wages": 34000,
+            "federal_withholding": 3100
+          }
+        }
+      ],
+      "household": {
+        "dependents": [
+          {
+            "display_name": "Maya",
+            "relationship": "daughter",
+            "age": 8,
+            "months_lived_with_taxpayer": 12,
+            "ssn": "123-45-6789",
+            "child_care_expenses": 4200,
+            "notes": "After-school care receipts available."
+          },
+          {
+            "display_name": "Leo",
+            "relationship": "son",
+            "age": 17,
+            "ssn_last4": "2468"
+          }
+        ]
+      },
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 10300
+      },
+      "user_request": "Preserve my family dependent context without storing full SSNs."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 2,
+      "child_care_total": 4200,
+      "sanitized_last4": "6789"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

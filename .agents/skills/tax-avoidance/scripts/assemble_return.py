@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    household_summary = normalized.get("household_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,25 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_rows = [
+        [
+            dependent.get("display_name", "Unknown"),
+            dependent.get("relationship", "unspecified"),
+            str(dependent.get("age", "unknown")),
+            str(dependent.get("months_lived_with_taxpayer", "unknown")),
+            "Yes" if dependent.get("has_valid_tin") else "No",
+            (
+                f"...{dependent['tin_last4']}"
+                if dependent.get("tin_last4")
+                else "Not provided"
+            ),
+            "Yes" if dependent.get("full_time_student") else "No",
+            "Yes" if dependent.get("disabled") else "No",
+            money(dependent.get("child_care_expenses")),
+            dependent.get("notes") or "None",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +369,39 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured: {household_summary.get('dependent_count', 0)}",
+        f"- Child-care expenses captured for review: {money(household_summary.get('child_care_expense_total', 0.0))}",
+        "",
+        make_markdown_table(
+            [
+                "Name",
+                "Relationship",
+                "Age",
+                "Months With Taxpayer",
+                "Valid TIN?",
+                "TIN Last 4",
+                "Full-Time Student?",
+                "Disabled?",
+                "Child-Care Expenses",
+                "Notes",
+            ],
+            dependent_rows
+            or [[
+                "None",
+                "None",
+                "None",
+                "None",
+                "No",
+                "Not provided",
+                "No",
+                "No",
+                "$0.00",
+                "None",
+            ]],
         ),
         "",
         "## State Follow-Up",

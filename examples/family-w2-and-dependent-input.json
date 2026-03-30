@@ -1,0 +1,55 @@
+{
+  "tax_year": 2025,
+  "filing_status": "married_filing_jointly",
+  "connectors": {
+    "gmail": true,
+    "google_drive": true
+  },
+  "documents": [
+    {
+      "id": "sample-family-w2-a",
+      "doc_type": "W-2",
+      "source_type": "upload",
+      "source_ref": "upload://sample-family-w2-a",
+      "fields": {
+        "wages": 98000.0,
+        "federal_withholding": 12100.0
+      }
+    },
+    {
+      "id": "sample-family-w2-b",
+      "doc_type": "W-2",
+      "source_type": "upload",
+      "source_ref": "upload://sample-family-w2-b",
+      "fields": {
+        "wages": 34000.0,
+        "federal_withholding": 3100.0
+      }
+    }
+  ],
+  "household": {
+    "dependents": [
+      {
+        "display_name": "Maya",
+        "relationship": "daughter",
+        "age": 8,
+        "months_lived_with_taxpayer": 12,
+        "ssn": "123-45-6789",
+        "child_care_expenses": 4200.0,
+        "notes": "After-school care receipts available separately."
+      },
+      {
+        "display_name": "Leo",
+        "relationship": "son",
+        "age": 17,
+        "months_lived_with_taxpayer": 12,
+        "ssn_last4": "2468"
+      }
+    ]
+  },
+  "answers": {
+    "deduction_amount": 29200.0,
+    "tax_before_credits": 10300.0
+  },
+  "user_request": "Build a sample family return package and preserve dependent review context."
+}
