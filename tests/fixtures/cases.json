@@ -563,6 +563,52 @@
       "unsupported": "Equity compensation"
     }
   },
+  "dependent_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 9200
+          }
+        }
+      ],
+      "dependents": [
+        {
+          "label": "Avery",
+          "relationship": "child",
+          "birth_year": 2017,
+          "months_lived_with_taxpayer": 12
+        },
+        {
+          "label": "Jordan",
+          "relationship": "child",
+          "birth_year": 2004,
+          "months_lived_with_taxpayer": 8,
+          "full_time_student": true
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 6400
+      },
+      "user_request": "Use the tax docs you found and preserve my household context for the return draft."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 2
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

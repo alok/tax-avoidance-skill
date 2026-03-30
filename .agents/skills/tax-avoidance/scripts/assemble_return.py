@@ -295,6 +295,24 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    household_summary = normalized.get("household_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("label", ""),
+            dependent.get("relationship") or "TBD",
+            str(dependent.get("birth_year")) if dependent.get("birth_year") is not None else "TBD",
+            str(dependent.get("estimated_age_in_tax_year"))
+            if dependent.get("estimated_age_in_tax_year") is not None
+            else "TBD",
+            str(dependent.get("months_lived_with_taxpayer"))
+            if dependent.get("months_lived_with_taxpayer") is not None
+            else "TBD",
+            "yes" if dependent.get("full_time_student") else "no",
+            "yes" if dependent.get("disabled") else "no",
+            dependent.get("support_test_status") or "TBD",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +367,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Listed dependents: {household_summary.get('dependent_count', 0)}",
+        f"- Potential qualifying children under 17 based on birth year only: {household_summary.get('qualifying_child_count', 0)}",
+        "- This section is intake scaffolding only. It preserves dependent context without deciding eligibility or collecting SSNs.",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Birth Year", "Age In Tax Year", "Months At Home", "Student", "Disabled", "Support Test"],
+            dependent_rows or [["None", "None", "None", "None", "None", "None", "None", "None"]],
         ),
         "",
         "## State Follow-Up",

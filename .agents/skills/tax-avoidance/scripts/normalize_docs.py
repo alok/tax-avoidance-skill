@@ -21,6 +21,7 @@ from tax_flow_common import (  # noqa: E402
     normalize_state_code,
     resolve_state_support,
     safe_float,
+    safe_int,
 )
 
 
@@ -39,6 +40,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -71,6 +73,31 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"1098-E"},
         "student_loan_interest",
+    )
+    dependents_raw = payload.get("dependents", household.get("dependents", []))
+    dependents: list[dict[str, Any]] = []
+    for index, dependent in enumerate(dependents_raw, start=1):
+        birth_year = safe_int(dependent.get("birth_year"))
+        months_lived_with_taxpayer = safe_int(dependent.get("months_lived_with_taxpayer"))
+        rendered = {
+            "label": dependent.get("label") or dependent.get("first_name") or f"Dependent {index}",
+            "relationship": dependent.get("relationship", ""),
+            "birth_year": birth_year,
+            "months_lived_with_taxpayer": months_lived_with_taxpayer,
+            "full_time_student": bool(dependent.get("full_time_student", False)),
+            "disabled": bool(dependent.get("disabled", False)),
+            "has_childcare_expenses": bool(dependent.get("has_childcare_expenses", False)),
+            "support_test_status": dependent.get("support_test_status", ""),
+            "tax_credit_notes": dependent.get("tax_credit_notes", ""),
+        }
+        if birth_year is not None:
+            rendered["estimated_age_in_tax_year"] = max(tax_year - birth_year, 0)
+        dependents.append(rendered)
+    qualifying_child_count = sum(
+        1
+        for dependent in dependents
+        if dependent.get("estimated_age_in_tax_year") is not None
+        and dependent["estimated_age_in_tax_year"] <= 16
     )
     expense_documents_for_year = [
         document
@@ -179,6 +206,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if dependents:
+        if "child_tax_credit" not in answers and "other_nonrefundable_credits" not in answers:
+            missing_items.append(
+                "Review child and dependent credit eligibility for the listed household members and provide any credit amount that should flow into the draft return."
+            )
+        for dependent in dependents:
+            label = dependent["label"]
+            if not dependent.get("relationship"):
+                missing_items.append(f"Add the relationship for {label} so dependent eligibility can be reviewed.")
+            if dependent.get("birth_year") is None:
+                missing_items.append(f"Add the birth year for {label} so age-based dependent rules can be reviewed.")
+            if dependent.get("months_lived_with_taxpayer") is None:
+                missing_items.append(
+                    f"Confirm how many months {label} lived with the taxpayer in {tax_year} for dependency support."
+                )
+            if not dependent.get("support_test_status"):
+                missing_items.append(
+                    f"Confirm whether {label} passed the support test and whether anyone else could claim them."
+                )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -289,6 +335,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "dependents": dependents,
+            "dependent_count": len(dependents),
+            "qualifying_child_count": qualifying_child_count,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

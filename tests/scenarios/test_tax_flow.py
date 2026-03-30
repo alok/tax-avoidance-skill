@@ -122,6 +122,16 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_intake_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["household_summary"]["dependent_count"], 2)
+        self.assertEqual(normalized["household_summary"]["qualifying_child_count"], 1)
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Avery", artifacts["tax-dossier.md"])
+        self.assertIn("Review child and dependent credit eligibility", artifacts["missing-items.md"])
+        self.assertIn("support test", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -139,6 +149,7 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Household And Dependents", dossier)
             self.assertIn("$48,000.00", dossier)
 
 

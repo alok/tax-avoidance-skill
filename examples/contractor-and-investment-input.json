@@ -57,6 +57,24 @@
       }
     }
   ],
+  "dependents": [
+    {
+      "label": "Avery",
+      "relationship": "child",
+      "birth_year": 2018,
+      "months_lived_with_taxpayer": 12,
+      "support_test_status": "taxpayer_provided_more_than_half",
+      "has_childcare_expenses": true
+    },
+    {
+      "label": "Milo",
+      "relationship": "child",
+      "birth_year": 2005,
+      "months_lived_with_taxpayer": 10,
+      "full_time_student": true,
+      "support_test_status": "taxpayer_provided_more_than_half"
+    }
+  ],
   "answers": {
     "business_expenses": 9000.0,
     "deduction_amount": 15000.0,

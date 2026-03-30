@@ -303,3 +303,13 @@ def resolve_state_support(code: str | None) -> dict[str, str] | None:
         "nonresident_form": "Unknown",
         "source_url": "",
     }
+
+
+def safe_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    return int(str(value))
