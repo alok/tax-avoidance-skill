@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Treats `SSA-1099` and `5498` intake conservatively: gross Social Security and reported IRA contributions are captured, while taxable benefits and deductible IRA amounts stay explicit review points unless already confirmed.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -32,6 +33,8 @@ No separate backend or custom API setup is required for the main workflow in thi
 ## Scope
 
 This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
+
+Some supported inputs still require explicit review rather than silent computation. For example, a Form `5498` contribution amount does not automatically equal the deductible IRA amount, and `SSA-1099` benefits should not be treated as fully taxable unless the taxable portion is already known.
 
 All substantive tax facts should trace back to primary IRS sources such as [Publication 17](https://www.irs.gov/publications/p17), [Publication 505](https://www.irs.gov/publications/p505), [Publication 590-A](https://www.irs.gov/publications/p590a), and [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969). Wikipedia is only used for the avoidance-vs-evasion terminology framing.
 

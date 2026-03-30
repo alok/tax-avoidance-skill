@@ -536,6 +536,105 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "benefits_and_adjustments_intake": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000,
+            "taxable_benefits": 12000
+          }
+        },
+        {
+          "id": "loan-interest",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098-e-main",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        },
+        {
+          "id": "donation-bundle",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-bundle",
+          "fields": {
+            "cash_donations": 900
+          }
+        }
+      ],
+      "answers": {
+        "ira_contribution_deduction": 6500,
+        "deduction_amount": 15000,
+        "tax_before_credits": 4800
+      },
+      "user_request": "Use the retirement and benefits docs to draft my return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 24000,
+      "line_6b": 12000,
+      "line_10": 8300
+    }
+  },
+  "social_security_needs_taxable_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-review",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-review",
+          "fields": {
+            "benefits": 19800
+          }
+        },
+        {
+          "id": "ira-5498-review",
+          "doc_type": "5498",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ira-5498-review",
+          "fields": {
+            "ira_contributions": 4000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Gather my SSA and IRA contribution info and tell me what is still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "taxable Social Security benefits amount"
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,

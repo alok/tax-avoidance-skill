@@ -47,12 +47,13 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
+    taxable_social_security = fact_value(normalized, "taxable_social_security_benefits")
     has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = wages + interest + dividends + capital_gains + taxable_social_security + (net_profit or 0.0)
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -137,6 +138,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "6a",
+            "label": "Social Security benefits",
+            "value": social_security or None,
+            "sources": fact_sources(normalized, "social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "6b",
+            "label": "Taxable Social Security benefits",
+            "value": taxable_social_security if fact_sources(normalized, "taxable_social_security_benefits") else None,
+            "sources": fact_sources(normalized, "taxable_social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
             "line": "7",
             "label": "Capital gain or loss",
             "value": capital_gains or None,
@@ -154,6 +171,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
+                "social_security_benefits",
                 "schedule_c",
             ),
         },
@@ -316,6 +334,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    benefits_and_adjustments_rows = [
+        ["SSA-1099 gross benefits", money(fact_value(normalized, "social_security_benefits"))],
+        ["Taxable Social Security used on line 6b", money(line_value(line_items, "Form 1040", "6b"))],
+        ["Form 5498 IRA contributions reported", money(fact_value(normalized, "ira_contributions_reported"))],
+        ["IRA deduction applied", money(fact_value(normalized, "ira_contribution_deduction"))],
+        ["1098-E student loan interest", money(fact_value(normalized, "student_loan_interest_deduction"))],
+        ["1098 mortgage interest", money(fact_value(normalized, "mortgage_interest"))],
+        ["Donation receipts", money(fact_value(normalized, "charitable_cash"))],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +368,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Benefits And Adjustments Intake",
+        "",
+        make_markdown_table(
+            ["Item", "Amount"],
+            benefits_and_adjustments_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",
@@ -381,6 +415,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         *refusal_lines,
     ]
     return "\n".join(sections).strip() + "\n"
+
+
+def line_value(line_items: list[dict[str, Any]], form: str, line: str) -> Any:
+    for item in line_items:
+        if item.get("form") == form and item.get("line") == line:
+            return item.get("value")
+    return None
 
 
 def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
