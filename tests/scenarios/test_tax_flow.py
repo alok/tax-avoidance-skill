@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "deduction_review_scaffold",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -72,6 +73,20 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_deduction_review_scaffold(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_scaffold")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("## Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498", artifacts["tax-dossier.md"])
+        self.assertIn("needs_deductibility_review", artifacts["tax-dossier.md"])
+        self.assertIn("$6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("$875.32", artifacts["tax-dossier.md"])
+        self.assertIn("$9,600.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,200.00", artifacts["tax-dossier.md"])
+        missing_items = "\n".join(normalized["missing_items"])
+        self.assertIn("Review deduction candidates from source documents", missing_items)
+        self.assertIn("Confirm how much of the Form 5498 IRA contribution is deductible", missing_items)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
