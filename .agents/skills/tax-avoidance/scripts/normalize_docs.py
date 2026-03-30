@@ -112,6 +112,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    state_local_taxes_paid, state_local_taxes_sources = answer_fact(answers, "state_local_taxes_paid")
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
@@ -120,6 +121,33 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    deductible_state_local_taxes = min(state_local_taxes_paid, 10000.0)
+    known_itemized_total = mortgage_interest + charitable_cash + deductible_state_local_taxes
+    itemized_components = [
+        {
+            "key": "mortgage_interest",
+            "label": "Mortgage interest",
+            "value": mortgage_interest,
+            "sources": mortgage_interest_sources,
+        },
+        {
+            "key": "charitable_cash",
+            "label": "Cash charitable contributions",
+            "value": charitable_cash,
+            "sources": charitable_sources,
+        },
+        {
+            "key": "state_local_taxes_paid",
+            "label": "State and local taxes paid",
+            "value": deductible_state_local_taxes,
+            "sources": state_local_taxes_sources,
+            "raw_value": state_local_taxes_paid,
+            "cap_applied": state_local_taxes_paid > deductible_state_local_taxes,
+        },
+    ]
+    deduction_path = str(answers.get("deduction_mode", "")).strip().lower()
+    if not deduction_path and deduction_amount > 0.0:
+        deduction_path = "provided_amount"
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -177,6 +205,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if known_itemized_total > 0.0 and "deduction_amount" not in answers:
+        missing_items.append(
+            f"Known Schedule A support totals ${known_itemized_total:,.2f}. Decide whether to itemize or use the standard deduction, then provide the deduction amount for the draft return."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -247,6 +279,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "state_local_taxes_paid": build_fact(
+            "state_local_taxes_paid",
+            state_local_taxes_paid,
+            state_local_taxes_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
@@ -289,6 +326,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "deduction_path": deduction_path,
+            "draft_deduction_amount": deduction_amount,
+            "known_itemized_total": known_itemized_total,
+            "itemized_components": itemized_components,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

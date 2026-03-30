@@ -30,6 +30,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 936",
         "url": "https://www.irs.gov/publications/p936",
     },
+    "state_local_taxes_paid": {
+        "title": "About Schedule A (Form 1040)",
+        "url": "https://www.irs.gov/forms-pubs/about-schedule-a-form-1040",
+    },
     "charitable_cash": {
         "title": "IRS Publication 526",
         "url": "https://www.irs.gov/publications/p526",

@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Adds a deduction-planning scaffold that summarizes known Schedule A support such as mortgage interest, charitable receipts, and state/local tax inputs before the final deduction amount is chosen.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -73,6 +74,8 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 ```
 
 That should create the same four standard artifacts in `output/example-run/`.
+
+The dossier now includes a `Deduction Planning` section so local dry runs can show known itemized-deduction support even when the final deduction amount still needs a user decision.
 
 ## Install In Claude Cowork
 

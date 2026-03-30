@@ -507,6 +507,55 @@
       "schedule_c_line_1": 108000.0
     }
   },
+  "itemized_deduction_scaffold": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 9200
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-receipt",
+          "fields": {
+            "cash_donations": 1800
+          }
+        }
+      ],
+      "answers": {
+        "state_local_taxes_paid": 13500,
+        "tax_before_credits": 13250
+      },
+      "user_request": "Gather my docs and tell me whether I probably need to itemize."
+    },
+    "expect": {
+      "status": "ok",
+      "known_itemized_total": 21000
+    }
+  },
   "unsupported_schedule_c": {
     "input": {
       "tax_year": 2025,

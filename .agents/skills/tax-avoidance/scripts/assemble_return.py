@@ -57,6 +57,11 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
     student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    state_local_taxes_paid = fact_value(normalized, "state_local_taxes_paid")
+    deductible_state_local_taxes = min(state_local_taxes_paid, 10000.0)
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    known_itemized_total = mortgage_interest + charitable_cash + deductible_state_local_taxes
     adjustments_total = ira + hsa + student_loan_interest
 
     agi = total_income - adjustments_total
@@ -87,6 +92,44 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             amount_owed = total_tax - total_payments
 
     return [
+        {
+            "form": "Schedule A",
+            "line": "5e",
+            "label": "State and local taxes",
+            "value": deductible_state_local_taxes or None,
+            "sources": fact_sources(normalized, "state_local_taxes_paid"),
+            "rule_citations": rule_citations("state_local_taxes_paid"),
+        },
+        {
+            "form": "Schedule A",
+            "line": "8a",
+            "label": "Home mortgage interest",
+            "value": mortgage_interest or None,
+            "sources": fact_sources(normalized, "mortgage_interest"),
+            "rule_citations": rule_citations("mortgage_interest"),
+        },
+        {
+            "form": "Schedule A",
+            "line": "11",
+            "label": "Gifts to charity",
+            "value": charitable_cash or None,
+            "sources": fact_sources(normalized, "charitable_cash"),
+            "rule_citations": rule_citations("charitable_cash"),
+        },
+        {
+            "form": "Schedule A",
+            "line": "17",
+            "label": "Known itemized deduction support",
+            "value": known_itemized_total or None,
+            "sources": fact_sources(normalized, "state_local_taxes_paid")
+            + fact_sources(normalized, "mortgage_interest")
+            + fact_sources(normalized, "charitable_cash"),
+            "rule_citations": rule_citations(
+                "state_local_taxes_paid",
+                "mortgage_interest",
+                "charitable_cash",
+            ),
+        },
         {
             "form": "Schedule C",
             "line": "1",
@@ -296,6 +339,34 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_rows = []
+    for component in deduction_summary.get("itemized_components", []):
+        label = component.get("label", component.get("key", "Unknown"))
+        if component.get("key") == "state_local_taxes_paid" and component.get("cap_applied"):
+            label = f"{label} (capped for Schedule A)"
+        deduction_rows.append(
+            [
+                label,
+                money(component.get("value")),
+                ", ".join(source.get("source_ref", "unknown") for source in component.get("sources", [])) or "TBD",
+            ]
+        )
+    deduction_notes = []
+    if deduction_summary.get("draft_deduction_amount"):
+        deduction_notes.append(
+            f"- Draft deduction amount currently used on Form 1040 line 12: {money(deduction_summary.get('draft_deduction_amount'))}."
+        )
+    if deduction_summary.get("known_itemized_total"):
+        deduction_notes.append(
+            f"- Known Schedule A support currently totals {money(deduction_summary.get('known_itemized_total'))} before any additional itemized categories."
+        )
+    if any(component.get("cap_applied") for component in deduction_summary.get("itemized_components", [])):
+        deduction_notes.append("- State and local taxes are capped at $10,000.00 in this scaffold.")
+    if deduction_summary.get("deduction_path"):
+        deduction_notes.append(f"- Deduction path signal: {deduction_summary.get('deduction_path')}.")
+    if not deduction_notes:
+        deduction_notes.append("- No deduction-planning inputs have been gathered yet.")
     state_rows = [
         [
             module.get("code", ""),
@@ -341,6 +412,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Planning",
+        "",
+        make_markdown_table(
+            ["Component", "Known Amount", "Sources"],
+            deduction_rows or [["None", "$0.00", "None"]],
+        ),
+        "",
+        *deduction_notes,
         "",
         "## Candidate Business Expenses",
         "",

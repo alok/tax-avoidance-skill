@@ -94,6 +94,17 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
 
+    def test_itemized_deduction_scaffold(self) -> None:
+        normalized, artifacts = self.run_case("itemized_deduction_scaffold")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_summary"]["known_itemized_total"], 21000)
+        self.assertIn("## Deduction Planning", artifacts["tax-dossier.md"])
+        self.assertIn("Known Schedule A support totals $21,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("State and local taxes are capped at $10,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("Schedule A", artifacts["federal-lines.md"])
+        self.assertIn("$21,000.00", artifacts["federal-lines.md"])
+        self.assertIn("Decide whether to itemize or use the standard deduction", artifacts["missing-items.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")
