@@ -59,6 +59,8 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
    missing items,
    and professional-review escalations.
 
+When SSA-1099 benefits are present, capture the gross benefits on Form 1040 line 6a but do not treat them as taxable by default. Require an explicit taxable-benefits figure before populating line 6b or counting the amount in total income.
+
 ## Output Contract
 
 Every completed run should yield:

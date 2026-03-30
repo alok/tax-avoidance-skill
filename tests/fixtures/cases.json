@@ -507,6 +507,71 @@
       "schedule_c_line_1": 108000.0
     }
   },
+  "social_security_reviewed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 9000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Draft my return package from my Social Security statement."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 24000.0,
+      "line_6b": 9000.0,
+      "line_9": 9000.0
+    }
+  },
+  "social_security_needs_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Start a draft package from my retirement benefits."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18000.0,
+      "line_9": null,
+      "missing": "taxable portion of Social Security benefits"
+    }
+  },
   "unsupported_schedule_c": {
     "input": {
       "tax_year": 2025,
