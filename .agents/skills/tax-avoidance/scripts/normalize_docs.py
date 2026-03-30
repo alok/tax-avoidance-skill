@@ -146,6 +146,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     state_modules = [resolve_state_support(code) for code in work_states]
     state_modules = [module for module in state_modules if module is not None]
     state_follow_up: list[str] = []
+    if not resident_state:
+        state_follow_up.append(
+            "Confirm your resident state for 2025 so the return package keeps the right state filing context."
+        )
+    if not work_states:
+        state_follow_up.append(
+            "Confirm every state where you lived or worked in 2025, even if state return calculations are not automated yet."
+        )
     if resident_state:
         resident_module = resolve_state_support(resident_state)
         if resident_module and resident_module["status"] == "planned":

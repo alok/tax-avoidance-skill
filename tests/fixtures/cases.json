@@ -321,6 +321,38 @@
       "candidate_total": 48.0
     }
   },
+  "state_intake_missing": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "sample-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://sample-w2",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 9600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9100
+      },
+      "user_request": "Draft my federal return package and keep the state side organized for later."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm your resident state for 2025",
+      "work_state_missing": "Confirm every state where you lived or worked in 2025"
+    }
+  },
   "state_follow_up": {
     "input": {
       "tax_year": 2025,

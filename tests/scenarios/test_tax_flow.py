@@ -115,6 +115,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
 
+    def test_state_intake_missing(self) -> None:
+        normalized, artifacts = self.run_case("state_intake_missing")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn(
+            "Confirm your resident state for 2025 so the return package keeps the right state filing context.",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn(
+            "Confirm every state where you lived or worked in 2025, even if state return calculations are not automated yet.",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("Resident state: None provided", artifacts["tax-dossier.md"])
+
     def test_state_allocations(self) -> None:
         normalized, artifacts = self.run_case("state_allocations")
         self.assertEqual(normalized["status"], "ok")
