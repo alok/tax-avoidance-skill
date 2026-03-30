@@ -280,6 +280,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    candidate_ira_contributions = fact_value(normalized, "candidate_ira_contributions")
+    charitable_cash = fact_value(normalized, "charitable_cash")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -294,6 +296,22 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             expense.get("source_ref") or "unknown",
         ]
         for expense in normalized.get("candidate_expense_documents", [])
+    ]
+    candidate_ira_rows = [
+        [
+            ira_doc.get("account_type") or "IRA",
+            money(ira_doc.get("amount")),
+            ira_doc.get("source_ref") or "unknown",
+        ]
+        for ira_doc in normalized.get("candidate_ira_documents", [])
+    ]
+    charitable_rows = [
+        [
+            charitable_doc.get("organization") or "Unknown",
+            money(charitable_doc.get("amount")),
+            charitable_doc.get("source_ref") or "unknown",
+        ]
+        for charitable_doc in normalized.get("charitable_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -349,6 +367,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Review",
+        "",
+        f"- Found Form 5498 contributions totaling {money(candidate_ira_contributions) if candidate_ira_contributions else '$0.00'} that still need deductible-amount review before they affect Form 1040 line 10.",
+        f"- Found donation receipts totaling {money(charitable_cash) if charitable_cash else '$0.00'} that may matter only if the return shifts from the standard deduction to itemizing.",
+        "",
+        make_markdown_table(
+            ["IRA Account", "Contribution", "Source"],
+            candidate_ira_rows or [["None", "$0.00", "None"]],
+        ),
+        "",
+        make_markdown_table(
+            ["Organization", "Cash Donation", "Source"],
+            charitable_rows or [["None", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",

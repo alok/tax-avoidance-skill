@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contributions, ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -104,6 +109,30 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    candidate_ira_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "account_type": document.get("fields", {}).get("account_type", "IRA"),
+            "amount": safe_float(document.get("fields", {}).get("ira_contributions")),
+        }
+        for document in documents
+        if document.get("doc_type") == "5498"
+        and safe_float(document.get("fields", {}).get("ira_contributions")) != 0.0
+    ]
+    charitable_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "organization": document.get("fields", {}).get("organization", "Unknown"),
+            "amount": safe_float(document.get("fields", {}).get("cash_donations")),
+        }
+        for document in documents
+        if document.get("doc_type") == "Donation Receipt"
+        and safe_float(document.get("fields", {}).get("cash_donations")) != 0.0
+    ]
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -179,6 +208,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 5498 IRA contributions totaling ${ira_contributions:,.2f} and confirm how much is deductible for the draft return."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -186,6 +219,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
+        )
+    if charitable_cash > 0.0:
+        missing_items.append(
+            f"Donation receipts totaling ${charitable_cash:,.2f} were found. Confirm whether to keep the standard deduction or switch to an itemized-deduction review."
         )
     for note in state_follow_up:
         if note not in missing_items:
@@ -241,6 +278,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             student_loan_interest,
             student_loan_interest_sources,
         ),
+        "candidate_ira_contributions": build_fact(
+            "candidate_ira_contributions",
+            ira_contributions,
+            ira_contribution_sources,
+        ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
@@ -290,6 +332,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "candidate_ira_documents": candidate_ira_documents,
+        "charitable_documents": charitable_documents,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

@@ -321,6 +321,98 @@
       "candidate_total": 48.0
     }
   },
+  "ira_contribution_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 6500,
+            "account_type": "Traditional IRA"
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Use the tax documents you found and tell me what still needs review."
+    },
+    "expect": {
+      "status": "ok",
+      "candidate_ira_contributions": 6500.0
+    }
+  },
+  "charitable_itemized_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent",
+          "fields": {
+            "wages": 132000,
+            "federal_withholding": 16200
+          }
+        },
+        {
+          "id": "donation-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-1",
+          "fields": {
+            "cash_donations": 1200,
+            "organization": "Doctors Without Borders"
+          }
+        },
+        {
+          "id": "donation-2",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-2",
+          "fields": {
+            "cash_donations": 500,
+            "organization": "Local Food Bank"
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 14600
+      },
+      "user_request": "Draft the return package and tell me whether anything still needs itemized-deduction review."
+    },
+    "expect": {
+      "status": "ok",
+      "charitable_cash": 1700.0
+    }
+  },
   "state_follow_up": {
     "input": {
       "tax_year": 2025,

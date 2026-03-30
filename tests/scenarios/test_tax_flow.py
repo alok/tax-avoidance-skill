@@ -115,6 +115,21 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
 
+    def test_ira_contribution_review(self) -> None:
+        normalized, artifacts = self.run_case("ira_contribution_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["candidate_ira_contributions"]["value"], 6500.0)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Traditional IRA", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498 IRA contributions totaling $6,500.00", artifacts["missing-items.md"])
+
+    def test_charitable_itemized_review(self) -> None:
+        normalized, artifacts = self.run_case("charitable_itemized_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 1700.0)
+        self.assertIn("Doctors Without Borders", artifacts["tax-dossier.md"])
+        self.assertIn("Donation receipts totaling $1,700.00 were found", artifacts["missing-items.md"])
+
     def test_state_allocations(self) -> None:
         normalized, artifacts = self.run_case("state_allocations")
         self.assertEqual(normalized["status"], "ok")
