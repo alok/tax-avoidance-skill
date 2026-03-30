@@ -79,6 +79,7 @@ class TaxFlowTest(unittest.TestCase):
         notes = "\n".join(normalized["connector_notes"])
         self.assertIn("Upload fallback is active", notes)
         self.assertIn("upload://upload-w2", artifacts["tax-dossier.md"])
+        self.assertIn("interview_questions", normalized)
 
     def test_unsupported_cases(self) -> None:
         for name in ("unsupported_complex_equity",):
@@ -93,6 +94,29 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+                self.assertTrue(normalized["interview_questions"])
+
+    def test_interview_queue_for_missing_schedule_c_inputs(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_missing_expenses")
+        question_keys = [item["key"] for item in normalized["interview_questions"]]
+        self.assertIn("business_expenses", question_keys)
+        business_expense_question = next(
+            item for item in normalized["interview_questions"] if item["key"] == "business_expenses"
+        )
+        self.assertTrue(business_expense_question["blocking"])
+        self.assertIn("Schedule C net profit", business_expense_question["reason"])
+        self.assertIn("Interview Queue", artifacts["tax-dossier.md"])
+        self.assertIn("Interview Queue", artifacts["missing-items.md"])
+
+    def test_interview_queue_marks_candidate_expense_review_as_non_blocking(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
+        candidate_question = next(
+            item for item in normalized["interview_questions"] if item["key"] == "candidate_business_expenses"
+        )
+        self.assertFalse(candidate_question["blocking"])
+        self.assertIn("$371.89", candidate_question["prompt"])
+        self.assertIn("anthropic-receipt", "\n".join(candidate_question["source_refs"]))
+        self.assertIn("Should the candidate business-expense receipts", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

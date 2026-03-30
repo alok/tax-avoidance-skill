@@ -280,11 +280,22 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    interview_questions = normalized.get("interview_questions", [])
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
+    interview_rows = [
+        [
+            question.get("key", ""),
+            "Yes" if question.get("blocking") else "No",
+            question.get("prompt", ""),
+            question.get("reason", ""),
+            ", ".join(question.get("source_refs", [])) or "None",
+        ]
+        for question in interview_questions
+    ]
     candidate_expense_rows = [
         [
             expense.get("document_date") or "unknown",
@@ -351,6 +362,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
         "",
+        "## Interview Queue",
+        "",
+        make_markdown_table(
+            ["Key", "Blocking", "Prompt", "Why It Matters", "Related Sources"],
+            interview_rows or [["None", "No", "None", "No follow-up questions are queued.", "None"]],
+        ),
+        "",
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
@@ -406,6 +424,14 @@ def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
 
 def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     lines = ["# Missing Items", ""]
+    interview_questions = normalized.get("interview_questions", [])
+    if interview_questions:
+        lines.extend(["## Interview Queue", ""])
+        lines.extend(
+            f"- [{'blocking' if item.get('blocking') else 'review'}] {item.get('prompt')} Why: {item.get('reason')}"
+            for item in interview_questions
+        )
+        lines.append("")
     if normalized.get("missing_items"):
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:

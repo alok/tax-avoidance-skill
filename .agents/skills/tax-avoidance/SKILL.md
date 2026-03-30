@@ -67,6 +67,7 @@ Every completed run should yield:
 - `return-data.json`: normalized extracted facts with provenance
 - `federal-lines.md`: line-by-line draft for supported federal lines
 - `missing-items.md`: unresolved fields, absent documents, and unsupported complexity
+- `return-data.json` should include `interview_questions`, a structured queue of blocking and review follow-ups with prompts, reasons, and related source references.
 - The dossier should separately surface **candidate business-expense receipts** that still need user confirmation before they are applied to Schedule C.
 
 Every nontrivial tax statement must cite an IRS source. Every extracted value must cite the originating document, email, file, or upload.
