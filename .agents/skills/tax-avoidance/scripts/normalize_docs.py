@@ -32,6 +32,59 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def aggregate_ira_contribution_evidence(
+    documents: list[dict[str, Any]],
+) -> tuple[float, list[dict[str, Any]]]:
+    contribution_fields = ("traditional_ira_contributions", "ira_contributions")
+    documents_for_aggregation: list[dict[str, Any]] = []
+    dedupe_groups: dict[str, list[dict[str, Any]]] = {}
+
+    for document in documents:
+        if document.get("doc_type") != "5498":
+            continue
+        dedupe_key = document.get("dedupe_key")
+        if dedupe_key:
+            dedupe_groups.setdefault(dedupe_key, []).append(document)
+        else:
+            documents_for_aggregation.append(document)
+
+    def evidence_rank(document: dict[str, Any]) -> tuple[int, int]:
+        content_status = document.get("content_status", "")
+        status_score = {
+            "available": 4,
+            "metadata_only": 3,
+            "unreadable_encrypted_attachment": 2,
+            "portal_notice_only": 1,
+        }.get(content_status, 0)
+        value_score = 1 if any(safe_float(document.get("fields", {}).get(name)) != 0.0 for name in contribution_fields) else 0
+        return (value_score, status_score)
+
+    for group in dedupe_groups.values():
+        documents_for_aggregation.append(max(group, key=evidence_rank))
+
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for document in documents_for_aggregation:
+        fields = document.get("fields", {})
+        for field_name in contribution_fields:
+            value = safe_float(fields.get(field_name))
+            if value == 0.0:
+                continue
+            total += value
+            sources.append(
+                {
+                    "doc_id": document.get("id"),
+                    "doc_type": document.get("doc_type"),
+                    "source_type": document.get("source_type"),
+                    "source_ref": document.get("source_ref"),
+                    "dedupe_key": document.get("dedupe_key"),
+                    "field": field_name,
+                    "value": value,
+                }
+            )
+    return total, sources
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -72,6 +125,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contribution_evidence, ira_contribution_evidence_sources = aggregate_ira_contribution_evidence(documents)
     expense_documents_for_year = [
         document
         for document in documents
@@ -177,6 +231,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if ira_contribution_evidence > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 5498 IRA contribution evidence totaling ${ira_contribution_evidence:,.2f} and confirm the deductible traditional IRA amount, if any, before applying it to the return."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -240,6 +298,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contribution_evidence,
+            ira_contribution_evidence_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",

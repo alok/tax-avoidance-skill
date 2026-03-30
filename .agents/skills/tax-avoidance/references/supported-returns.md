@@ -35,3 +35,8 @@
 ## Behavior On Unsupported Cases
 
 Preserve the gathered facts, create `missing-items.md`, and state clearly that the flow is outside the supported simple-return envelope.
+
+## Intake Notes
+
+- Treat Form 5498 as contribution evidence and review scaffolding, not an automatically deductible IRA amount.
+- Keep deductible IRA confirmation explicit because coverage, income, and contribution type can change the allowed deduction.
