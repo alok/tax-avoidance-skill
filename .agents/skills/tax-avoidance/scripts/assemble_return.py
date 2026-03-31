@@ -316,6 +316,30 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_summary = normalized.get("deduction_summary", {})
+    above_the_line = deduction_summary.get("above_the_line_adjustments", {})
+    itemized_evidence = deduction_summary.get("itemized_evidence", {})
+    deduction_review_rows = [
+        ["Deduction handling", str(deduction_summary.get("deduction_kind", "unspecified")).replace("_", " ").title()],
+        ["Chosen deduction amount", money(deduction_summary.get("selected_deduction_amount"))],
+        ["IRA deduction", money(above_the_line.get("ira_contribution_deduction"))],
+        ["HSA deduction", money(above_the_line.get("hsa_deduction"))],
+        ["Student loan interest deduction", money(above_the_line.get("student_loan_interest_deduction"))],
+        ["Above-the-line adjustments total", money(above_the_line.get("total"))],
+        ["Documented mortgage interest", money(itemized_evidence.get("mortgage_interest"))],
+        ["Documented charitable cash", money(itemized_evidence.get("charitable_cash"))],
+        ["Documented itemized evidence total", money(itemized_evidence.get("total"))],
+        ["Undocumented itemized gap", money(itemized_evidence.get("undocumented_gap"))],
+    ]
+    deduction_review_lines = ["- None"]
+    if deduction_summary.get("deduction_kind") == "unspecified" and itemized_evidence.get("total", 0.0):
+        deduction_review_lines = [
+            "- Mortgage-interest or donation documents are present, but the deduction path is still unspecified."
+        ]
+    elif itemized_evidence.get("undocumented_gap", 0.0):
+        deduction_review_lines = [
+            f"- The chosen itemized deduction amount exceeds documented mortgage-interest and donation support by {money(itemized_evidence.get('undocumented_gap'))}."
+        ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +365,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        make_markdown_table(["Field", "Value"], deduction_review_rows),
+        "",
+        *deduction_review_lines,
         "",
         "## Candidate Business Expenses",
         "",

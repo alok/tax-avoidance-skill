@@ -71,6 +71,7 @@
         }
       ],
       "answers": {
+        "deduction_kind": "standard",
         "deduction_amount": 29200,
         "ira_contribution_deduction": 4000,
         "hsa_deduction": 1800,
@@ -505,6 +506,66 @@
     "expect": {
       "status": "ok",
       "schedule_c_line_1": 108000.0
+    }
+  },
+  "deduction_review_gap": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 12500
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 6400
+          }
+        },
+        {
+          "id": "charity-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://charity-1",
+          "fields": {
+            "cash_donations": 600
+          }
+        },
+        {
+          "id": "1098-e",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-e",
+          "fields": {
+            "student_loan_interest": 900
+          }
+        }
+      ],
+      "answers": {
+        "deduction_kind": "itemized",
+        "deduction_amount": 9000,
+        "tax_before_credits": 11500
+      },
+      "user_request": "Draft my return package and show what is still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 98000,
+      "line_25a": 12500
     }
   },
   "unsupported_schedule_c": {

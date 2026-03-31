@@ -25,6 +25,10 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Adds a TurboTax-style deduction review block that separates:
+  - above-the-line adjustments such as IRA, HSA, and student-loan-interest deductions
+  - documented itemized evidence such as mortgage interest and cash donations
+  - any remaining gap when the user says they are itemizing more than the currently documented support
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -96,9 +100,10 @@ Primary command:
 3. Capture resident-state and work-state context as early as possible.
 4. Build a document inventory and ask the minimum remaining interview questions.
 5. Normalize extracted facts into `return-data.json`.
-6. Assemble a prefilled federal line map and a human-readable dossier.
-7. Surface likely business-expense receipts separately from confirmed deductible expenses.
-8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
+6. Build a deduction review summary so the user can confirm whether they are taking the standard deduction or itemizing.
+7. Assemble a prefilled federal line map and a human-readable dossier.
+8. Surface likely business-expense receipts separately from confirmed deductible expenses.
+9. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
 
 ## Repository Layout
 
