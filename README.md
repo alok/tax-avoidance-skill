@@ -26,6 +26,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `federal-lines.md`
   - `missing-items.md`
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
+- Preserves explicit zero-value interview answers, so a confirmed `0` for items like contractor expenses renders as `$0.00` instead of falling back to `TBD`.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
 

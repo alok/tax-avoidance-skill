@@ -94,6 +94,13 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
 
+    def test_schedule_c_allows_explicit_zero_expenses(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_zero_expenses_confirmed")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("$0.00", artifacts["federal-lines.md"])
+        self.assertIn("$24,000.00", artifacts["federal-lines.md"])
+        self.assertNotIn("Provide deductible business expenses", artifacts["missing-items.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")
