@@ -32,6 +32,53 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def normalize_dependent_record(raw: dict[str, Any], index: int) -> dict[str, Any]:
+    age = raw.get("age")
+    if age in (None, ""):
+        age = None
+    else:
+        age = int(age)
+
+    months_in_home = raw.get("months_in_home")
+    if months_in_home in (None, ""):
+        months_in_home = None
+    else:
+        months_in_home = int(months_in_home)
+
+    childcare_expenses = safe_float(raw.get("childcare_expenses"))
+    sensitive_fields = [
+        field
+        for field in ("ssn", "itin", "tin", "date_of_birth")
+        if raw.get(field) not in (None, "")
+    ]
+    relationship = str(raw.get("relationship", "")).strip()
+    can_be_claimed = bool(raw.get("taxpayer_claims", True)) and not bool(raw.get("claimed_by_other_taxpayer", False))
+    under_age_17 = raw.get("under_age_17")
+    if under_age_17 is None:
+        under_age_17 = age is not None and age < 17
+
+    credit_signal = "none"
+    if can_be_claimed and under_age_17:
+        credit_signal = "child_tax_credit_review"
+    elif can_be_claimed:
+        credit_signal = "other_dependent_credit_review"
+
+    return {
+        "name": raw.get("name") or raw.get("label") or f"Dependent {index}",
+        "relationship": relationship or "unspecified",
+        "age": age,
+        "under_age_17": bool(under_age_17),
+        "full_time_student": bool(raw.get("full_time_student", False)),
+        "disabled": bool(raw.get("disabled", False)),
+        "months_in_home": months_in_home,
+        "taxpayer_claims": can_be_claimed,
+        "childcare_expenses": childcare_expenses,
+        "credit_signal": credit_signal,
+        "notes": str(raw.get("notes", "")).strip(),
+        "sensitive_fields_omitted": sensitive_fields,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +86,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
+    dependents = [
+        normalize_dependent_record(dependent, index)
+        for index, dependent in enumerate(household.get("dependents", []), start=1)
+    ]
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -183,6 +235,22 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    if dependents and "child_tax_credit" not in answers:
+        credit_signal_count = sum(1 for dependent in dependents if dependent["credit_signal"] == "child_tax_credit_review")
+        dependent_signal_count = sum(
+            1 for dependent in dependents if dependent["credit_signal"] == "other_dependent_credit_review"
+        )
+        if credit_signal_count or dependent_signal_count:
+            missing_items.append(
+                "Review Child Tax Credit / Credit for Other Dependents eligibility for the listed dependents and provide the credit amount to use in the draft package."
+            )
+    if any(
+        dependent["childcare_expenses"] > 0.0 and dependent["months_in_home"] is None
+        for dependent in dependents
+    ):
+        missing_items.append(
+            "Confirm months in the home for dependents with childcare expenses before using those facts in a later credit review."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -289,6 +357,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "dependents": dependents,
+            "dependent_count": len(dependents),
+            "child_tax_credit_signal_count": sum(
+                1 for dependent in dependents if dependent["credit_signal"] == "child_tax_credit_review"
+            ),
+            "other_dependent_credit_signal_count": sum(
+                1 for dependent in dependents if dependent["credit_signal"] == "other_dependent_credit_review"
+            ),
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

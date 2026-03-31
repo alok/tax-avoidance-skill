@@ -65,14 +65,14 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     taxable_income = max(agi - deduction_amount - qbi_deduction, 0.0) if deduction_amount else None
 
     tax_before_credits = fact_value(normalized, "tax_before_credits")
-    nonrefundable_credits = (
+    child_tax_credit = fact_value(normalized, "child_tax_credit")
+    other_credits = (
         fact_value(normalized, "education_credit")
         + fact_value(normalized, "clean_vehicle_credit")
         + fact_value(normalized, "clean_energy_credit")
-        + fact_value(normalized, "child_tax_credit")
         + fact_value(normalized, "other_nonrefundable_credits")
     )
-    total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
+    total_tax = max(tax_before_credits - child_tax_credit - other_credits, 0.0) if tax_before_credits else None
 
     withholding = fact_value(normalized, "federal_withholding")
     other_payments = fact_value(normalized, "other_payments")
@@ -205,13 +205,20 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "19",
+            "label": "Child tax credit or credit for other dependents",
+            "value": child_tax_credit or None,
+            "sources": fact_sources(normalized, "child_tax_credit"),
+            "rule_citations": rule_citations("child_tax_credit"),
+        },
+        {
+            "form": "Form 1040",
             "line": "20",
             "label": "Other credits",
-            "value": nonrefundable_credits or None,
+            "value": other_credits or None,
             "sources": fact_sources(normalized, "education_credit")
             + fact_sources(normalized, "clean_vehicle_credit")
             + fact_sources(normalized, "clean_energy_credit")
-            + fact_sources(normalized, "child_tax_credit")
             + fact_sources(normalized, "other_nonrefundable_credits"),
             "rule_citations": rule_citations(
                 "education_credit",
@@ -316,6 +323,36 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    household_summary = normalized.get("household_summary", {})
+    dependent_rows = []
+    for dependent in household_summary.get("dependents", []):
+        age_bits = []
+        if dependent.get("age") is not None:
+            age_bits.append(f"age {dependent['age']}")
+        if dependent.get("under_age_17"):
+            age_bits.append("under 17")
+        if dependent.get("full_time_student"):
+            age_bits.append("student")
+        if dependent.get("disabled"):
+            age_bits.append("disabled")
+        omitted = dependent.get("sensitive_fields_omitted", [])
+        note_parts = []
+        if dependent.get("notes"):
+            note_parts.append(dependent["notes"])
+        if omitted:
+            note_parts.append(f"Sensitive fields omitted: {', '.join(omitted)}")
+        dependent_rows.append(
+            [
+                dependent.get("name", "Unknown"),
+                dependent.get("relationship", "unspecified"),
+                ", ".join(age_bits) or "None",
+                str(dependent.get("months_in_home")) if dependent.get("months_in_home") is not None else "TBD",
+                "Yes" if dependent.get("taxpayer_claims") else "No",
+                money(dependent.get("childcare_expenses")),
+                dependent.get("credit_signal", "none"),
+                "; ".join(note_parts) or "None",
+            ]
+        )
 
     sections = [
         "# Tax Dossier",
@@ -367,6 +404,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ),
         "",
         *state_follow_up_lines,
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured: {household_summary.get('dependent_count', 0)}",
+        f"- Child-credit review signals: {household_summary.get('child_tax_credit_signal_count', 0)}",
+        f"- Other dependent-credit review signals: {household_summary.get('other_dependent_credit_signal_count', 0)}",
+        "- Sensitive identifiers such as SSNs are intentionally omitted from normalized artifacts.",
+        "",
+        make_markdown_table(
+            ["Name", "Relationship", "Age / Status", "Months Home", "Claimed Here", "Childcare", "Credit Signal", "Notes"],
+            dependent_rows or [["None", "None", "None", "None", "None", "$0.00", "none", "None"]],
+        ),
         "",
         "## Missing Items",
         "",

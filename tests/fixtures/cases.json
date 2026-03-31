@@ -167,6 +167,50 @@
       "line_20": 1800
     }
   },
+  "dependent_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "household": {
+        "dependents": [
+          {
+            "name": "Avery",
+            "relationship": "child",
+            "age": 9,
+            "months_in_home": 12,
+            "childcare_expenses": 3200,
+            "ssn": "123-45-6789"
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-parent",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 8200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7600,
+        "child_tax_credit": 2000
+      },
+      "user_request": "Draft my return package and keep the household details straight."
+    },
+    "expect": {
+      "status": "ok",
+      "line_19": 2000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

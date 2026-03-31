@@ -5,6 +5,17 @@
     "gmail": true,
     "google_drive": true
   },
+  "household": {
+    "dependents": [
+      {
+        "name": "Avery",
+        "relationship": "child",
+        "age": 9,
+        "months_in_home": 12,
+        "childcare_expenses": 3200.0
+      }
+    ]
+  },
   "documents": [
     {
       "id": "sample-1099-nec",

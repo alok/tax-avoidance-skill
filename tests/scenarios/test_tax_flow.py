@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "dependent_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -66,6 +67,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "line_19" in expected:
+                    self.assertIn(f"${expected['line_19']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
@@ -122,6 +125,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_intake_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household")
+        self.assertEqual(normalized["status"], "ok")
+        household = normalized["household_summary"]
+        self.assertEqual(household["dependent_count"], 1)
+        self.assertEqual(household["child_tax_credit_signal_count"], 1)
+        self.assertEqual(household["dependents"][0]["sensitive_fields_omitted"], ["ssn"])
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Sensitive identifiers such as SSNs are intentionally omitted", artifacts["tax-dossier.md"])
+        self.assertIn("$2,000.00", artifacts["federal-lines.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -138,8 +152,11 @@ class TaxFlowTest(unittest.TestCase):
                 cwd=REPO_ROOT,
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
+            missing = (out_dir / "missing-items.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Household And Dependents", dossier)
             self.assertIn("$48,000.00", dossier)
+            self.assertIn("Review Child Tax Credit / Credit for Other Dependents eligibility", missing)
 
 
 if __name__ == "__main__":
