@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    deduction_summary = normalized.get("deduction_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_rows = [
+        ["Reported line 12 deduction amount", money(deduction_summary.get("deduction_amount"))],
+        ["Mortgage interest from Form 1098", money(deduction_summary.get("mortgage_interest"))],
+        ["Cash donations from receipts", money(deduction_summary.get("charitable_cash"))],
+        ["Student loan interest adjustment", money(deduction_summary.get("student_loan_interest"))],
+        ["IRA contribution deduction", money(deduction_summary.get("ira_contribution_deduction"))],
+        ["HSA deduction", money(deduction_summary.get("hsa_deduction"))],
+    ]
+    deduction_note_lines = [f"- {item}" for item in deduction_summary.get("notes", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +351,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Interview",
+        "",
+        make_markdown_table(
+            ["Signal", "Amount"],
+            deduction_rows,
+        ),
+        "",
+        *deduction_note_lines,
         "",
         "## Candidate Business Expenses",
         "",

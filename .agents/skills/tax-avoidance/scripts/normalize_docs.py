@@ -176,7 +176,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if mortgage_interest > 0.0 or charitable_cash > 0.0:
+            missing_items.append(
+                "Choose whether to use the standard deduction or itemize. Current documents already show mortgage interest or charitable giving that could affect the deduction amount."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -222,6 +227,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         status = "refused"
     elif unsupported_reasons:
         status = "unsupported"
+
+    deduction_notes: list[str] = []
+    if mortgage_interest > 0.0 or charitable_cash > 0.0:
+        deduction_notes.append(
+            "Mortgage interest and donation receipts can support an itemized-deduction decision, but this workflow still expects an explicit line 12 deduction amount."
+        )
+    if student_loan_interest > 0.0 or ira_deduction > 0.0 or hsa_deduction > 0.0:
+        deduction_notes.append(
+            "Student loan interest, IRA deductions, and HSA deductions reduce income separately from the standard-vs-itemized deduction choice."
+        )
 
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
@@ -289,6 +304,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "deduction_amount": deduction_amount,
+            "mortgage_interest": mortgage_interest,
+            "charitable_cash": charitable_cash,
+            "student_loan_interest": student_loan_interest,
+            "ira_contribution_deduction": ira_deduction,
+            "hsa_deduction": hsa_deduction,
+            "notes": deduction_notes,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
