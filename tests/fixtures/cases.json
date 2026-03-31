@@ -563,6 +563,107 @@
       "unsupported": "Equity compensation"
     }
   },
+  "education_credit_intake_questions": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 9500
+          }
+        },
+        {
+          "id": "1098t-student",
+          "doc_type": "1098-T",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098t-student",
+          "fields": {
+            "qualified_tuition": 8400,
+            "scholarships": 2500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 8400
+      },
+      "user_request": "Use the tuition forms you found and tell me the next questions."
+    },
+    "expect": {
+      "status": "ok",
+      "question": "American Opportunity Credit",
+      "question_secondary": "excluding scholarships"
+    }
+  },
+  "retirement_hsa_intake_questions": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 118000,
+            "federal_withholding": 17500
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        },
+        {
+          "id": "hsa-5498-sa",
+          "doc_type": "5498-SA",
+          "source_type": "google_drive",
+          "source_ref": "drive://hsa-5498-sa",
+          "fields": {
+            "hsa_contributions": 1800
+          }
+        },
+        {
+          "id": "hsa-1099-sa",
+          "doc_type": "1099-SA",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://hsa-1099-sa",
+          "fields": {
+            "hsa_distributions": 900
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 16800
+      },
+      "user_request": "Review my IRA and HSA forms and ask only what still matters."
+    },
+    "expect": {
+      "status": "ok",
+      "question": "workplace retirement plan",
+      "question_secondary": "qualified medical expenses"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

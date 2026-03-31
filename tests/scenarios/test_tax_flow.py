@@ -129,6 +129,22 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Refusal", artifacts["missing-items.md"])
         self.assertIn("tax evasion", artifacts["tax-dossier.md"])
 
+    def test_targeted_education_intake_questions(self) -> None:
+        normalized, artifacts = self.run_case("education_credit_intake_questions")
+        self.assertEqual(normalized["status"], "ok")
+        prompts = "\n".join(question["prompt"] for question in normalized["interview_questions"])
+        self.assertIn("excluding scholarships", prompts)
+        self.assertIn("American Opportunity Credit", prompts)
+        self.assertIn("Targeted Interview Questions", artifacts["tax-dossier.md"])
+
+    def test_targeted_retirement_and_hsa_questions(self) -> None:
+        normalized, artifacts = self.run_case("retirement_hsa_intake_questions")
+        self.assertEqual(normalized["status"], "ok")
+        prompts = "\n".join(question["prompt"] for question in normalized["interview_questions"])
+        self.assertIn("workplace retirement plan", prompts)
+        self.assertIn("qualified medical expenses", prompts)
+        self.assertIn("Targeted Interview Questions", artifacts["tax-dossier.md"])
+
     def test_example_input_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             out_dir = Path(temp_dir) / "out"

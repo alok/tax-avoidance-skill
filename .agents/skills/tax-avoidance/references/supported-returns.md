@@ -17,8 +17,11 @@
 - 1099-DIV
 - 1099-B summary data
 - 1098
+- 1098-T
 - 1098-E
 - 5498
+- 5498-SA
+- 1099-SA
 - SSA-1099
 - donation receipts
 

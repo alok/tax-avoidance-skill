@@ -42,5 +42,6 @@ For a plain Codex app user:
 - Ask for filing status only after document collection begins.
 - Ask one question at a time when the answer changes supported-line output.
 - Prefer targeted clarifications over generic tax questionnaires.
+- If education, IRA, or HSA forms appear, convert them into specific next questions instead of assuming the raw form amount is already the final credit or deduction input.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.

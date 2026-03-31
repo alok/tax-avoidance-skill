@@ -32,6 +32,20 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_question(
+    key: str,
+    prompt: str,
+    why_it_matters: str,
+    sources: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "prompt": prompt,
+        "why_it_matters": why_it_matters,
+        "sources": sources,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -71,6 +85,31 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"1098-E"},
         "student_loan_interest",
+    )
+    qualified_tuition, qualified_tuition_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "qualified_tuition",
+    )
+    scholarships, scholarship_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "scholarships",
+    )
+    ira_contributions_reported, ira_contribution_reported_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
+    hsa_contributions_reported, hsa_contribution_reported_sources = aggregate_numeric(
+        documents,
+        {"5498-SA"},
+        "hsa_contributions",
+    )
+    hsa_distributions_reported, hsa_distribution_reported_sources = aggregate_numeric(
+        documents,
+        {"1099-SA"},
+        "hsa_distributions",
     )
     expense_documents_for_year = [
         document
@@ -223,6 +262,56 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     elif unsupported_reasons:
         status = "unsupported"
 
+    interview_questions: list[dict[str, Any]] = []
+    if qualified_tuition > 0.0 and "education_credit" not in answers:
+        interview_questions.append(
+            build_question(
+                "education_credit_expenses",
+                "Your 1098-T shows qualified tuition. What amount was actually paid in 2025 after excluding scholarships, employer aid, and any expenses that do not count toward the education credit?",
+                "Education credits depend on net qualified education expenses, not just the raw 1098-T boxes.",
+                qualified_tuition_sources + scholarship_sources,
+            )
+        )
+        interview_questions.append(
+            build_question(
+                "education_credit_student_status",
+                "Was the student enrolled at least half time in a program leading to a degree or credential, and had they already claimed the American Opportunity Credit for four prior tax years?",
+                "That determines whether the American Opportunity Credit is even available or whether the review should stay in Lifetime Learning Credit mode.",
+                qualified_tuition_sources,
+            )
+        )
+
+    if ira_contributions_reported > 0.0 and "ira_contribution_deduction" not in answers:
+        interview_questions.append(
+            build_question(
+                "ira_deduction_review",
+                "The 5498 reports IRA contributions. Were these traditional IRA contributions designated for 2025, and was the taxpayer covered by a workplace retirement plan during the year?",
+                "The reported contribution is not automatically deductible; coverage and contribution type control the IRA deduction review.",
+                ira_contribution_reported_sources,
+            )
+        )
+
+    if (
+        hsa_contributions_reported > 0.0 or hsa_distributions_reported > 0.0
+    ) and "hsa_deduction" not in answers:
+        interview_questions.append(
+            build_question(
+                "hsa_contribution_review",
+                "The HSA forms show contributions or distributions. How much of the 2025 HSA contribution was made directly outside payroll, and did the taxpayer have self-only or family HDHP coverage?",
+                "Only direct HSA contributions flow through the deduction line, and the coverage type affects the allowed contribution limit.",
+                hsa_contribution_reported_sources + hsa_distribution_reported_sources,
+            )
+        )
+        if hsa_distributions_reported > 0.0:
+            interview_questions.append(
+                build_question(
+                    "hsa_distribution_review",
+                    "Were all 1099-SA distributions used for qualified medical expenses in 2025, or is any portion taxable or subject to penalty review?",
+                    "Qualified use determines whether the HSA distribution stays non-taxable or needs follow-up.",
+                    hsa_distribution_reported_sources,
+                )
+            )
+
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
         "nonemployee_compensation": build_fact(
@@ -236,10 +325,27 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "qualified_tuition": build_fact("qualified_tuition", qualified_tuition, qualified_tuition_sources),
+        "scholarships": build_fact("scholarships", scholarships, scholarship_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contribution_reported_sources,
+        ),
+        "hsa_contributions_reported": build_fact(
+            "hsa_contributions_reported",
+            hsa_contributions_reported,
+            hsa_contribution_reported_sources,
+        ),
+        "hsa_distributions_reported": build_fact(
+            "hsa_distributions_reported",
+            hsa_distributions_reported,
+            hsa_distribution_reported_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
@@ -276,6 +382,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "interview_questions": interview_questions,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,
