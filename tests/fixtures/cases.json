@@ -279,6 +279,64 @@
       "candidate_total": 371.89
     }
   },
+  "targeted_interview_questions": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "contractor-1099",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://contractor-1099",
+          "fields": {
+            "nonemployee_compensation": 32000
+          }
+        },
+        {
+          "id": "student-loan",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://student-loan",
+          "fields": {
+            "student_loan_interest": 625.14
+          }
+        },
+        {
+          "id": "ira-record",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-record",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        },
+        {
+          "id": "ai-receipt",
+          "doc_type": "Expense Receipt",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://ai-receipt",
+          "document_date": "2025-01-10",
+          "fields": {
+            "amount": 120.00,
+            "vendor": "OpenAI"
+          }
+        }
+      ],
+      "answers": {},
+      "user_request": "Gather my simple tax docs and ask only the next questions that matter."
+    },
+    "expect": {
+      "status": "ok",
+      "question": "Should the candidate receipts totaling $120.00 be treated as Schedule C business expenses",
+      "student_loan_question": "Should the student loan interest deduction include the 1098-E amount of $625.14?",
+      "ira_question": "Form 5498 reports $7,000.00 of IRA contributions. How much of that should be treated as deductible for 2025?"
+    }
+  },
   "expense_year_filter": {
     "input": {
       "tax_year": 2025,

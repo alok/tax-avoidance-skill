@@ -42,6 +42,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
+    intake_questions: list[str] = []
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
@@ -104,6 +105,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_contributions_reported, _ira_document_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -164,8 +170,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         state_follow_up.append(
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
+        intake_questions.append("The documents show wages in multiple states. Which state was your resident state for 2025?")
 
     missing_items: list[str] = []
+    document_types = {document.get("doc_type") for document in documents}
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -173,25 +181,63 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     }
     if not payload.get("filing_status"):
         missing_items.append("Confirm the filing status for the return.")
+        intake_questions.append("What filing status applies for 2025: single or married filing jointly?")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
+        intake_questions.append("Which tax forms do you already have in hand, and which ones still need to be uploaded or found through connectors?")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if "1098" in document_types or "Donation Receipt" in document_types:
+            intake_questions.append(
+                "Do you want this draft to use the standard deduction, or should it review itemizing with mortgage interest, donations, and any other itemized deductions?"
+            )
+        else:
+            intake_questions.append("Should this draft use the standard deduction, or do you want to provide an itemized deduction total?")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+        intake_questions.append(
+            "Do you already have a tax-before-credits figure for the draft package, or should the tax lines stay marked for manual review?"
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+        if candidate_business_expenses > 0.0:
+            intake_questions.append(
+                f"Should the candidate receipts totaling ${candidate_business_expenses:,.2f} be treated as Schedule C business expenses, and are there any additional deductible expenses not captured yet?"
+            )
+        else:
+            intake_questions.append(
+                "For the 1099-NEC work, should Schedule C business expenses be treated as zero, or do you want to provide deductible business expenses?"
+            )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if "1098-E" in document_types and "student_loan_interest_deduction" not in answers:
+        if student_loan_interest > 0.0:
+            intake_questions.append(
+                f"Should the student loan interest deduction include the 1098-E amount of ${student_loan_interest:,.2f}?"
+            )
+        else:
+            intake_questions.append("A 1098-E was found. Should student loan interest be included in this draft?")
+    if "5498" in document_types and "ira_contribution_deduction" not in answers:
+        if ira_contributions_reported > 0.0:
+            intake_questions.append(
+                f"Form 5498 reports ${ira_contributions_reported:,.2f} of IRA contributions. How much of that should be treated as deductible for 2025?"
+            )
+        else:
+            intake_questions.append(
+                "Form 5498 was found. How much of your 2025 IRA contribution should be treated as deductible in this draft?"
+            )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+        intake_questions.append(
+            "What is the net capital gain or loss from the 1099-B or consolidated brokerage support documents?"
+        )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -275,6 +321,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "connector_notes": connector_notes(connectors, documents),
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
+        "intake_questions": list(dict.fromkeys(intake_questions)),
         "missing_items": missing_items,
         "state_summary": {
             "resident_state": resident_state,

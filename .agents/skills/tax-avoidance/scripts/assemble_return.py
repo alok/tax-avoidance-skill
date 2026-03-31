@@ -282,6 +282,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
+    intake_lines = [f"- {item}" for item in normalized.get("intake_questions", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
@@ -351,6 +352,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
         "",
+        "## Targeted Interview Questions",
+        "",
+        *intake_lines,
+        "",
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
@@ -406,6 +411,11 @@ def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
 
 def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     lines = ["# Missing Items", ""]
+    if normalized.get("intake_questions"):
+        lines.extend(["## Targeted Interview Questions", ""])
+        lines.extend(f"- {item}" for item in normalized["intake_questions"])
+        lines.append("")
+
     if normalized.get("missing_items"):
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:

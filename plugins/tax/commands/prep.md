@@ -28,7 +28,8 @@ Run the shared Tax Avoidance workflow for a normal person who wants to use Claud
    `return-data.json`,
    `federal-lines.md`,
    and `missing-items.md`
-7. Clearly separate:
+7. Surface the next targeted interview questions implied by the forms already found.
+8. Clearly separate:
    legal planning moves,
    unsupported complexity,
    illegal requests,

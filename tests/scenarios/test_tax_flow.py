@@ -102,6 +102,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
 
+    def test_targeted_interview_questions(self) -> None:
+        normalized, artifacts = self.run_case("targeted_interview_questions")
+        self.assertEqual(normalized["status"], "ok")
+        expected = self.cases["targeted_interview_questions"]["expect"]
+        questions = normalized["intake_questions"]
+        self.assertIn(expected["question"], "\n".join(questions))
+        self.assertIn(expected["student_loan_question"], questions)
+        self.assertIn(expected["ira_question"], questions)
+        self.assertIn("## Targeted Interview Questions", artifacts["tax-dossier.md"])
+        self.assertIn(expected["question"], artifacts["tax-dossier.md"])
+        self.assertIn("## Targeted Interview Questions", artifacts["missing-items.md"])
+        self.assertIn(expected["student_loan_question"], artifacts["missing-items.md"])
+
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
         self.assertEqual(normalized["status"], "ok")
