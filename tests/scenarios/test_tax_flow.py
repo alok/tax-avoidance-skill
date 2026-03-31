@@ -122,6 +122,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_artifacts_include_traceability(self) -> None:
+        normalized, artifacts = self.run_case("w2_single")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("## Fact Traceability", artifacts["tax-dossier.md"])
+        self.assertIn("gmail://w2-acme", artifacts["tax-dossier.md"])
+        self.assertIn("[IRS Publication 17](https://www.irs.gov/publications/p17)", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "[IRS Publication 505](https://www.irs.gov/publications/p505)",
+            artifacts["federal-lines.md"],
+        )
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

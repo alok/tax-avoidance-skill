@@ -39,6 +39,50 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def compact_doc_sources(sources: list[dict[str, Any]]) -> str:
+    refs = [src.get("source_ref", "unknown") for src in sources if src.get("source_ref")]
+    return ", ".join(dict.fromkeys(refs)) or "TBD"
+
+
+def compact_rule_sources(citations: list[dict[str, str]]) -> str:
+    refs = [f"[{src['title']}]({src['url']})" for src in citations]
+    return ", ".join(dict.fromkeys(refs)) or "TBD"
+
+
+def build_fact_trace_rows(normalized: dict[str, Any]) -> list[list[str]]:
+    traced_facts = [
+        ("Wages", "wages", "wages"),
+        ("Federal withholding", "federal_withholding", "federal_withholding"),
+        ("Taxable interest", "taxable_interest", "taxable_interest"),
+        ("Ordinary dividends", "ordinary_dividends", "ordinary_dividends"),
+        ("Capital gains", "capital_gains", "capital_gains"),
+        ("IRA deduction", "ira_contribution_deduction", "ira_contribution_deduction"),
+        ("HSA deduction", "hsa_deduction", "hsa_deduction"),
+        ("Student loan interest deduction", "student_loan_interest_deduction", "student_loan_interest_deduction"),
+        ("Education credit", "education_credit", "education_credit"),
+        ("Clean vehicle credit", "clean_vehicle_credit", "clean_vehicle_credit"),
+        ("Clean energy credit", "clean_energy_credit", "clean_energy_credit"),
+        ("Nonemployee compensation", "nonemployee_compensation", "nonemployee_compensation"),
+        ("Business expenses", "business_expenses", "business_expenses"),
+        ("Candidate business expenses", "candidate_business_expenses", "business_expenses"),
+    ]
+    rows: list[list[str]] = []
+    for label, fact_key, citation_key in traced_facts:
+        value = fact_value(normalized, fact_key)
+        sources = fact_sources(normalized, fact_key)
+        if value == 0.0 and not sources:
+            continue
+        rows.append(
+            [
+                label,
+                money(value),
+                compact_doc_sources(sources),
+                compact_rule_sources(rule_citations(citation_key)),
+            ]
+        )
+    return rows
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -280,6 +324,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    fact_trace_rows = build_fact_trace_rows(normalized)
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -342,6 +387,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
         "",
+        "## Fact Traceability",
+        "",
+        make_markdown_table(
+            ["Fact", "Value", "Document Sources", "IRS Or Form Sources"],
+            fact_trace_rows or [["None", "$0.00", "TBD", "TBD"]],
+        ),
+        "",
         "## Candidate Business Expenses",
         "",
         f"- Found candidate expense receipts totaling {money(candidate_business_expenses) if candidate_business_expenses else '$0.00'} that are not yet applied to Schedule C.",
@@ -386,8 +438,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
 def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
     rows: list[list[str]] = []
     for item in line_items:
-        doc_sources = ", ".join(src.get("source_ref", "unknown") for src in item.get("sources", [])) or "TBD"
-        rule_sources = ", ".join(src["title"] for src in item.get("rule_citations", [])) or "TBD"
+        doc_sources = compact_doc_sources(item.get("sources", []))
+        rule_sources = compact_rule_sources(item.get("rule_citations", []))
         rows.append(
             [
                 item["form"],
