@@ -122,6 +122,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_education_credit_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("education_credit_scaffolding")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["qualified_tuition_paid"]["value"], 9000)
+        self.assertEqual(normalized["facts"]["scholarships_grants"]["value"], 2500)
+        self.assertIn("Education Credit Scaffolding", artifacts["tax-dossier.md"])
+        self.assertIn("$9,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("1098-T support", artifacts["missing-items.md"])
+        self.assertIn("TBD", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

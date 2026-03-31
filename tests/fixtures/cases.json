@@ -167,6 +167,48 @@
       "line_20": 1800
     }
   },
+  "education_credit_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent",
+          "fields": {
+            "wages": 102000,
+            "federal_withholding": 12000
+          }
+        },
+        {
+          "id": "1098t-student",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-student",
+          "fields": {
+            "qualified_tuition_paid": 9000,
+            "scholarships_grants": 2500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 11800
+      },
+      "user_request": "Help with my tuition docs and draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "qualified_tuition_paid": 9000,
+      "scholarships_grants": 2500
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

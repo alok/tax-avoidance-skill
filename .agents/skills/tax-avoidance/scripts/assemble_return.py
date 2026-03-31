@@ -296,6 +296,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    qualified_tuition_paid = fact_value(normalized, "qualified_tuition_paid")
+    scholarships_grants = fact_value(normalized, "scholarships_grants")
+    education_credit = fact_value(normalized, "education_credit")
+    education_docs_present = any(doc.get("doc_type") == "1098-T" for doc in normalized.get("documents", []))
     state_rows = [
         [
             module.get("code", ""),
@@ -351,6 +355,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
         "",
+    ]
+    if education_docs_present or education_credit:
+        sections.extend(
+            [
+                "## Education Credit Scaffolding",
+                "",
+                f"- Qualified tuition from 1098-T documents: {money(qualified_tuition_paid)}",
+                f"- Scholarships and grants from 1098-T documents: {money(scholarships_grants)}",
+                f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit) if education_credit else 'TBD'}",
+                "- 1098-T amounts are surfaced for review and are not converted into an education credit automatically.",
+                "",
+            ]
+        )
+    sections.extend(
+        [
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
@@ -379,7 +398,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Refusal Notes",
         "",
         *refusal_lines,
-    ]
+    ])
     return "\n".join(sections).strip() + "\n"
 
 
