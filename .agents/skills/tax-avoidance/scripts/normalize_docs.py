@@ -14,6 +14,7 @@ from tax_flow_common import (  # noqa: E402
     aggregate_numeric,
     categorize_expense_vendor,
     connector_notes,
+    default_standard_deduction,
     detect_illegal_request,
     detect_unsupported,
     dump_json,
@@ -38,7 +39,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     connectors = payload.get("connectors", {})
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
+    filing_status = payload.get("filing_status", "")
     state = payload.get("state", {})
+    inference_notes: list[str] = []
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -109,6 +112,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
+    if "deduction_amount" not in answers:
+        inferred_standard_deduction = default_standard_deduction(tax_year, filing_status)
+        if inferred_standard_deduction is not None:
+            deduction_amount = inferred_standard_deduction
+            deduction_sources = [
+                {
+                    "source_type": "rule_default",
+                    "source_ref": f"rule:standard_deduction:{tax_year}:{filing_status}",
+                    "field": "deduction_amount",
+                    "value": deduction_amount,
+                }
+            ]
+            inference_notes.append(
+                f"Applied the {tax_year} standard deduction of ${deduction_amount:,.2f} by default for filing status `{filing_status}`. Review before filing if you expect to itemize instead."
+            )
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
@@ -171,7 +189,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         for document in documents
         if document.get("dedupe_key") and document.get("content_status") == "available"
     }
-    if not payload.get("filing_status"):
+    if not filing_status:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
@@ -268,11 +286,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     normalized: dict[str, Any] = {
         "status": status,
         "tax_year": tax_year,
-        "filing_status": payload.get("filing_status", ""),
+        "filing_status": filing_status,
         "user_request": user_request,
         "documents": documents,
         "connectors": connectors,
         "connector_notes": connector_notes(connectors, documents),
+        "inference_notes": inference_notes,
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,

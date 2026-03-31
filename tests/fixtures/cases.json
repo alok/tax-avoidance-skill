@@ -31,6 +31,38 @@
       "line_25a": 14000
     }
   },
+  "w2_single_standard_deduction_default": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-standard-default",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-standard-default",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 9800
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 8200
+      },
+      "user_request": "Use the normal simple-return default if I did not provide a deduction amount."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 78000,
+      "line_12": 15750,
+      "line_25a": 9800
+    }
+  },
   "mfj_common_deductions": {
     "input": {
       "tax_year": 2025,

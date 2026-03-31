@@ -48,6 +48,7 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
 3. Search for likely tax documents using opinionated queries rather than asking the user to browse manually.
 4. Build a document inventory that names each candidate document, source, and confidence.
 5. Ask only the missing interview questions needed to assemble the supported return.
+   If the filing status is supported and no deduction amount was provided yet, default to the official 2025 standard deduction and mark that assumption for review.
 6. Write an input JSON payload and run the deterministic script:
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
 7. Return the artifact set:

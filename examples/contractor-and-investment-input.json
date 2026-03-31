@@ -59,7 +59,6 @@
   ],
   "answers": {
     "business_expenses": 9000.0,
-    "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
   "user_request": "Build a sample contractor plus investment return package."

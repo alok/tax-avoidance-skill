@@ -282,6 +282,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
+    inference_lines = [f"- {note}" for note in normalized.get("inference_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
@@ -330,6 +331,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Connector Notes",
         "",
         *connector_lines,
+        "",
+        "## Assumptions And Inferences",
+        "",
+        *inference_lines,
         "",
         "## Document Inventory",
         "",

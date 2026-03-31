@@ -62,6 +62,17 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "standard_deduction_2025": {
+        "title": "Publication 501 (2025), Dependents, Standard Deduction, and Filing Information",
+        "url": "https://www.irs.gov/publications/p501",
+    },
+}
+
+STANDARD_DEDUCTION_BY_YEAR: dict[int, dict[str, float]] = {
+    2025: {
+        "single": 15750.0,
+        "married_filing_jointly": 31500.0,
+    },
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {
@@ -303,3 +314,8 @@ def resolve_state_support(code: str | None) -> dict[str, str] | None:
         "nonresident_form": "Unknown",
         "source_url": "",
     }
+
+
+def default_standard_deduction(tax_year: int, filing_status: str) -> float | None:
+    year_amounts = STANDARD_DEDUCTION_BY_YEAR.get(tax_year, {})
+    return year_amounts.get(filing_status)

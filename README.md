@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Defaults to the official 2025 standard deduction for supported filing statuses when the user has not explicitly chosen or supplied a deduction amount yet, while still flagging that assumption for review.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -73,6 +74,7 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 ```
 
 That should create the same four standard artifacts in `output/example-run/`.
+The bundled example intentionally omits `deduction_amount` so you can see the default standard-deduction inference in the generated artifacts.
 
 ## Install In Claude Cowork
 
@@ -96,6 +98,7 @@ Primary command:
 3. Capture resident-state and work-state context as early as possible.
 4. Build a document inventory and ask the minimum remaining interview questions.
 5. Normalize extracted facts into `return-data.json`.
+   The deterministic layer will apply the 2025 standard deduction automatically for supported filing statuses unless the input explicitly supplies a deduction amount.
 6. Assemble a prefilled federal line map and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.
 8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.

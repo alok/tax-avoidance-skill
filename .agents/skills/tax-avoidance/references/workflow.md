@@ -41,6 +41,7 @@ For a plain Codex app user:
 
 - Ask for filing status only after document collection begins.
 - Ask one question at a time when the answer changes supported-line output.
+- If the filing status is supported and the user has not given a deduction amount yet, default to the official 2025 standard deduction first and mark that assumption for review instead of blocking the whole flow.
 - Prefer targeted clarifications over generic tax questionnaires.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.
