@@ -14,6 +14,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "social_security_benefits": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
+    "taxable_social_security_benefits": {
+        "title": "IRS Publication 915",
+        "url": "https://www.irs.gov/publications/p915",
+    },
     "ira_contribution_deduction": {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",
@@ -183,11 +187,13 @@ def answer_fact(
     answers: dict[str, Any],
     key: str,
     fallback: float = 0.0,
+    *,
+    preserve_zero_source: bool = True,
 ) -> tuple[float, list[dict[str, Any]]]:
     if key not in answers:
         return fallback, []
     value = safe_float(answers.get(key))
-    if value == 0.0:
+    if value == 0.0 and not preserve_zero_source:
         return value, []
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
 

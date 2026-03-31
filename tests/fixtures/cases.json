@@ -563,6 +563,80 @@
       "unsupported": "Equity compensation"
     }
   },
+  "social_security_requires_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1000
+      },
+      "user_request": "Gather my Social Security tax documents."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 12000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 4200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 800
+      },
+      "user_request": "Draft my return package with my SSA-1099 too."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 18000,
+      "line_6a": 12000,
+      "line_6b": 4200,
+      "line_9": 22200
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,
