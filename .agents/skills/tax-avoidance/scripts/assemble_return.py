@@ -283,6 +283,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
+    review_hint_lines = [f"- {item}" for item in normalized.get("review_hints", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
     candidate_expense_rows = [
@@ -372,6 +373,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *missing_lines,
         "",
+        "## Review Hints",
+        "",
+        *review_hint_lines,
+        "",
         "## Unsupported Or Risky Items",
         "",
         *unsupported_lines,
@@ -410,6 +415,10 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:
         lines.append("- None")
+
+    if normalized.get("review_hints"):
+        lines.extend(["", "## Review Hints", ""])
+        lines.extend(f"- {item}" for item in normalized["review_hints"])
 
     if normalized.get("unsupported_reasons"):
         lines.extend(["", "## Unsupported Complexity", ""])

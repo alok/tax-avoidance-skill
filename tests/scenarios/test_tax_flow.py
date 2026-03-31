@@ -80,6 +80,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Upload fallback is active", notes)
         self.assertIn("upload://upload-w2", artifacts["tax-dossier.md"])
 
+    def test_document_derived_deduction_hints(self) -> None:
+        normalized, artifacts = self.run_case("document_derived_deduction_hints")
+        self.assertEqual(normalized["status"], "ok")
+        review_hints = "\n".join(normalized["review_hints"])
+        self.assertIn("Form 1098-E shows 1,450.00 of student loan interest", review_hints)
+        self.assertIn("Form 5498 shows 3,500.00 of IRA contributions", review_hints)
+        self.assertIn("Form 1098 shows 6,200.00 of mortgage interest", review_hints)
+        self.assertIn("Donation receipts show 900.00 of charitable cash contributions", review_hints)
+        self.assertIn("Review Hints", artifacts["missing-items.md"])
+        self.assertIn("itemized-deduction review", artifacts["tax-dossier.md"])
+
     def test_unsupported_cases(self) -> None:
         for name in ("unsupported_complex_equity",):
             with self.subTest(name=name):

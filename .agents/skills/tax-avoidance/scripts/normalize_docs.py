@@ -104,6 +104,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_contribution_basis, ira_contribution_basis_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -166,6 +171,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    review_hints: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -179,6 +185,26 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        review_hints.append(
+            f"Form 1098-E shows {student_loan_interest:,.2f} of student loan interest. Confirm the deductible amount after applying the IRS income limits."
+        )
+    if ira_contribution_basis > 0.0 and "ira_contribution_deduction" not in answers:
+        review_hints.append(
+            f"Form 5498 shows {ira_contribution_basis:,.2f} of IRA contributions. Confirm how much is deductible before applying any IRA deduction to the draft return."
+        )
+    if mortgage_interest > 0.0:
+        review_hints.append(
+            f"Form 1098 shows {mortgage_interest:,.2f} of mortgage interest. Compare itemizing against the standard deduction before locking the deduction path."
+        )
+    if charitable_cash > 0.0:
+        review_hints.append(
+            f"Donation receipts show {charitable_cash:,.2f} of charitable cash contributions. Include them in the itemized-deduction review if the taxpayer may itemize."
+        )
+    if (mortgage_interest > 0.0 or charitable_cash > 0.0) and "deduction_amount" not in answers:
+        missing_items.append(
+            "Review mortgage-interest and charitable-giving documents, then confirm whether to use the standard deduction or an itemized-deduction amount."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -276,6 +302,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "review_hints": review_hints,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,
