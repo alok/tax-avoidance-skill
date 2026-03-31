@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "dependent_intake_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -72,6 +73,17 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_dependent_intake_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_intake_household")
+        self.assertEqual(normalized["status"], "ok")
+        household = normalized["household_summary"]
+        self.assertEqual(household["dependent_count"], 2)
+        self.assertIn("Child A", artifacts["tax-dossier.md"])
+        self.assertIn("Parent B", artifacts["tax-dossier.md"])
+        self.assertIn("Household Intake", artifacts["tax-dossier.md"])
+        self.assertIn("Review dependent-related credits", artifacts["missing-items.md"])
+        self.assertIn("Complete dependent intake for Parent B", artifacts["missing-items.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -139,6 +151,7 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Household Intake", dossier)
             self.assertIn("$48,000.00", dossier)
 
 

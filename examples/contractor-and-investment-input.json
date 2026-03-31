@@ -62,5 +62,20 @@
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
+  "household": {
+    "notes": "Example dependent data keeps the workflow realistic without using real identities.",
+    "dependents": [
+      {
+        "label": "Child A",
+        "relationship": "daughter",
+        "birth_year": 2016,
+        "months_lived_with_taxpayer": 12,
+        "taxpayer_provided_over_half_support": true,
+        "citizenship_status": "US citizen",
+        "care_expenses": 2400.0,
+        "care_provider_ref": "provider://after-school-care"
+      }
+    ]
+  },
   "user_request": "Build a sample contractor plus investment return package."
 }

@@ -32,6 +32,59 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def normalize_dependent(dependent: dict[str, Any], tax_year: int, index: int) -> dict[str, Any]:
+    label = str(dependent.get("label") or dependent.get("id") or f"Dependent {index}").strip()
+    relationship = str(dependent.get("relationship") or "Unspecified").strip()
+    birth_year = dependent.get("birth_year")
+    months_lived = dependent.get("months_lived_with_taxpayer")
+    citizenship_status = str(dependent.get("citizenship_status") or "Unspecified").strip()
+    support_value = dependent.get("taxpayer_provided_over_half_support")
+    support_status = "Unspecified"
+    if support_value is True:
+        support_status = "Yes"
+    elif support_value is False:
+        support_status = "No"
+
+    care_expenses = safe_float(dependent.get("care_expenses"))
+    age_at_year_end: int | None = None
+    if isinstance(birth_year, int):
+        age_at_year_end = tax_year - birth_year
+
+    review_notes: list[str] = []
+    if age_at_year_end is not None and age_at_year_end < 17:
+        review_notes.append("Review Child Tax Credit eligibility.")
+    elif age_at_year_end is not None:
+        review_notes.append("Review Credit for Other Dependents eligibility.")
+    else:
+        review_notes.append("Confirm age-based dependent credit eligibility.")
+    if care_expenses > 0.0:
+        review_notes.append("Review dependent care expenses for credit eligibility.")
+
+    missing_fields: list[str] = []
+    if age_at_year_end is None:
+        missing_fields.append("birth year")
+    if months_lived in (None, ""):
+        missing_fields.append("months lived with taxpayer")
+    if support_value is None:
+        missing_fields.append("support test")
+    if citizenship_status == "Unspecified":
+        missing_fields.append("citizenship or residency status")
+
+    return {
+        "label": label,
+        "relationship": relationship,
+        "birth_year": birth_year,
+        "age_at_year_end": age_at_year_end,
+        "months_lived_with_taxpayer": months_lived,
+        "citizenship_status": citizenship_status,
+        "support_status": support_status,
+        "care_expenses": care_expenses,
+        "care_provider_ref": dependent.get("care_provider_ref", ""),
+        "review_notes": review_notes,
+        "missing_fields": missing_fields,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +92,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -104,6 +158,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    dependents = [
+        normalize_dependent(dependent, tax_year, index)
+        for index, dependent in enumerate(household.get("dependents", []), start=1)
+    ]
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -192,6 +250,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    if dependents:
+        if "child_tax_credit" not in answers and "other_nonrefundable_credits" not in answers:
+            missing_items.append(
+                "Review dependent-related credits before finalizing the draft package. Confirm whether Child Tax Credit, Credit for Other Dependents, or dependent-care credit details should be added."
+            )
+        for dependent in dependents:
+            if dependent["missing_fields"]:
+                missing_items.append(
+                    f"Complete dependent intake for {dependent['label']}: missing {', '.join(dependent['missing_fields'])}."
+                )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -289,6 +357,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "filing_household_notes": household.get("notes", ""),
+            "dependent_count": len(dependents),
+            "dependents": dependents,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

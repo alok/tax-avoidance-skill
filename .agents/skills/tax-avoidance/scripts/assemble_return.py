@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    household_summary = normalized.get("household_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,23 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_rows = [
+        [
+            dependent.get("label", ""),
+            dependent.get("relationship", ""),
+            str(dependent.get("birth_year") or "TBD"),
+            str(dependent.get("months_lived_with_taxpayer") or "TBD"),
+            dependent.get("support_status", "Unspecified"),
+            money(dependent.get("care_expenses")),
+            " ".join(dependent.get("review_notes", [])) or "None",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
+    household_note = household_summary.get("filing_household_notes") or "None"
+    total_care_expenses = sum(
+        float(dependent.get("care_expenses") or 0.0)
+        for dependent in household_summary.get("dependents", [])
+    )
 
     sections = [
         "# Tax Dossier",
@@ -367,6 +385,19 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ),
         "",
         *state_follow_up_lines,
+        "",
+        "## Household Intake",
+        "",
+        f"- Listed dependents: {household_summary.get('dependent_count', 0)}",
+        f"- Reported dependent care expenses: {money(total_care_expenses)}",
+        f"- Household notes: {household_note}",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Birth Year", "Months With Taxpayer", "Support Test", "Care Expenses", "Review Notes"],
+            dependent_rows or [["None", "None", "TBD", "TBD", "Unspecified", "$0.00", "None"]],
+        ),
+        "",
+        "- Household intake preserves family context without collecting full SSNs or deciding dependent-credit eligibility automatically.",
         "",
         "## Missing Items",
         "",

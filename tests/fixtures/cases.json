@@ -167,6 +167,67 @@
       "line_20": 1800
     }
   },
+  "dependent_intake_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "w2-parent-b",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent-b",
+          "fields": {
+            "wages": 42000,
+            "federal_withholding": 3600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 14300
+      },
+      "household": {
+        "notes": "Two generic dependents for public-safe intake coverage.",
+        "dependents": [
+          {
+            "label": "Child A",
+            "relationship": "daughter",
+            "birth_year": 2017,
+            "months_lived_with_taxpayer": 12,
+            "taxpayer_provided_over_half_support": true,
+            "citizenship_status": "US citizen",
+            "care_expenses": 3200
+          },
+          {
+            "label": "Parent B",
+            "relationship": "parent",
+            "months_lived_with_taxpayer": 7
+          }
+        ]
+      },
+      "user_request": "Build the draft return package and preserve dependent context."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 140000,
+      "line_25a": 15400
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
