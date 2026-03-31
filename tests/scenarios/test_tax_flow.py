@@ -88,11 +88,22 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c", "ira_5498_review"):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_ira_5498_review(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["observed_ira_contributions"]["value"], 6500)
+        self.assertIn("IRA Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("drive://trad-ira-5498", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the Form 5498 traditional IRA contributions totaling $6,500.00",
+            artifacts["missing-items.md"],
+        )
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
