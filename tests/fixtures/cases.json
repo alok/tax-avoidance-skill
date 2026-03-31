@@ -71,7 +71,7 @@
         }
       ],
       "answers": {
-        "deduction_amount": 29200,
+        "deduction_amount": 30000,
         "ira_contribution_deduction": 4000,
         "hsa_deduction": 1800,
         "tax_before_credits": 15800
@@ -156,7 +156,7 @@
         }
       ],
       "answers": {
-        "deduction_amount": 29200,
+        "deduction_amount": 30000,
         "education_credit": 1800,
         "tax_before_credits": 11800
       },
@@ -561,6 +561,65 @@
     "expect": {
       "status": "unsupported",
       "unsupported": "Equity compensation"
+    }
+  },
+  "itemized_deduction_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 14000
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 16200
+          }
+        },
+        {
+          "id": "charity-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://charity-1",
+          "fields": {
+            "cash_donations": 2200
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 900
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 18400,
+        "tax_before_credits": 12300
+      },
+      "user_request": "Show me whether my documented itemized deductions beat the standard deduction."
+    },
+    "expect": {
+      "status": "ok",
+      "recommended_path": "itemized",
+      "recommended_amount": 18400
     }
   },
   "illegal_request": {

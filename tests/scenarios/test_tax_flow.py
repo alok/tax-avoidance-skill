@@ -122,6 +122,26 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_deduction_analysis(self) -> None:
+        normalized, artifacts = self.run_case("mfj_common_deductions")
+        deduction_analysis = normalized["deduction_analysis"]
+        self.assertEqual(deduction_analysis["standard_deduction"], 30000.0)
+        self.assertEqual(deduction_analysis["recommendation"], "standard")
+        self.assertEqual(deduction_analysis["recommendation_amount"], 30000.0)
+        self.assertIn("Deduction Analysis", artifacts["tax-dossier.md"])
+        self.assertIn("$30,000.00", artifacts["tax-dossier.md"])
+
+        normalized, artifacts = self.run_case("itemized_deduction_review")
+        deduction_analysis = normalized["deduction_analysis"]
+        self.assertEqual(deduction_analysis["recommendation"], "itemized")
+        self.assertEqual(deduction_analysis["recommendation_amount"], 18400.0)
+        self.assertEqual(
+            deduction_analysis["above_the_line_adjustments"]["student_loan_interest_deduction"],
+            900.0,
+        )
+        self.assertIn("itemized", artifacts["tax-dossier.md"].lower())
+        self.assertIn("$18,400.00", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

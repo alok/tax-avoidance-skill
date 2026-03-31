@@ -21,6 +21,7 @@ from tax_flow_common import (  # noqa: E402
     normalize_state_code,
     resolve_state_support,
     safe_float,
+    standard_deduction_for_2025,
 )
 
 
@@ -121,6 +122,51 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    standard_deduction = standard_deduction_for_2025(payload.get("filing_status"))
+    itemized_candidate_total = mortgage_interest + charitable_cash
+    chosen_deduction = deduction_amount if deduction_sources else None
+    recommendation: str | None = None
+    recommendation_amount: float | None = None
+    if standard_deduction is not None:
+        if itemized_candidate_total > standard_deduction:
+            recommendation = "itemized"
+            recommendation_amount = itemized_candidate_total
+        else:
+            recommendation = "standard"
+            recommendation_amount = standard_deduction
+
+    deduction_path: str | None = None
+    if chosen_deduction is not None:
+        if standard_deduction is not None and abs(chosen_deduction - standard_deduction) < 0.01:
+            deduction_path = "standard"
+        elif itemized_candidate_total > 0.0 and abs(chosen_deduction - itemized_candidate_total) < 0.01:
+            deduction_path = "itemized"
+        else:
+            deduction_path = "review"
+
+    deduction_review_notes: list[str] = []
+    if standard_deduction is not None and chosen_deduction is None:
+        deduction_review_notes.append(
+            f"Compare the documented itemized deductions against the 2025 standard deduction of ${standard_deduction:,.2f} before finalizing Form 1040 line 12."
+        )
+    if (
+        standard_deduction is not None
+        and chosen_deduction is not None
+        and itemized_candidate_total <= standard_deduction
+        and chosen_deduction + 0.01 < standard_deduction
+    ):
+        deduction_review_notes.append(
+            f"The chosen deduction amount of ${chosen_deduction:,.2f} is lower than the 2025 standard deduction of ${standard_deduction:,.2f}; re-check whether line 12 should use the standard deduction instead."
+        )
+    if (
+        recommendation == "itemized"
+        and chosen_deduction is not None
+        and chosen_deduction + 0.01 < itemized_candidate_total
+    ):
+        deduction_review_notes.append(
+            f"Documented mortgage interest and charitable giving total ${itemized_candidate_total:,.2f}, which is higher than the chosen deduction amount of ${chosen_deduction:,.2f}."
+        )
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -188,6 +234,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
     for note in state_follow_up:
+        if note not in missing_items:
+            missing_items.append(note)
+    for note in deduction_review_notes:
         if note not in missing_items:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
@@ -289,6 +338,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_analysis": {
+            "standard_deduction": standard_deduction,
+            "itemized_candidates": {
+                "mortgage_interest": mortgage_interest,
+                "charitable_cash": charitable_cash,
+                "total": itemized_candidate_total,
+            },
+            "above_the_line_adjustments": {
+                "ira_contribution_deduction": ira_deduction,
+                "hsa_deduction": hsa_deduction,
+                "student_loan_interest_deduction": student_loan_interest,
+                "total": ira_deduction + hsa_deduction + student_loan_interest,
+            },
+            "chosen_deduction_amount": chosen_deduction,
+            "deduction_path": deduction_path,
+            "recommendation": recommendation,
+            "recommendation_amount": recommendation_amount,
+            "review_notes": deduction_review_notes,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

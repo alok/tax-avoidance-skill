@@ -185,7 +185,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Standard or itemized deduction",
             "value": deduction_amount or None,
             "sources": fact_sources(normalized, "deduction_amount"),
-            "rule_citations": [],
+            "rule_citations": rule_citations("standard_deduction_2025", "mortgage_interest", "charitable_cash"),
         },
         {
             "form": "Form 1040",
@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    deduction_analysis = normalized.get("deduction_analysis", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_rows = [
+        ["2025 standard deduction", money(deduction_analysis.get("standard_deduction"))],
+        ["Mortgage interest evidence", money(deduction_analysis.get("itemized_candidates", {}).get("mortgage_interest"))],
+        ["Charitable cash evidence", money(deduction_analysis.get("itemized_candidates", {}).get("charitable_cash"))],
+        ["Itemized-evidence total", money(deduction_analysis.get("itemized_candidates", {}).get("total"))],
+        [
+            "Above-the-line adjustments",
+            money(deduction_analysis.get("above_the_line_adjustments", {}).get("total")),
+        ],
+        ["Chosen line 12 amount", money(deduction_analysis.get("chosen_deduction_amount"))],
+        ["Recommended path", str(deduction_analysis.get("recommendation") or "TBD").replace("_", " ")],
+        ["Recommended amount", money(deduction_analysis.get("recommendation_amount"))],
+    ]
+    deduction_review_lines = [f"- {item}" for item in deduction_analysis.get("review_notes", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +356,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Analysis",
+        "",
+        make_markdown_table(["Check", "Value"], deduction_rows),
+        "",
+        *deduction_review_lines,
         "",
         "## Candidate Business Expenses",
         "",
