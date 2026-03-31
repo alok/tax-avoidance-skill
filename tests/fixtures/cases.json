@@ -563,6 +563,53 @@
       "unsupported": "Equity compensation"
     }
   },
+  "dependent_household_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 9800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7600
+      },
+      "household": {
+        "dependents": [
+          {
+            "label": "Child A",
+            "relationship": "daughter",
+            "age": 8,
+            "months_in_home": 12,
+            "citizen_or_resident": true,
+            "care_expenses": 3200,
+            "care_provider_documents": true,
+            "ssn": "111-22-3333",
+            "date_of_birth": "2017-04-12"
+          }
+        ]
+      },
+      "user_request": "Prepare the return package and keep the dependent context."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_label": "Child A",
+      "care_expenses": 3200
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

@@ -20,9 +20,10 @@ For a plain Codex app user:
 3. Search for likely forms before asking the user to browse.
 4. Build a document inventory with source, doc type, and confidence.
 5. Ask only the missing questions needed for supported lines.
-6. Normalize everything into structured facts.
-7. Assemble the artifact set.
-8. Flag unsupported complexity and illegal requests explicitly.
+6. Preserve dependent context with labels, relationship, age bands, and care-expense clues, but keep SSNs, full birth dates, and provider TINs on the source forms instead of the artifact set.
+7. Normalize everything into structured facts.
+8. Assemble the artifact set.
+9. Flag unsupported complexity and illegal requests explicitly.
 
 ## Connector Priority
 

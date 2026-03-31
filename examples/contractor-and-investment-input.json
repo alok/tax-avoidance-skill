@@ -62,5 +62,18 @@
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
+  "household": {
+    "dependents": [
+      {
+        "label": "Child A",
+        "relationship": "daughter",
+        "age": 8,
+        "months_in_home": 12,
+        "citizen_or_resident": true,
+        "care_expenses": 3200.0,
+        "care_provider_documents": true
+      }
+    ]
+  },
   "user_request": "Build a sample contractor plus investment return package."
 }

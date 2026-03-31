@@ -316,6 +316,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    household_summary = normalized.get("household_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("label") or "Unknown",
+            dependent.get("relationship") or "Unknown",
+            str(dependent.get("age")) if dependent.get("age") is not None else "TBD",
+            str(dependent.get("months_in_home")) if dependent.get("months_in_home") is not None else "TBD",
+            "Yes" if dependent.get("full_time_student") else "No",
+            "Yes" if dependent.get("disabled") else "No",
+            money(dependent.get("care_expenses")),
+            ", ".join(dependent.get("review_flags", [])) or "None",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
+    household_review_lines = [f"- {item}" for item in household_summary.get("review_notes", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +365,19 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured: {household_summary.get('dependent_count', 0)}",
+        f"- Possible child-credit candidates to review: {household_summary.get('child_credit_candidate_count', 0)}",
+        f"- Documented dependent-care expenses: {money(household_summary.get('total_care_expenses'))}",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Age", "Months Home", "Student", "Disabled", "Care Expenses", "Review Flags"],
+            dependent_rows or [["None", "None", "TBD", "TBD", "No", "No", "$0.00", "None"]],
+        ),
+        "",
+        *household_review_lines,
         "",
         "## State Follow-Up",
         "",

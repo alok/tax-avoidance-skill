@@ -32,6 +32,93 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def safe_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def summarize_dependents(payload: dict[str, Any]) -> dict[str, Any]:
+    dependents = payload.get("household", {}).get("dependents", [])
+    sanitized_dependents: list[dict[str, Any]] = []
+    review_notes: list[str] = []
+    total_care_expenses = 0.0
+    child_credit_candidates = 0
+
+    for index, dependent in enumerate(dependents, start=1):
+        label = (
+            dependent.get("label")
+            or dependent.get("nickname")
+            or dependent.get("name")
+            or f"Dependent {index}"
+        )
+        relationship = str(dependent.get("relationship") or "unspecified")
+        age = safe_int(dependent.get("age"))
+        months_in_home = safe_int(dependent.get("months_in_home"))
+        full_time_student = bool(dependent.get("full_time_student"))
+        disabled = bool(dependent.get("disabled"))
+        citizen_or_resident = bool(dependent.get("citizen_or_resident", False))
+        care_expenses = safe_float(dependent.get("care_expenses"))
+        care_provider_documents = dependent.get("care_provider_documents")
+
+        if age is not None and age < 17:
+            child_credit_candidates += 1
+        total_care_expenses += care_expenses
+
+        flags: list[str] = []
+        if age is not None and age < 17:
+            flags.append("under_17")
+        if months_in_home is not None and months_in_home >= 6:
+            flags.append("lived_with_taxpayer_6_plus_months")
+        if full_time_student:
+            flags.append("full_time_student")
+        if disabled:
+            flags.append("disabled")
+        if citizen_or_resident:
+            flags.append("citizen_or_resident_marked")
+        if care_expenses > 0.0:
+            flags.append("has_dependent_care_expenses")
+
+        sanitized_dependents.append(
+            {
+                "label": label,
+                "relationship": relationship,
+                "age": age,
+                "months_in_home": months_in_home,
+                "full_time_student": full_time_student,
+                "disabled": disabled,
+                "citizen_or_resident": citizen_or_resident,
+                "care_expenses": care_expenses,
+                "care_provider_documents": bool(care_provider_documents) if care_provider_documents is not None else None,
+                "review_flags": flags,
+            }
+        )
+
+    if sanitized_dependents:
+        review_notes.append(
+            "Dependent intake preserves only public-safe household scaffolding here. Keep SSNs, full birth dates, and provider TINs on the original tax forms instead of this artifact set."
+        )
+    if child_credit_candidates > 0:
+        review_notes.append(
+            f"{child_credit_candidates} dependent(s) look like possible child-credit candidates and still need manual eligibility review."
+        )
+    if total_care_expenses > 0.0:
+        review_notes.append(
+            f"Dependent-care expenses totaling ${total_care_expenses:,.2f} were noted and need a separate care-credit review with provider details."
+        )
+
+    return {
+        "dependents": sanitized_dependents,
+        "dependent_count": len(sanitized_dependents),
+        "child_credit_candidate_count": child_credit_candidates,
+        "total_care_expenses": total_care_expenses,
+        "review_notes": review_notes,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +126,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household_summary = summarize_dependents(payload)
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -183,6 +271,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    if household_summary["dependent_count"] > 0 and "child_tax_credit" not in answers:
+        missing_items.append(
+            "Review dependent eligibility and provide a child tax credit or credit for other dependents amount, or explicitly confirm that it should be treated as zero."
+        )
+    if household_summary["total_care_expenses"] > 0.0:
+        missing_items.append(
+            f"Review dependent-care credit support for the documented care expenses totaling ${household_summary['total_care_expenses']:,.2f}; keep provider identity details on the source forms, not in this public-safe artifact set."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -290,6 +386,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "household_summary": household_summary,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

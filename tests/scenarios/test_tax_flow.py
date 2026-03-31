@@ -122,6 +122,26 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_household_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household_scaffolding")
+        self.assertEqual(normalized["status"], "ok")
+        household = normalized["household_summary"]
+        self.assertEqual(household["dependent_count"], 1)
+        self.assertEqual(household["child_credit_candidate_count"], 1)
+        self.assertEqual(household["total_care_expenses"], 3200)
+        self.assertEqual(household["dependents"][0]["label"], "Child A")
+        self.assertIn("under_17", household["dependents"][0]["review_flags"])
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Child A", artifacts["tax-dossier.md"])
+        self.assertIn("$3,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("child tax credit or credit for other dependents amount", artifacts["missing-items.md"])
+        self.assertIn("dependent-care credit support", artifacts["missing-items.md"])
+        serialized = json.dumps(normalized)
+        self.assertNotIn("111-22-3333", serialized)
+        self.assertNotIn("2017-04-12", serialized)
+        self.assertNotIn("111-22-3333", artifacts["tax-dossier.md"])
+        self.assertNotIn("2017-04-12", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -140,6 +160,8 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+            self.assertIn("Household And Dependents", dossier)
+            self.assertIn("Child A", dossier)
 
 
 if __name__ == "__main__":
