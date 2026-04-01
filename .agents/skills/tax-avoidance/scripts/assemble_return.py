@@ -280,6 +280,9 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    itemized_deduction_candidates = fact_value(normalized, "itemized_deduction_candidates")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -350,6 +353,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Intake",
+        "",
+        f"- Mortgage-interest documents found: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Charitable-cash receipts found: {money(charitable_cash) if charitable_cash else '$0.00'}",
+        f"- Total itemized-deduction candidates from supported source documents: {money(itemized_deduction_candidates) if itemized_deduction_candidates else '$0.00'}",
+        "- This is intake scaffolding only. Confirm the final deduction path before using it on Form 1040 line 12.",
         "",
         "## State Follow-Up",
         "",
