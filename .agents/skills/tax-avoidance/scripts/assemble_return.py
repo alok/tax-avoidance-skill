@@ -75,8 +75,9 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
 
     withholding = fact_value(normalized, "federal_withholding")
+    form_1099_withholding = fact_value(normalized, "form_1099_withholding")
     other_payments = fact_value(normalized, "other_payments")
-    total_payments = withholding + other_payments
+    total_payments = withholding + form_1099_withholding + other_payments
 
     refund = None
     amount_owed = None
@@ -237,10 +238,20 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "25b",
+            "label": "Federal income tax withheld from Forms 1099",
+            "value": form_1099_withholding or None,
+            "sources": fact_sources(normalized, "form_1099_withholding"),
+            "rule_citations": rule_citations("federal_withholding"),
+        },
+        {
+            "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
             "value": total_payments or None,
-            "sources": fact_sources(normalized, "federal_withholding") + fact_sources(normalized, "other_payments"),
+            "sources": fact_sources(normalized, "federal_withholding")
+            + fact_sources(normalized, "form_1099_withholding")
+            + fact_sources(normalized, "other_payments"),
             "rule_citations": rule_citations("federal_withholding"),
         },
         {

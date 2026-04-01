@@ -45,6 +45,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    form_1099_withholding, form_1099_withholding_sources = aggregate_numeric(
+        documents,
+        {"1099-INT", "1099-DIV", "1099-B", "1099-NEC", "SSA-1099"},
+        "federal_withholding",
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -231,6 +236,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             nonemployee_compensation_sources,
         ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "form_1099_withholding": build_fact(
+            "form_1099_withholding",
+            form_1099_withholding,
+            form_1099_withholding_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),

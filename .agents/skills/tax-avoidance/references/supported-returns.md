@@ -13,13 +13,13 @@
 ## Supported Documents
 
 - W-2
-- 1099-INT
-- 1099-DIV
+- 1099-INT, including federal backup withholding when present
+- 1099-DIV, including federal backup withholding when present
 - 1099-B summary data
 - 1098
 - 1098-E
 - 5498
-- SSA-1099
+- SSA-1099, including federal withholding when present
 - donation receipts
 
 ## Unsupported In V1

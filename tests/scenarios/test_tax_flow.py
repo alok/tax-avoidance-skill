@@ -68,6 +68,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_25b" in expected:
+                    self.assertIn(f"${expected['line_25b']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -79,6 +81,13 @@ class TaxFlowTest(unittest.TestCase):
         notes = "\n".join(normalized["connector_notes"])
         self.assertIn("Upload fallback is active", notes)
         self.assertIn("upload://upload-w2", artifacts["tax-dossier.md"])
+
+    def test_form_1099_withholding_support(self) -> None:
+        normalized, artifacts = self.run_case("investment_backup_withholding")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["form_1099_withholding"]["value"], 765.0)
+        self.assertIn("Federal income tax withheld from Forms 1099", artifacts["federal-lines.md"])
+        self.assertIn("$765.00", artifacts["federal-lines.md"])
 
     def test_unsupported_cases(self) -> None:
         for name in ("unsupported_complex_equity",):

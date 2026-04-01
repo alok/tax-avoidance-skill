@@ -135,6 +135,59 @@
       "line_3b": 1400
     }
   },
+  "investment_backup_withholding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 14500
+          }
+        },
+        {
+          "id": "1099-int-backup",
+          "doc_type": "1099-INT",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099-int-backup",
+          "fields": {
+            "interest_income": 420,
+            "federal_withholding": 120
+          }
+        },
+        {
+          "id": "1099-div-backup",
+          "doc_type": "1099-DIV",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099-div-backup",
+          "fields": {
+            "ordinary_dividends": 1100,
+            "capital_gains": 900,
+            "federal_withholding": 645
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 17800
+      },
+      "user_request": "Use my brokerage tax docs and keep any backup withholding in the draft return."
+    },
+    "expect": {
+      "status": "ok",
+      "line_25a": 14500,
+      "line_25b": 765
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
