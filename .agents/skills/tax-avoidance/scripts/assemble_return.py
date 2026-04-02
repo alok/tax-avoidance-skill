@@ -316,6 +316,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_guidance = normalized.get("deduction_guidance", {})
+    deduction_notes = [f"- {item}" for item in deduction_guidance.get("notes", [])] or ["- None"]
+    tracked_categories = ", ".join(deduction_guidance.get("tracked_itemized_categories", [])) or "None"
+    recommendation = deduction_guidance.get("recommendation", "deduction_input_needed")
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +345,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Guidance",
+        "",
+        f"- Selected deduction amount: {money(deduction_guidance.get('selected_deduction_amount'))}",
+        f"- 2025 standard deduction reference: {money(deduction_guidance.get('standard_deduction_amount'))}",
+        f"- Tracked itemized subtotal from provided docs: {money(deduction_guidance.get('tracked_itemized_subtotal'))}",
+        f"- Tracked itemized categories: {tracked_categories}",
+        f"- Recommendation status: {recommendation}",
+        "",
+        *deduction_notes,
         "",
         "## Candidate Business Expenses",
         "",

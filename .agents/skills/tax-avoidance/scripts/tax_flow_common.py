@@ -34,6 +34,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 526",
         "url": "https://www.irs.gov/publications/p526",
     },
+    "standard_deduction": {
+        "title": "IRS Publication 501 (2025), Standard Deduction Tables",
+        "url": "https://www.irs.gov/publications/p501",
+    },
     "education_credit": {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
@@ -102,6 +106,10 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+STANDARD_DEDUCTION_AMOUNTS = {
+    "single": 15750.0,
+    "married_filing_jointly": 31500.0,
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -214,6 +222,12 @@ def detect_unsupported(payload: dict[str, Any]) -> list[str]:
     if answers.get("has_complex_equity"):
         reasons.append("Complex equity compensation is out of scope for v1.")
     return list(dict.fromkeys(reasons))
+
+
+def get_standard_deduction_amount(filing_status: str | None) -> float | None:
+    if not filing_status:
+        return None
+    return STANDARD_DEDUCTION_AMOUNTS.get(filing_status)
 
 
 def connector_notes(connectors: dict[str, bool], documents: list[dict[str, Any]]) -> list[str]:

@@ -17,6 +17,7 @@ from tax_flow_common import (  # noqa: E402
     detect_illegal_request,
     detect_unsupported,
     dump_json,
+    get_standard_deduction_amount,
     load_json,
     normalize_state_code,
     resolve_state_support,
@@ -104,6 +105,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    tracked_itemized_deductions = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -175,8 +177,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
+    standard_deduction_amount = get_standard_deduction_amount(payload.get("filing_status"))
+    deduction_guidance_notes: list[str] = []
+    if standard_deduction_amount is not None:
+        deduction_guidance_notes.append(
+            "Tracked itemized deductions currently include only mortgage interest and cash charitable donations surfaced from provided documents."
+        )
+        deduction_guidance_notes.append(
+            "State and local taxes, medical expenses, and other itemized categories still need explicit follow-up before relying on an itemized total."
+        )
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if standard_deduction_amount is not None:
+            missing_items.append(
+                "Confirm whether to use the 2025 standard deduction of "
+                f"${standard_deduction_amount:,.2f} or provide an itemized deduction total. "
+                f"The currently tracked itemized subtotal from provided documents is ${tracked_itemized_deductions:,.2f}."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -289,6 +307,27 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_guidance": {
+            "selected_deduction_amount": deduction_amount if deduction_sources else None,
+            "standard_deduction_amount": standard_deduction_amount,
+            "tracked_itemized_subtotal": tracked_itemized_deductions,
+            "tracked_itemized_categories": [
+                category
+                for category, amount in (
+                    ("mortgage_interest", mortgage_interest),
+                    ("charitable_cash", charitable_cash),
+                )
+                if amount > 0.0
+            ],
+            "recommendation": (
+                "standard_deduction_review"
+                if standard_deduction_amount is not None and tracked_itemized_deductions < standard_deduction_amount
+                else "itemized_deduction_review"
+                if standard_deduction_amount is not None and tracked_itemized_deductions >= standard_deduction_amount
+                else "deduction_input_needed"
+            ),
+            "notes": deduction_guidance_notes,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

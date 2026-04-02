@@ -563,6 +563,55 @@
       "unsupported": "Equity compensation"
     }
   },
+  "deduction_guidance_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 9800
+          }
+        },
+        {
+          "id": "mortgage-interest",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 7200
+          }
+        },
+        {
+          "id": "charity-2025",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://charity-2025",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 8200
+      },
+      "user_request": "Gather my simple wage return and show me what deduction path to confirm."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "standard deduction of $15,750.00",
+      "tracked_itemized_subtotal": "$8,400.00"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

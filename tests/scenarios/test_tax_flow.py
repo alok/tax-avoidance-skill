@@ -108,6 +108,15 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$48.00", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts totaling $48.00", artifacts["missing-items.md"])
 
+    def test_deduction_guidance_review(self) -> None:
+        normalized, artifacts = self.run_case("deduction_guidance_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_guidance"]["standard_deduction_amount"], 15750.0)
+        self.assertEqual(normalized["deduction_guidance"]["tracked_itemized_subtotal"], 8400.0)
+        self.assertIn("standard deduction of $15,750.00", artifacts["missing-items.md"])
+        self.assertIn("Tracked itemized subtotal from provided docs: $8,400.00", artifacts["tax-dossier.md"])
+        self.assertIn("Recommendation status: standard_deduction_review", artifacts["tax-dossier.md"])
+
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")
         self.assertEqual(normalized["status"], "ok")
