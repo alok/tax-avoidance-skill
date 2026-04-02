@@ -28,8 +28,10 @@ def build_fact(
     key: str,
     value: float,
     sources: list[dict[str, Any]],
+    *,
+    provided: bool = False,
 ) -> dict[str, Any]:
-    return {"key": key, "value": value, "sources": sources}
+    return {"key": key, "value": value, "sources": sources, "provided": provided}
 
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -105,18 +107,27 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "cash_donations",
     )
 
-    ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
-    hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
-    business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
-    deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
-    qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
-    tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
-    other_payments, other_payments_sources = answer_fact(answers, "other_payments")
-    education_credit, education_credit_sources = answer_fact(answers, "education_credit")
-    clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
-    clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
-    child_tax_credit, child_tax_credit_sources = answer_fact(answers, "child_tax_credit")
-    other_nonrefundable_credits, other_credit_sources = answer_fact(
+    ira_deduction, ira_sources, ira_provided = answer_fact(answers, "ira_contribution_deduction")
+    hsa_deduction, hsa_sources, hsa_provided = answer_fact(answers, "hsa_deduction")
+    business_expenses, business_expense_sources, business_expenses_provided = answer_fact(answers, "business_expenses")
+    deduction_amount, deduction_sources, deduction_amount_provided = answer_fact(answers, "deduction_amount")
+    qbi_deduction, qbi_sources, qbi_provided = answer_fact(answers, "qbi_deduction")
+    tax_before_credits, tax_before_credits_sources, tax_before_credits_provided = answer_fact(
+        answers,
+        "tax_before_credits",
+    )
+    other_payments, other_payments_sources, other_payments_provided = answer_fact(answers, "other_payments")
+    education_credit, education_credit_sources, education_credit_provided = answer_fact(answers, "education_credit")
+    clean_vehicle_credit, clean_vehicle_credit_sources, clean_vehicle_credit_provided = answer_fact(
+        answers,
+        "clean_vehicle_credit",
+    )
+    clean_energy_credit, clean_energy_credit_sources, clean_energy_credit_provided = answer_fact(
+        answers,
+        "clean_energy_credit",
+    )
+    child_tax_credit, child_tax_credit_sources, child_tax_credit_provided = answer_fact(answers, "child_tax_credit")
+    other_nonrefundable_credits, other_credit_sources, other_nonrefundable_credits_provided = answer_fact(
         answers,
         "other_nonrefundable_credits",
     )
@@ -247,21 +258,67 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
-        "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
-        "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
-        "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
-        "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
-        "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
-        "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
-        "other_payments": build_fact("other_payments", other_payments, other_payments_sources),
-        "education_credit": build_fact("education_credit", education_credit, education_credit_sources),
-        "clean_vehicle_credit": build_fact("clean_vehicle_credit", clean_vehicle_credit, clean_vehicle_credit_sources),
-        "clean_energy_credit": build_fact("clean_energy_credit", clean_energy_credit, clean_energy_credit_sources),
-        "child_tax_credit": build_fact("child_tax_credit", child_tax_credit, child_tax_credit_sources),
+        "ira_contribution_deduction": build_fact(
+            "ira_contribution_deduction",
+            ira_deduction,
+            ira_sources,
+            provided=ira_provided,
+        ),
+        "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources, provided=hsa_provided),
+        "business_expenses": build_fact(
+            "business_expenses",
+            business_expenses,
+            business_expense_sources,
+            provided=business_expenses_provided,
+        ),
+        "deduction_amount": build_fact(
+            "deduction_amount",
+            deduction_amount,
+            deduction_sources,
+            provided=deduction_amount_provided,
+        ),
+        "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources, provided=qbi_provided),
+        "tax_before_credits": build_fact(
+            "tax_before_credits",
+            tax_before_credits,
+            tax_before_credits_sources,
+            provided=tax_before_credits_provided,
+        ),
+        "other_payments": build_fact(
+            "other_payments",
+            other_payments,
+            other_payments_sources,
+            provided=other_payments_provided,
+        ),
+        "education_credit": build_fact(
+            "education_credit",
+            education_credit,
+            education_credit_sources,
+            provided=education_credit_provided,
+        ),
+        "clean_vehicle_credit": build_fact(
+            "clean_vehicle_credit",
+            clean_vehicle_credit,
+            clean_vehicle_credit_sources,
+            provided=clean_vehicle_credit_provided,
+        ),
+        "clean_energy_credit": build_fact(
+            "clean_energy_credit",
+            clean_energy_credit,
+            clean_energy_credit_sources,
+            provided=clean_energy_credit_provided,
+        ),
+        "child_tax_credit": build_fact(
+            "child_tax_credit",
+            child_tax_credit,
+            child_tax_credit_sources,
+            provided=child_tax_credit_provided,
+        ),
         "other_nonrefundable_credits": build_fact(
             "other_nonrefundable_credits",
             other_nonrefundable_credits,
             other_credit_sources,
+            provided=other_nonrefundable_credits_provided,
         ),
     }
 

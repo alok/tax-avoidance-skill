@@ -183,13 +183,13 @@ def answer_fact(
     answers: dict[str, Any],
     key: str,
     fallback: float = 0.0,
-) -> tuple[float, list[dict[str, Any]]]:
+) -> tuple[float, list[dict[str, Any]], bool]:
     if key not in answers:
-        return fallback, []
+        return fallback, [], False
     value = safe_float(answers.get(key))
     if value == 0.0:
-        return value, []
-    return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
+        return value, [], True
+    return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}], True
 
 
 def detect_illegal_request(user_request: str) -> list[str]:

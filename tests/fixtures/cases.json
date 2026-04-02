@@ -228,6 +228,40 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "schedule_c_zero_expenses": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-nec-zero-expenses",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-zero-expenses",
+          "fields": {
+            "nonemployee_compensation": 32000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 0,
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Prepare my contractor return. I did not have deductible business expenses."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_1": 32000,
+      "schedule_c_line_31": 32000,
+      "line_16": 0,
+      "line_34": 0
+    }
+  },
   "schedule_c_candidate_expenses": {
     "input": {
       "tax_year": 2025,
@@ -424,6 +458,39 @@
     "expect": {
       "status": "ok",
       "connector_note": "Upload fallback is active"
+    }
+  },
+  "zero_tax_refund": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-low-income",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-low-income",
+          "fields": {
+            "wages": 8000,
+            "federal_withholding": 450
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Draft my simple return and show whether I should expect a refund."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 8000,
+      "line_16": 0,
+      "line_34": 450
     }
   },
   "metadata_only_tax_docs": {

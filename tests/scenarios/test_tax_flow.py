@@ -68,6 +68,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_16" in expected:
+                    self.assertIn(f"${expected['line_16']:,.2f}", federal_lines)
+                if "line_34" in expected:
+                    self.assertIn(f"${expected['line_34']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -79,6 +83,21 @@ class TaxFlowTest(unittest.TestCase):
         notes = "\n".join(normalized["connector_notes"])
         self.assertIn("Upload fallback is active", notes)
         self.assertIn("upload://upload-w2", artifacts["tax-dossier.md"])
+
+    def test_explicit_zero_answers_are_preserved(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_zero_expenses")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertTrue(normalized["facts"]["business_expenses"]["provided"])
+        self.assertTrue(normalized["facts"]["tax_before_credits"]["provided"])
+        self.assertNotIn("Provide deductible business expenses", artifacts["missing-items.md"])
+        self.assertIn("| Schedule C | 28 | Total expenses | $0.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Schedule C | 31 | Net profit or loss | $32,000.00 |", artifacts["federal-lines.md"])
+
+        normalized, artifacts = self.run_case("zero_tax_refund")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertTrue(normalized["facts"]["tax_before_credits"]["provided"])
+        self.assertIn("| Form 1040 | 16 | Tax | $0.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 34 | Refund | $450.00 |", artifacts["federal-lines.md"])
 
     def test_unsupported_cases(self) -> None:
         for name in ("unsupported_complex_equity",):
