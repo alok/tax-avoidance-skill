@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    deduction_summary = normalized.get("deduction_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,33 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_component_rows = [
+        [
+            component.get("label", ""),
+            money(component.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in component.get("sources", [])) or "TBD",
+        ]
+        for component in deduction_summary.get("known_itemized_components", [])
+    ]
+    chosen_deduction_amount = float(deduction_summary.get("chosen_deduction_amount", 0.0) or 0.0)
+    known_itemized_subtotal = float(deduction_summary.get("known_itemized_subtotal", 0.0) or 0.0)
+    deduction_review_lines = ["- No itemized deduction documents were recognized yet."]
+    if known_itemized_subtotal > 0.0 and chosen_deduction_amount == 0.0:
+        deduction_review_lines = [
+            f"- Imported deduction documents show a known itemized subtotal of {money(known_itemized_subtotal)}, but no deduction amount has been chosen yet."
+        ]
+    elif known_itemized_subtotal > 0.0 and chosen_deduction_amount < known_itemized_subtotal:
+        deduction_review_lines = [
+            f"- Warning: the chosen deduction amount of {money(chosen_deduction_amount)} is below the known itemized subtotal of {money(known_itemized_subtotal)} from imported documents."
+        ]
+    elif known_itemized_subtotal > 0.0 and chosen_deduction_amount == known_itemized_subtotal:
+        deduction_review_lines = [
+            f"- The chosen deduction amount matches the known itemized subtotal from imported documents: {money(known_itemized_subtotal)}."
+        ]
+    elif known_itemized_subtotal > 0.0:
+        deduction_review_lines = [
+            f"- Imported deduction documents show {money(known_itemized_subtotal)} of known itemized deductions. The current draft still uses {money(chosen_deduction_amount)} as the chosen deduction amount."
+        ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +369,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        f"- Chosen deduction amount: {money(chosen_deduction_amount) if chosen_deduction_amount else 'TBD'}",
+        f"- Known itemized subtotal from imported docs: {money(known_itemized_subtotal) if known_itemized_subtotal else '$0.00'}",
+        "",
+        make_markdown_table(
+            ["Known Component", "Amount", "Document Sources"],
+            deduction_component_rows or [["None", "$0.00", "None"]],
+        ),
+        "",
+        *deduction_review_lines,
         "",
         "## Candidate Business Expenses",
         "",

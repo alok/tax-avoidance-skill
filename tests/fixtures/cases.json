@@ -395,6 +395,55 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "deduction_review_lower_than_itemized": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 10100
+          }
+        },
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 7800
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-receipt",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 8000,
+        "tax_before_credits": 9300
+      },
+      "user_request": "Draft my return and keep the deduction decision honest."
+    },
+    "expect": {
+      "status": "ok",
+      "known_itemized_subtotal": 9000
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

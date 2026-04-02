@@ -104,6 +104,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    known_itemized_components = [
+        {
+            "key": "mortgage_interest",
+            "label": "Mortgage interest from Form 1098",
+            "value": mortgage_interest,
+            "sources": mortgage_interest_sources,
+        },
+        {
+            "key": "charitable_cash",
+            "label": "Cash charitable donations from receipts",
+            "value": charitable_cash,
+            "sources": charitable_sources,
+        },
+    ]
+    known_itemized_components = [
+        component for component in known_itemized_components if component["value"] > 0.0
+    ]
+    known_itemized_subtotal = sum(component["value"] for component in known_itemized_components)
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -177,6 +195,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if known_itemized_subtotal > 0.0:
+            missing_items.append(
+                f"Known itemized deductions from imported documents already total ${known_itemized_subtotal:,.2f}; decide whether the draft should use standard or itemized deductions."
+            )
+    elif known_itemized_subtotal > 0.0 and deduction_amount < known_itemized_subtotal:
+        missing_items.append(
+            f"Known itemized deductions from imported documents already total ${known_itemized_subtotal:,.2f}, which is higher than the chosen deduction amount of ${deduction_amount:,.2f}. Re-check the deduction decision."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -289,6 +315,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "chosen_deduction_amount": deduction_amount,
+            "known_itemized_subtotal": known_itemized_subtotal,
+            "known_itemized_components": known_itemized_components,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
