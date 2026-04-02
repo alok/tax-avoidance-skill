@@ -17,6 +17,7 @@ This workflow is designed for a normal user with the Codex app, not a custom tax
 - ask only the missing interview questions
 - build the four standard artifacts
 - separate confirmed values from candidate values
+- keep 1098-T tuition and scholarship figures visible until the education-credit amount is reviewed
 
 ## What The Skill Should Not Do
 

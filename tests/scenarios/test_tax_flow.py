@@ -58,6 +58,8 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], self.cases[name]["expect"]["status"])
                 expected = self.cases[name]["expect"]
                 federal_lines = artifacts["federal-lines.md"]
+                missing_items = artifacts["missing-items.md"]
+                dossier = artifacts["tax-dossier.md"]
                 if "line_1a" in expected:
                     self.assertIn(f"${expected['line_1a']:,.2f}", federal_lines)
                 if "line_2b" in expected:
@@ -72,6 +74,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "missing" in expected:
+                    self.assertIn(expected["missing"], missing_items)
+                if "dossier_contains" in expected:
+                    self.assertIn(expected["dossier_contains"], dossier)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -88,11 +94,24 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "education_credit_needs_review",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_education_credit_review_section(self) -> None:
+        normalized, artifacts = self.run_case("education_credit_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Education Credit Review", artifacts["tax-dossier.md"])
+        self.assertIn("$8,400.00", artifacts["tax-dossier.md"])
+        self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,800.00", artifacts["tax-dossier.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

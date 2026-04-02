@@ -35,6 +35,16 @@
       }
     },
     {
+      "id": "sample-1098t",
+      "doc_type": "1098-T",
+      "source_type": "upload",
+      "source_ref": "upload://sample-1098t",
+      "fields": {
+        "qualified_tuition_expenses": 4200.0,
+        "scholarships_and_grants": 1000.0
+      }
+    },
+    {
       "id": "sample-anthropic-receipt",
       "doc_type": "Expense Receipt",
       "source_type": "upload",

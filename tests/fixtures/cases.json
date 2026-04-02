@@ -153,6 +153,16 @@
             "wages": 102000,
             "federal_withholding": 12000
           }
+        },
+        {
+          "id": "1098t-student",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-student",
+          "fields": {
+            "qualified_tuition_expenses": 8400,
+            "scholarships_and_grants": 2500
+          }
         }
       ],
       "answers": {
@@ -165,6 +175,47 @@
     "expect": {
       "status": "ok",
       "line_20": 1800
+    }
+  },
+  "education_credit_needs_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-student-parent",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-student-parent",
+          "fields": {
+            "wages": 68000,
+            "federal_withholding": 7100
+          }
+        },
+        {
+          "id": "1098t-student",
+          "doc_type": "1098-T",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098t-student",
+          "fields": {
+            "qualified_tuition_expenses": 6200,
+            "scholarships_and_grants": 1500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 5200
+      },
+      "user_request": "Use my tuition documents to prepare the draft return package."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Review the 1098-T qualified tuition"
     }
   },
   "schedule_c_contractor": {

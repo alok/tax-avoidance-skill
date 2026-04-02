@@ -72,6 +72,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    qualified_tuition_expenses, qualified_tuition_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "qualified_tuition_expenses",
+    )
+    scholarships_and_grants, scholarships_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "scholarships_and_grants",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -187,6 +197,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if qualified_tuition_expenses > 0.0 and "education_credit" not in answers:
+        missing_items.append(
+            "Review the 1098-T qualified tuition, scholarships, and student eligibility details before claiming an education credit."
+        )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -240,6 +254,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "qualified_tuition_expenses": build_fact(
+            "qualified_tuition_expenses",
+            qualified_tuition_expenses,
+            qualified_tuition_sources,
+        ),
+        "scholarships_and_grants": build_fact(
+            "scholarships_and_grants",
+            scholarships_and_grants,
+            scholarships_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
