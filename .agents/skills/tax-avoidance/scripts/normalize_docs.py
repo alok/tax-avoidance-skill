@@ -104,6 +104,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    education_payments, education_payment_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "payments_received",
+    )
+    education_scholarships, education_scholarship_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "scholarships_grants",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -187,6 +197,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if education_payments > 0.0 and "education_credit" not in answers:
+        missing_items.append(
+            "Review the 1098-T tuition statement, qualified education expenses, and scholarship amounts before claiming an education credit."
+        )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -247,6 +261,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "education_payments": build_fact("education_payments", education_payments, education_payment_sources),
+        "education_scholarships": build_fact(
+            "education_scholarships",
+            education_scholarships,
+            education_scholarship_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),

@@ -280,6 +280,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    education_payments = fact_value(normalized, "education_payments")
+    education_scholarships = fact_value(normalized, "education_scholarships")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -350,6 +352,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Education Review",
+        "",
+        f"- 1098-T payments received for qualified tuition and related expenses: {money(education_payments)}",
+        f"- 1098-T scholarships or grants: {money(education_scholarships)}",
+        f"- Education credit currently applied on Form 1040 line 20: {money(fact_value(normalized, 'education_credit'))}",
+        "- Treat these values as review scaffolding only until the household confirms qualified expenses, student eligibility, and any scholarship restrictions.",
         "",
         "## State Follow-Up",
         "",
