@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    ira_contribution_candidate = fact_value(normalized, "ira_contribution_candidate")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -294,6 +295,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             expense.get("source_ref") or "unknown",
         ]
         for expense in normalized.get("candidate_expense_documents", [])
+    ]
+    ira_candidate_rows = [
+        [
+            source.get("doc_id", "unknown"),
+            source.get("source_ref", "unknown"),
+            money(source.get("value")),
+        ]
+        for source in fact_sources(normalized, "ira_contribution_candidate")
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -349,6 +358,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## IRA Contribution Review",
+        "",
+        "- Form 5498 amounts are treated as candidate IRA contributions only. They are not automatically applied as deductible IRA amounts.",
+        f"- Candidate Form 5498 IRA contributions: {money(ira_contribution_candidate) if ira_contribution_candidate else '$0.00'}",
+        "",
+        make_markdown_table(
+            ["Document ID", "Source", "Reported Contribution"],
+            ira_candidate_rows or [["None", "None", "$0.00"]],
         ),
         "",
         "## State Follow-Up",

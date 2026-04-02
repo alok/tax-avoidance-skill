@@ -167,6 +167,88 @@
       "line_20": 1800
     }
   },
+  "ira_5498_candidate_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 13500
+          }
+        },
+        {
+          "id": "5498-traditional-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-traditional-ira",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 10800
+      },
+      "user_request": "Draft my simple return and flag what still needs confirmation."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 88000
+    }
+  },
+  "ira_5498_confirmed_deduction": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 14200
+          }
+        },
+        {
+          "id": "5498-traditional-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-traditional-ira",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        }
+      ],
+      "answers": {
+        "ira_contribution_deduction": 7000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 11100
+      },
+      "user_request": "Use my tax forms to draft a clean federal package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 91000,
+      "line_10": 7000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

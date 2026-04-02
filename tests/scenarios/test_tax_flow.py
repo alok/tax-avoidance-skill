@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "ira_5498_confirmed_deduction",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -66,6 +67,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "line_10" in expected:
+                    self.assertIn(f"${expected['line_10']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
@@ -88,11 +91,25 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "ira_5498_candidate_review",
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_ira_5498_candidate_review(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_candidate_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contribution_candidate"]["value"], 6500)
+        self.assertIn("Form 5498 IRA contribution amount of $6,500.00", artifacts["missing-items.md"])
+        self.assertIn("IRA Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("drive://5498-traditional-ira", artifacts["tax-dossier.md"])
+        self.assertIn("not automatically applied as deductible IRA amounts", artifacts["tax-dossier.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

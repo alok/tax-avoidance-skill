@@ -22,6 +22,8 @@
 - SSA-1099
 - donation receipts
 
+Form 5498 values are treated as candidate IRA contribution evidence only. They should prompt a deductible-amount review, not automatic application of the full contributed amount.
+
 ## Unsupported In V1
 
 - automated state tax calculations
