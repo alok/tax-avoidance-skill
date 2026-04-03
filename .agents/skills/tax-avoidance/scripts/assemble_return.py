@@ -421,6 +421,44 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     return "\n".join(lines).strip() + "\n"
 
 
+def build_interview_plan_markdown(normalized: dict[str, Any]) -> str:
+    plan = normalized.get("interview_plan", {})
+    summary = plan.get("summary", {})
+    questions = plan.get("questions", [])
+
+    lines = [
+        "# Interview Plan",
+        "",
+        f"- Total questions: {summary.get('question_count', 0)}",
+        f"- Blocking questions: {summary.get('blocking_count', 0)}",
+        f"- Next question id: {summary.get('next_question_id') or 'None'}",
+    ]
+
+    if not questions:
+        lines.extend(["", "- No follow-up questions are queued."])
+        return "\n".join(lines).strip() + "\n"
+
+    for question in questions:
+        lines.extend(
+            [
+                "",
+                f"## {question['id']}",
+                "",
+                f"- Priority: {question['priority']}",
+                f"- Blocking: {'yes' if question['blocking'] else 'no'}",
+                f"- Response type: {question['response_type']}",
+                f"- Required for: {', '.join(question.get('required_for', [])) or 'review'}",
+                f"- Prompt: {question['prompt']}",
+                f"- Reason: {question['reason']}",
+            ]
+        )
+        if question.get("options"):
+            lines.append(f"- Options: {', '.join(question['options'])}")
+        if question.get("evidence"):
+            lines.append(f"- Evidence: {', '.join(question['evidence'])}")
+    return "\n".join(lines).strip() + "\n"
+
+
 def assemble_artifacts(normalized: dict[str, Any]) -> dict[str, Any]:
     line_items = build_line_items(normalized)
     return {
@@ -428,6 +466,8 @@ def assemble_artifacts(normalized: dict[str, Any]) -> dict[str, Any]:
         "federal-lines.md": build_federal_lines_markdown(line_items),
         "tax-dossier.md": build_dossier(normalized, line_items),
         "missing-items.md": build_missing_items_markdown(normalized),
+        "interview-plan.json": normalized.get("interview_plan", {}),
+        "interview-plan.md": build_interview_plan_markdown(normalized),
     }
 
 

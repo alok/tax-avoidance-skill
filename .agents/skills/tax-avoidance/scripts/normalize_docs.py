@@ -18,6 +18,7 @@ from tax_flow_common import (  # noqa: E402
     detect_unsupported,
     dump_json,
     load_json,
+    money,
     normalize_state_code,
     resolve_state_support,
     safe_float,
@@ -30,6 +31,245 @@ def build_fact(
     sources: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {"key": key, "value": value, "sources": sources}
+
+
+def build_question(
+    question_id: str,
+    prompt: str,
+    response_type: str,
+    required_for: list[str],
+    reason: str,
+    priority: int,
+    *,
+    blocking: bool = True,
+    options: list[str] | None = None,
+    evidence: list[str] | None = None,
+) -> dict[str, Any]:
+    question: dict[str, Any] = {
+        "id": question_id,
+        "priority": priority,
+        "blocking": blocking,
+        "prompt": prompt,
+        "response_type": response_type,
+        "required_for": required_for,
+        "reason": reason,
+    }
+    if options:
+        question["options"] = options
+    if evidence:
+        question["evidence"] = evidence
+    return question
+
+
+def build_interview_questions(
+    payload: dict[str, Any],
+    *,
+    tax_year: int,
+    illegal_reasons: list[str],
+    unsupported_reasons: list[str],
+    missing_items: list[str],
+    resident_state: str | None,
+    work_states: list[str],
+    nonemployee_compensation: float,
+    business_expenses: float,
+    candidate_business_expenses: float,
+    candidate_expense_documents: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if illegal_reasons:
+        return []
+
+    questions: list[dict[str, Any]] = []
+    documents = payload.get("documents", [])
+    answers = payload.get("answers", {})
+    connectors = payload.get("connectors", {})
+
+    if not payload.get("filing_status"):
+        questions.append(
+            build_question(
+                "filing-status",
+                "What filing status should this return use?",
+                "single_choice",
+                ["supported return gating", "Form 1040 line mapping"],
+                "The deterministic draft only supports single and married filing jointly returns.",
+                10,
+                options=["single", "married_filing_jointly"],
+            )
+        )
+
+    if not resident_state:
+        questions.append(
+            build_question(
+                "resident-state",
+                f"What was your resident state for the {tax_year} return?",
+                "state_code",
+                ["state intake scaffolding", "state follow-up notes"],
+                "The repo preserves resident-state context now so later state modules do not need the user to reconstruct it.",
+                20,
+            )
+        )
+
+    if not work_states:
+        questions.append(
+            build_question(
+                "work-states",
+                f"Did you work or earn wages in any state other than your resident state during {tax_year}?",
+                "state_list",
+                ["state intake scaffolding"],
+                "Work-state context changes later state filing follow-up and prevents losing sourcing information.",
+                25,
+                blocking=False,
+            )
+        )
+
+    if "deduction_amount" not in answers:
+        questions.append(
+            build_question(
+                "deduction-amount",
+                "Should the draft use the standard deduction or an itemized deduction amount, and what dollar amount should it use?",
+                "choice_plus_amount",
+                ["Form 1040 lines 12 and 15", "refund or amount-owed estimate"],
+                "Taxable income cannot be computed without a deduction path and amount.",
+                30,
+                options=["standard", "itemized"],
+            )
+        )
+
+    if "tax_before_credits" not in answers:
+        questions.append(
+            build_question(
+                "tax-before-credits",
+                "Do you want to provide a tax-before-credits figure for the draft, or should the tax and refund lines stay marked for review?",
+                "number_or_skip",
+                ["Form 1040 lines 16, 22, 34, and 37"],
+                "The current deterministic draft can preserve line mapping without inventing a tax calculation.",
+                40,
+                blocking=False,
+            )
+        )
+
+    if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
+        candidate_evidence = [
+            f"{expense['vendor']} {money(expense['amount'])} on {expense.get('document_date') or 'unknown date'}"
+            for expense in candidate_expense_documents
+        ]
+        reason = (
+            "Schedule C net profit is unsafe to compute until deductible expenses are confirmed."
+            if candidate_business_expenses == 0.0
+            else f"Candidate receipts totaling ${candidate_business_expenses:,.2f} were found, but they are not applied automatically."
+        )
+        questions.append(
+            build_question(
+                "business-expenses",
+                "What deductible business-expense total should be used for the 1099-NEC work, and should any candidate receipts be included?",
+                "amount_with_confirmation",
+                ["Schedule C lines 28 and 31", "self-employment profit review"],
+                reason,
+                35,
+                evidence=candidate_evidence or None,
+            )
+        )
+
+    if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
+        questions.append(
+            build_question(
+                "capital-gains-summary",
+                "What net capital gain or loss from your 1099-B support documents should the draft use?",
+                "currency_amount",
+                ["Form 1040 line 7"],
+                "The repo supports 1099-B summary data, but it cannot invent a gain or loss number from a bare form notice.",
+                45,
+            )
+        )
+
+    for document in documents:
+        doc_type = document.get("doc_type", "document")
+        source_ref = document.get("source_ref", "unknown source")
+        content_status = document.get("content_status")
+        if content_status == "portal_notice_only":
+            questions.append(
+                build_question(
+                    f"upload-{document.get('id', 'document')}",
+                    f"Please upload the actual {doc_type} from {source_ref}.",
+                    "file_upload",
+                    ["document ingestion", "fact verification"],
+                    "A portal notice is not enough to use the form contents in a return draft.",
+                    15,
+                    evidence=[source_ref],
+                )
+            )
+        elif content_status == "unreadable_encrypted_attachment":
+            questions.append(
+                build_question(
+                    f"unlock-{document.get('id', 'document')}",
+                    f"Please upload or unlock the actual {doc_type} from {source_ref}.",
+                    "file_upload",
+                    ["document ingestion", "fact verification"],
+                    "The attachment exists, but the deterministic flow could not read its contents.",
+                    15,
+                    evidence=[source_ref],
+                )
+            )
+        elif content_status == "metadata_only":
+            prompt = f"Please confirm the extracted {doc_type} details from {source_ref} against the actual form."
+            if not document.get("fields"):
+                prompt = f"Please upload the actual {doc_type} from {source_ref}; only metadata is available right now."
+            questions.append(
+                build_question(
+                    f"confirm-{document.get('id', 'document')}",
+                    prompt,
+                    "confirmation_or_upload",
+                    ["document provenance", "fact verification"],
+                    "Metadata-only source hits are useful for discovery but not strong enough to treat as a final tax fact without confirmation.",
+                    18,
+                    evidence=[source_ref],
+                )
+            )
+
+    if not documents and not any(connectors.values()):
+        questions.append(
+            build_question(
+                "connect-or-upload",
+                "Would you rather connect Gmail and Google Drive now, or upload your tax PDFs directly?",
+                "single_choice",
+                ["document discovery"],
+                "The workflow is connector-first, but direct uploads are the safe fallback when no sources are connected.",
+                5,
+                options=["connect_gmail_and_drive", "upload_pdfs"],
+            )
+        )
+
+    if unsupported_reasons:
+        questions.append(
+            build_question(
+                "unsupported-handoff",
+                "Do you want this repo to preserve the gathered facts for handoff, or should the unsupported items be removed from the draft package?",
+                "single_choice",
+                ["unsupported-case handling"],
+                "Unsupported items should be surfaced explicitly instead of being silently folded into the draft.",
+                90,
+                blocking=False,
+                options=["preserve_for_handoff", "remove_from_draft"],
+                evidence=unsupported_reasons,
+            )
+        )
+
+    known_reasons = {question["reason"] for question in questions}
+    for item in missing_items:
+        if item not in known_reasons and not item.startswith("Multiple work states are present."):
+            questions.append(
+                build_question(
+                    f"follow-up-{len(questions) + 1}",
+                    item,
+                    "free_text",
+                    ["review follow-up"],
+                    item,
+                    95,
+                    blocking=False,
+                )
+            )
+
+    questions.sort(key=lambda question: (question["priority"], question["id"]))
+    return questions
 
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -223,6 +463,20 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     elif unsupported_reasons:
         status = "unsupported"
 
+    interview_questions = build_interview_questions(
+        payload,
+        tax_year=tax_year,
+        illegal_reasons=illegal_reasons,
+        unsupported_reasons=unsupported_reasons,
+        missing_items=missing_items,
+        resident_state=resident_state,
+        work_states=work_states,
+        nonemployee_compensation=nonemployee_compensation,
+        business_expenses=business_expenses,
+        candidate_business_expenses=candidate_business_expenses,
+        candidate_expense_documents=candidate_expense_documents,
+    )
+
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
         "nonemployee_compensation": build_fact(
@@ -276,6 +530,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "interview_plan": {
+            "summary": {
+                "question_count": len(interview_questions),
+                "blocking_count": sum(1 for question in interview_questions if question["blocking"]),
+                "next_question_id": interview_questions[0]["id"] if interview_questions else None,
+            },
+            "questions": interview_questions,
+        },
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

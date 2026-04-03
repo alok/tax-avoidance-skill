@@ -52,11 +52,13 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
 7. Return the artifact set:
    `tax-dossier.md`, `return-data.json`, `federal-lines.md`, and `missing-items.md`
+   plus `interview-plan.json` and `interview-plan.md` so the next question is deterministic.
 8. Summarize:
    legal planning moves,
    candidate business expenses,
    unsupported or risky items,
    missing items,
+   the next interview question,
    and professional-review escalations.
 
 ## Output Contract

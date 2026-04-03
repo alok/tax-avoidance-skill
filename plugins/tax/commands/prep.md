@@ -27,9 +27,12 @@ Run the shared Tax Avoidance workflow for a normal person who wants to use Claud
    `tax-dossier.md`,
    `return-data.json`,
    `federal-lines.md`,
-   and `missing-items.md`
+   `missing-items.md`,
+   `interview-plan.json`,
+   and `interview-plan.md`
 7. Clearly separate:
    legal planning moves,
    unsupported complexity,
    illegal requests,
+   the next interview question,
    and professional-review items.

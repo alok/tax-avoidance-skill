@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Emits a deterministic `interview-plan.json` and `interview-plan.md` so the next question is explicit instead of inferred from prose.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -72,7 +73,7 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
   --out-dir output/example-run
 ```
 
-That should create the same four standard artifacts in `output/example-run/`.
+That should create the four standard artifacts plus `interview-plan.json` and `interview-plan.md` in `output/example-run/`.
 
 ## Install In Claude Cowork
 
@@ -97,8 +98,9 @@ Primary command:
 4. Build a document inventory and ask the minimum remaining interview questions.
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
-7. Surface likely business-expense receipts separately from confirmed deductible expenses.
-8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
+7. Emit a prioritized interview plan that says which question to ask next, why it matters, and what answer shape is expected.
+8. Surface likely business-expense receipts separately from confirmed deductible expenses.
+9. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
 
 ## Repository Layout
 

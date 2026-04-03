@@ -38,10 +38,21 @@ class TaxFlowTest(unittest.TestCase):
                 "tax-dossier.md": (out_dir / "tax-dossier.md").read_text(encoding="utf-8"),
                 "federal-lines.md": (out_dir / "federal-lines.md").read_text(encoding="utf-8"),
                 "missing-items.md": (out_dir / "missing-items.md").read_text(encoding="utf-8"),
+                "interview-plan.md": (out_dir / "interview-plan.md").read_text(encoding="utf-8"),
             }
+            interview_plan = json.loads((out_dir / "interview-plan.json").read_text(encoding="utf-8"))
 
-            for required in ("tax-dossier.md", "return-data.json", "federal-lines.md", "missing-items.md"):
+            for required in (
+                "tax-dossier.md",
+                "return-data.json",
+                "federal-lines.md",
+                "missing-items.md",
+                "interview-plan.json",
+                "interview-plan.md",
+            ):
                 self.assertTrue((out_dir / required).exists(), f"{required} was not created for {name}")
+            self.assertIn("summary", interview_plan)
+            self.assertIn("questions", interview_plan)
             return normalized, text_artifacts
 
     def test_happy_paths(self) -> None:
@@ -93,6 +104,20 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_interview_plan_for_missing_business_expenses(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_missing_expenses")
+        question_ids = [question["id"] for question in normalized["interview_plan"]["questions"]]
+        self.assertIn("business-expenses", question_ids)
+        self.assertIn("Schedule C lines 28 and 31", artifacts["interview-plan.md"])
+        self.assertIn("deductible business-expense total", artifacts["interview-plan.md"])
+
+    def test_interview_plan_for_source_recovery(self) -> None:
+        normalized, artifacts = self.run_case("metadata_only_tax_docs")
+        question_ids = [question["id"] for question in normalized["interview_plan"]["questions"]]
+        self.assertIn("unlock-baif-1099-nec", question_ids)
+        self.assertIn("upload-wealthfront-portal", question_ids)
+        self.assertIn("Please upload the actual Consolidated 1099", artifacts["interview-plan.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

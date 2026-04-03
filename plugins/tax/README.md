@@ -9,6 +9,6 @@ This plugin shares the same workflow and legality framing as the canonical Codex
 - simple U.S. federal individual returns only
 - connector-first discovery, explicit upload fallback for real PDFs
 - prefilled federal return package, not e-filing
+- deterministic interview-plan artifacts for the next required question
 
 If Gmail or Google Drive integrations cannot provide the actual attachment content, stop and ask the user to upload the PDF instead of pretending the content was ingested.
-
