@@ -280,6 +280,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    documented_itemized_deductions = fact_value(normalized, "documented_itemized_deductions")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    hsa_deduction = fact_value(normalized, "hsa_deduction")
+    deduction_review_rows = [
+        ["Mortgage interest documents", money(mortgage_interest), "Forms 1098 and lender records"],
+        ["Charitable cash receipts", money(charitable_cash), "Donation receipts only; non-cash gifts still need separate review"],
+        ["Documented itemized subtotal", money(documented_itemized_deductions), "Visible itemizable deductions gathered so far"],
+        ["Student loan interest", money(student_loan_interest), "Form 1098-E support for above-the-line deduction review"],
+        ["IRA contribution deduction", money(ira_deduction), "User-provided contribution deduction input"],
+        ["HSA deduction", money(hsa_deduction), "User-provided HSA deduction input"],
+    ]
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -341,6 +355,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction And Adjustment Review",
+        "",
+        "- Use this section to compare the standard deduction against the documented itemized inputs already gathered.",
+        "- Student-loan interest belongs in the adjustment review even when the deduction path ends up staying on the standard deduction.",
+        "",
+        make_markdown_table(
+            ["Review Item", "Amount", "Why It Matters"],
+            deduction_review_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",

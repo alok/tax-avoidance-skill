@@ -563,6 +563,64 @@
       "unsupported": "Equity compensation"
     }
   },
+  "deduction_review_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "mortgage-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://mortgage-1098",
+          "fields": {
+            "mortgage_interest": 7600
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-receipt",
+          "fields": {
+            "cash_donations": 1200
+          }
+        },
+        {
+          "id": "student-loan-1098e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://student-loan-1098e",
+          "fields": {
+            "student_loan_interest": 650
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 10200
+      },
+      "user_request": "Gather what you can and tell me how to choose between standard and itemized deductions."
+    },
+    "expect": {
+      "status": "ok",
+      "documented_itemized_deductions": 8800,
+      "student_loan_interest": 650
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,
