@@ -7,6 +7,7 @@
 - Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, Social Security income
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
 - Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
+- Federal payment tracking: W-2 withholding plus simple estimated-tax payment evidence from `1040-ES` confirmations or IRS account transcripts
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
 
@@ -18,7 +19,9 @@
 - 1099-B summary data
 - 1098
 - 1098-E
+- 1040-ES payment confirmations
 - 5498
+- IRS account transcripts with estimated-tax payment totals
 - SSA-1099
 - donation receipts
 

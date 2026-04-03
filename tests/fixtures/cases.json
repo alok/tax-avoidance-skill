@@ -167,6 +167,58 @@
       "line_20": 1800
     }
   },
+  "estimated_payments_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 135000,
+            "federal_withholding": 16000
+          }
+        },
+        {
+          "id": "q1-payment",
+          "doc_type": "1040-ES Payment",
+          "source_type": "google_drive",
+          "source_ref": "drive://irs-q1-payment",
+          "fields": {
+            "estimated_tax_payment": 2500
+          }
+        },
+        {
+          "id": "irs-account",
+          "doc_type": "IRS Account Transcript",
+          "source_type": "google_drive",
+          "source_ref": "drive://irs-account-transcript",
+          "fields": {
+            "estimated_tax_payments": 1500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 17500
+      },
+      "user_request": "Use my estimated payment confirmations too so the draft refund is accurate."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 135000,
+      "line_25a": 16000,
+      "line_26": 4000,
+      "line_33": 20000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

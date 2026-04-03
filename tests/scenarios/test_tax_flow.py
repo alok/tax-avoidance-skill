@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "estimated_payments_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -68,6 +69,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_26" in expected:
+                    self.assertIn(f"${expected['line_26']:,.2f}", federal_lines)
+                if "line_33" in expected:
+                    self.assertIn(f"${expected['line_33']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:

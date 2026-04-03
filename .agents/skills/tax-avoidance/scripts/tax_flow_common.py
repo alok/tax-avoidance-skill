@@ -10,6 +10,7 @@ WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 RULE_SOURCES: dict[str, dict[str, str]] = {
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "estimated_tax_payments": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
@@ -176,6 +177,20 @@ def aggregate_numeric(
                 "value": value,
             }
         )
+    return total, sources
+
+
+def aggregate_multiple_numeric(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: list[str],
+) -> tuple[float, list[dict[str, Any]]]:
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for field_name in field_names:
+        field_total, field_sources = aggregate_numeric(documents, doc_types, field_name)
+        total += field_total
+        sources.extend(field_sources)
     return total, sources
 
 

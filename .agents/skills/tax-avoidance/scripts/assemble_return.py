@@ -75,8 +75,9 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
 
     withholding = fact_value(normalized, "federal_withholding")
+    estimated_tax_payments = fact_value(normalized, "estimated_tax_payments")
     other_payments = fact_value(normalized, "other_payments")
-    total_payments = withholding + other_payments
+    total_payments = withholding + estimated_tax_payments + other_payments
 
     refund = None
     amount_owed = None
@@ -237,11 +238,21 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "26",
+            "label": "Estimated tax payments and amount applied from prior year",
+            "value": estimated_tax_payments or None,
+            "sources": fact_sources(normalized, "estimated_tax_payments"),
+            "rule_citations": rule_citations("estimated_tax_payments"),
+        },
+        {
+            "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
             "value": total_payments or None,
-            "sources": fact_sources(normalized, "federal_withholding") + fact_sources(normalized, "other_payments"),
-            "rule_citations": rule_citations("federal_withholding"),
+            "sources": fact_sources(normalized, "federal_withholding")
+            + fact_sources(normalized, "estimated_tax_payments")
+            + fact_sources(normalized, "other_payments"),
+            "rule_citations": rule_citations("federal_withholding", "estimated_tax_payments"),
         },
         {
             "form": "Form 1040",
