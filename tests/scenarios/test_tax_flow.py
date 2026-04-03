@@ -60,10 +60,16 @@ class TaxFlowTest(unittest.TestCase):
                 federal_lines = artifacts["federal-lines.md"]
                 if "line_1a" in expected:
                     self.assertIn(f"${expected['line_1a']:,.2f}", federal_lines)
+                if "line_2a" in expected:
+                    self.assertIn(f"${expected['line_2a']:,.2f}", federal_lines)
                 if "line_2b" in expected:
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -107,6 +113,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertEqual(normalized["status"], "ok")
         self.assertIn("$48.00", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts totaling $48.00", artifacts["missing-items.md"])
+
+    def test_social_security_taxability(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxability")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("$600.00", artifacts["federal-lines.md"])
+        self.assertIn("$30,000.00", artifacts["federal-lines.md"])
+        self.assertIn("$300.00", artifacts["federal-lines.md"])
+
+    def test_social_security_missing_tax_exempt_interest_review(self) -> None:
+        normalized, artifacts = self.run_case("social_security_missing_tax_exempt_interest")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("tax-exempt interest", artifacts["missing-items.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
 
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")

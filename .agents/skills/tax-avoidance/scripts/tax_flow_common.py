@@ -8,12 +8,14 @@ WIKIPEDIA_AVOIDANCE = "https://en.wikipedia.org/wiki/Tax_avoidance"
 WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 
 RULE_SOURCES: dict[str, dict[str, str]] = {
+    "tax_exempt_interest": {"title": "IRS Publication 550", "url": "https://www.irs.gov/publications/p550"},
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
-    "social_security_benefits": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
+    "social_security_benefits": {"title": "IRS Publication 915", "url": "https://www.irs.gov/publications/p915"},
+    "taxable_social_security_benefits": {"title": "IRS Publication 915", "url": "https://www.irs.gov/publications/p915"},
     "ira_contribution_deduction": {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",
@@ -187,8 +189,6 @@ def answer_fact(
     if key not in answers:
         return fallback, []
     value = safe_float(answers.get(key))
-    if value == 0.0:
-        return value, []
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
 
 

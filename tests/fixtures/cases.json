@@ -321,6 +321,79 @@
       "candidate_total": 48.0
     }
   },
+  "social_security_taxability": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 30000
+          }
+        },
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-part-time",
+          "fields": {
+            "wages": 10000,
+            "federal_withholding": 900
+          }
+        }
+      ],
+      "answers": {
+        "tax_exempt_interest": 600,
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Draft my simple return including Social Security benefits."
+    },
+    "expect": {
+      "status": "ok",
+      "line_2a": 600,
+      "line_6a": 30000,
+      "line_6b": 300
+    }
+  },
+  "social_security_missing_tax_exempt_interest": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 30000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Prepare my Social Security return draft."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "tax-exempt interest"
+    }
+  },
   "state_follow_up": {
     "input": {
       "tax_year": 2025,

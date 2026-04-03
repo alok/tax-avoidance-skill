@@ -105,6 +105,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "cash_donations",
     )
 
+    tax_exempt_interest, tax_exempt_interest_sources = answer_fact(answers, "tax_exempt_interest")
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
@@ -179,6 +180,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if social_security > 0.0 and "tax_exempt_interest" not in answers:
+        missing_items.append(
+            "Confirm whether you had any tax-exempt interest for the Social Security benefits worksheet, even if the amount is zero."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -224,6 +229,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         status = "unsupported"
 
     facts = {
+        "tax_exempt_interest": build_fact("tax_exempt_interest", tax_exempt_interest, tax_exempt_interest_sources),
         "wages": build_fact("wages", wages, wages_sources),
         "nonemployee_compensation": build_fact(
             "nonemployee_compensation",
@@ -269,6 +275,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "status": status,
         "tax_year": tax_year,
         "filing_status": payload.get("filing_status", ""),
+        "provided_answers": sorted(answers.keys()),
         "user_request": user_request,
         "documents": documents,
         "connectors": connectors,

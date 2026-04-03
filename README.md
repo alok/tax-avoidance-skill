@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Handles SSA-1099 benefits more safely by drafting Form 1040 lines `6a` and `6b` from the Social Security worksheet inputs instead of treating the full benefit as taxable income.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -95,6 +96,7 @@ Primary command:
 2. Search for likely tax documents using fixed, opinionated queries instead of asking the user to browse manually.
 3. Capture resident-state and work-state context as early as possible.
 4. Build a document inventory and ask the minimum remaining interview questions.
+   - If SSA-1099 benefits are present, explicitly confirm tax-exempt interest for the Social Security worksheet, even when the amount is zero.
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.
