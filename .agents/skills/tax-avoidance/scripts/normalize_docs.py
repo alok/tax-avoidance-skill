@@ -120,6 +120,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    known_itemized_deductions = mortgage_interest + charitable_cash
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -176,7 +177,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        documented_inputs: list[str] = []
+        if mortgage_interest > 0.0:
+            documented_inputs.append(f"mortgage interest {mortgage_interest:,.2f}")
+        if charitable_cash > 0.0:
+            documented_inputs.append(f"cash donations {charitable_cash:,.2f}")
+        if documented_inputs:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"Documented itemized inputs so far: {', '.join(documented_inputs)}."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -291,6 +303,22 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "deduction_summary": {
+            "documented_itemized_inputs": {
+                "mortgage_interest": mortgage_interest,
+                "charitable_cash": charitable_cash,
+                "total": known_itemized_deductions,
+                "sources": mortgage_interest_sources + charitable_sources,
+            },
+            "above_the_line_adjustments": {
+                "ira_contribution_deduction": ira_deduction,
+                "hsa_deduction": hsa_deduction,
+                "student_loan_interest_deduction": student_loan_interest,
+                "total": ira_deduction + hsa_deduction + student_loan_interest,
+                "sources": ira_sources + hsa_sources + student_loan_interest_sources,
+            },
+            "deduction_amount_answered": "deduction_amount" in answers,
+        },
         "facts": facts,
     }
     return normalized

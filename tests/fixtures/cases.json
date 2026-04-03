@@ -507,6 +507,62 @@
       "schedule_c_line_1": 108000.0
     }
   },
+  "deduction_guidance_snapshot": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 13500
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 8200
+          }
+        },
+        {
+          "id": "donation-bundle",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-bundle",
+          "fields": {
+            "cash_donations": 900
+          }
+        },
+        {
+          "id": "1098e-loan",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-loan",
+          "fields": {
+            "student_loan_interest": 650
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 11800
+      },
+      "user_request": "Gather my tax forms and tell me what is still missing."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "unsupported_schedule_c": {
     "input": {
       "tax_year": 2025,

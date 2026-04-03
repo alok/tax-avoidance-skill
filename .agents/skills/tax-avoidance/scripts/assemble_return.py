@@ -295,6 +295,22 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_summary = normalized.get("deduction_summary", {})
+    itemized_inputs = deduction_summary.get("documented_itemized_inputs", {})
+    adjustment_inputs = deduction_summary.get("above_the_line_adjustments", {})
+    deduction_rows = [
+        ["Mortgage interest", money(itemized_inputs.get("mortgage_interest"))],
+        ["Cash donations", money(itemized_inputs.get("charitable_cash"))],
+        ["Documented itemized inputs total", money(itemized_inputs.get("total"))],
+        ["IRA contribution deduction", money(adjustment_inputs.get("ira_contribution_deduction"))],
+        ["HSA deduction", money(adjustment_inputs.get("hsa_deduction"))],
+        ["Student loan interest deduction", money(adjustment_inputs.get("student_loan_interest_deduction"))],
+        ["Above-the-line adjustments total", money(adjustment_inputs.get("total"))],
+        [
+            "Deduction amount provided",
+            "Yes" if deduction_summary.get("deduction_amount_answered") else "No",
+        ],
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -341,6 +357,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Snapshot",
+        "",
+        make_markdown_table(["Input", "Value"], deduction_rows),
         "",
         "## Candidate Business Expenses",
         "",
