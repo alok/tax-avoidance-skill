@@ -28,6 +28,7 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Separates gross `SSA-1099` benefits from the taxable Social Security amount so the workflow asks for a reviewed line `6b` figure instead of assuming the full benefit is taxable.
 
 ## Scope
 

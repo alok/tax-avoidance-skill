@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "social_security_taxable_amount_provided",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -64,6 +65,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -88,11 +93,27 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "social_security_review_needed",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_social_security_review_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_needed")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn(
+            "Provide the taxable Social Security benefits amount for Form 1040 line 6b",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("$12,000.00", artifacts["federal-lines.md"])
+        self.assertIn("Taxable social security benefits", artifacts["federal-lines.md"])
+        self.assertIn("TBD", artifacts["federal-lines.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

@@ -536,6 +536,91 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "social_security_review_needed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 32000,
+            "federal_withholding": 2400
+          }
+        },
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099-main",
+          "fields": {
+            "benefits": 12000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1800
+      },
+      "user_request": "Draft my return package from my wage and Social Security documents."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 32000,
+      "line_6a": 12000
+    }
+  },
+  "social_security_taxable_amount_provided": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 32000,
+            "federal_withholding": 2400
+          }
+        },
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099-main",
+          "fields": {
+            "benefits": 12000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 3000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1800
+      },
+      "user_request": "Draft my return package from my wage and Social Security documents."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 32000,
+      "line_6a": 12000,
+      "line_6b": 3000,
+      "line_25a": 2400
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,
