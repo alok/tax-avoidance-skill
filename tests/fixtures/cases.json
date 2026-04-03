@@ -167,6 +167,38 @@
       "line_20": 1800
     }
   },
+  "social_security_taxable_amount_provided": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 9000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Use my Social Security form to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 24000,
+      "line_6b": 9000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
@@ -461,6 +493,36 @@
     "expect": {
       "status": "ok",
       "missing": "Download the actual Consolidated 1099"
+    }
+  },
+  "social_security_requires_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Use my Social Security form to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Compute the taxable Social Security amount"
     }
   },
   "duplicate_doc_sources": {
