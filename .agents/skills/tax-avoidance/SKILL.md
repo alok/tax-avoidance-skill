@@ -48,6 +48,7 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
 3. Search for likely tax documents using opinionated queries rather than asking the user to browse manually.
 4. Build a document inventory that names each candidate document, source, and confidence.
 5. Ask only the missing interview questions needed to assemble the supported return.
+   When `SSA-1099` is present, preserve the gross benefits amount from the document but ask for the taxable portion before putting anything on Form 1040 line 6b.
 6. Write an input JSON payload and run the deterministic script:
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
 7. Return the artifact set:

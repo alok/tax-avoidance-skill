@@ -21,13 +21,14 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Optimizes for Codex first, because Codex has a stronger connector and document-ingestion story for Gmail, Google Drive, Dropbox, and related tools. See the [OpenAI connectors guide](https://developers.openai.com/api/docs/guides/tools-connectors-mcp/).
 - Keeps a Claude Cowork path with the same interview flow, but expects explicit PDF upload when Gmail or Drive integrations cannot expose the actual attachment content. See [Claude integrations setup](https://support.claude.com/en/articles/10168395-set-up-claude-integrations), [Use Google Workspace connectors in Claude](https://support.claude.com/id/articles/10166901-gunakan-konektor-google-workspace), and [Use plugins in Cowork](https://support.claude.com/en/articles/13837440-use-plugins-in-cowork).
 - Produces the same artifact set every time:
-  - `tax-dossier.md`
-  - `return-data.json`
-  - `federal-lines.md`
-  - `missing-items.md`
+- `tax-dossier.md`
+- `return-data.json`
+- `federal-lines.md`
+- `missing-items.md`
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Preserves gross Social Security benefits from `SSA-1099`, but requires the taxable portion to be confirmed before carrying that amount onto Form 1040 line 6b.
 
 ## Scope
 

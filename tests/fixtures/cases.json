@@ -167,6 +167,68 @@
       "line_20": 1800
     }
   },
+  "social_security_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 12000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use my Social Security form to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 24000,
+      "line_6b": 12000
+    }
+  },
+  "social_security_needs_taxable_confirmation": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Help me draft my return from my Social Security form."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm the taxable portion of Social Security benefits"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
