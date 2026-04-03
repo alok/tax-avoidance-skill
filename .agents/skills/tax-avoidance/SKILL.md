@@ -68,6 +68,7 @@ Every completed run should yield:
 - `federal-lines.md`: line-by-line draft for supported federal lines
 - `missing-items.md`: unresolved fields, absent documents, and unsupported complexity
 - The dossier should separately surface **candidate business-expense receipts** that still need user confirmation before they are applied to Schedule C.
+- When `SSA-1099` appears, preserve the gross benefits from the document and ask for the taxable amount needed for Form 1040 line 6b instead of inferring it.
 
 Every nontrivial tax statement must cite an IRS source. Every extracted value must cite the originating document, email, file, or upload.
 
