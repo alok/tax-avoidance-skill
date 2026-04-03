@@ -64,6 +64,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_10" in expected:
+                    self.assertIn(f"${expected['line_10']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -107,6 +109,16 @@ class TaxFlowTest(unittest.TestCase):
         self.assertEqual(normalized["status"], "ok")
         self.assertIn("$48.00", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts totaling $48.00", artifacts["missing-items.md"])
+
+    def test_deduction_support_review(self) -> None:
+        normalized, artifacts = self.run_case("deduction_support_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertTrue(normalized["deduction_summary"]["itemized_review_needed"])
+        self.assertEqual(normalized["deduction_summary"]["known_itemized_deductions_total"], 19000)
+        self.assertIn("## Deduction Support", artifacts["tax-dossier.md"])
+        self.assertIn("$19,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,800.00", artifacts["tax-dossier.md"])
+        self.assertIn("Review whether itemizing deductions is better", artifacts["missing-items.md"])
 
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")

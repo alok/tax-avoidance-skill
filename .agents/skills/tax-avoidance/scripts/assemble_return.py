@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    deduction_summary = normalized.get("deduction_summary", {})
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -316,6 +317,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_lines = [
+        f"- Chosen deduction amount: {money(deduction_summary.get('chosen_deduction_amount'))}",
+        f"- Student loan interest support: {money(deduction_summary.get('student_loan_interest'))}",
+        f"- Known mortgage-interest support: {money(deduction_summary.get('mortgage_interest'))}",
+        f"- Known charitable cash support: {money(deduction_summary.get('charitable_cash'))}",
+        f"- Known itemized-deduction subtotal from supported documents: {money(deduction_summary.get('known_itemized_deductions_total'))}",
+    ]
+    if deduction_summary.get("itemized_review_needed"):
+        deduction_lines.append(
+            "- Review whether itemizing beats the chosen deduction amount; the currently supported itemized documents already exceed it."
+        )
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +362,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Support",
+        "",
+        *deduction_lines,
         "",
         "## State Follow-Up",
         "",

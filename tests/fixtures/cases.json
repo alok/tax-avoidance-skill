@@ -321,6 +321,55 @@
       "candidate_total": 48.0
     }
   },
+  "deduction_support_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 9000
+          }
+        },
+        {
+          "id": "charity-2025",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://charity-2025",
+          "fields": {
+            "cash_donations": 10000
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 5200
+      },
+      "user_request": "Use my tax forms and tell me if I should revisit the deduction choice."
+    },
+    "expect": {
+      "status": "ok",
+      "line_10": 1800,
+      "known_itemized_total": 19000
+    }
+  },
   "state_follow_up": {
     "input": {
       "tax_year": 2025,
