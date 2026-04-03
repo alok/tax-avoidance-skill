@@ -279,6 +279,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         [item["form"], item["line"], item["label"], money(item["value"])]
         for item in line_items
     ]
+    reported_ira_contributions = fact_value(normalized, "reported_ira_contributions")
+    reported_ira_sources = ", ".join(
+        source.get("source_ref", "unknown")
+        for source in fact_sources(normalized, "reported_ira_contributions")
+    ) or "None"
+    deductible_ira_amount = fact_value(normalized, "ira_contribution_deduction")
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
@@ -341,6 +347,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Retirement Contribution Review",
+        "",
+        f"- Reported IRA contributions from Form 5498 documents: {money(reported_ira_contributions) if reported_ira_contributions else '$0.00'}",
+        f"- Deductible IRA contribution currently applied in the draft: {money(deductible_ira_amount) if deductible_ira_amount else '$0.00'}",
+        f"- Source documents: {reported_ira_sources}",
         "",
         "## Candidate Business Expenses",
         "",

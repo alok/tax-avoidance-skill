@@ -22,6 +22,8 @@
 - SSA-1099
 - donation receipts
 
+Form 5498 support is evidence-first: the workflow preserves reported IRA contribution amounts, shows them in the artifacts, and asks the user to confirm the deductible portion before applying any IRA deduction.
+
 ## Unsupported In V1
 
 - automated state tax calculations
