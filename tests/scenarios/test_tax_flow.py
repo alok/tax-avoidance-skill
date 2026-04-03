@@ -122,6 +122,25 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_social_security_review_required(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_required")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn(
+            "provide the taxable Social Security amount for Form 1040 line 6b",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("$18,600.00", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 9 | Total income | $42,000.00 |", artifacts["federal-lines.md"])
+
+    def test_social_security_taxable_amount(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_amount")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 15810.0)
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $18,600.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | $15,810.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 9 | Total income | $57,810.00 |", artifacts["federal-lines.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
