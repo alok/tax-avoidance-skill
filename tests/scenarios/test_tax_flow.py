@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "deduction_review_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -140,6 +141,19 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_deduction_and_adjustment_review(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_review"]["itemized_candidate_total"], 1200)
+        self.assertEqual(normalized["adjustment_review"]["total_adjustments"], 4650)
+        dossier = artifacts["tax-dossier.md"]
+        self.assertIn("Deduction Review", dossier)
+        self.assertIn("Adjustment Review", dossier)
+        self.assertIn("Cash charitable contributions", dossier)
+        self.assertIn("Student loan interest deduction", dossier)
+        self.assertIn("$1,200.00", dossier)
+        self.assertIn("$4,650.00", dossier)
 
 
 if __name__ == "__main__":

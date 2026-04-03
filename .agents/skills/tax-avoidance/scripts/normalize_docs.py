@@ -265,6 +265,44 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         ),
     }
 
+    deduction_review = {
+        "chosen_deduction_amount": deduction_amount,
+        "itemized_candidates": [
+            {
+                "label": "Mortgage interest",
+                "amount": mortgage_interest,
+                "fact_key": "mortgage_interest",
+            },
+            {
+                "label": "Cash charitable contributions",
+                "amount": charitable_cash,
+                "fact_key": "charitable_cash",
+            },
+        ],
+        "itemized_candidate_total": mortgage_interest + charitable_cash,
+    }
+
+    adjustment_review = {
+        "adjustments": [
+            {
+                "label": "IRA contribution deduction",
+                "amount": ira_deduction,
+                "fact_key": "ira_contribution_deduction",
+            },
+            {
+                "label": "HSA deduction",
+                "amount": hsa_deduction,
+                "fact_key": "hsa_deduction",
+            },
+            {
+                "label": "Student loan interest deduction",
+                "amount": student_loan_interest,
+                "fact_key": "student_loan_interest_deduction",
+            },
+        ],
+        "total_adjustments": ira_deduction + hsa_deduction + student_loan_interest,
+    }
+
     normalized: dict[str, Any] = {
         "status": status,
         "tax_year": tax_year,
@@ -292,6 +330,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
+        "deduction_review": deduction_review,
+        "adjustment_review": adjustment_review,
     }
     return normalized
 

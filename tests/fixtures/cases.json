@@ -167,6 +167,57 @@
       "line_20": 1800
     }
   },
+  "deduction_review_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 9700
+          }
+        },
+        {
+          "id": "1098-e-loan",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-e-loan",
+          "fields": {
+            "student_loan_interest": 1650
+          }
+        },
+        {
+          "id": "donation-2025",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-2025",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "ira_contribution_deduction": 3000,
+        "tax_before_credits": 9900
+      },
+      "user_request": "Build a clear draft return package and show my deduction review."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 88000,
+      "line_25a": 9700
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

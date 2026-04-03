@@ -316,6 +316,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_review = normalized.get("deduction_review", {})
+    deduction_rows = [
+        [item.get("label", ""), money(item.get("amount"))]
+        for item in deduction_review.get("itemized_candidates", [])
+    ]
+    adjustment_review = normalized.get("adjustment_review", {})
+    adjustment_rows = [
+        [item.get("label", ""), money(item.get("amount"))]
+        for item in adjustment_review.get("adjustments", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +359,26 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Review",
+        "",
+        f"- Chosen deduction amount in draft return: {money(deduction_review.get('chosen_deduction_amount'))}",
+        f"- Itemized deduction candidates observed from documents: {money(deduction_review.get('itemized_candidate_total'))}",
+        "- Itemized candidates are review scaffolding only and are not auto-applied unless the chosen deduction amount already reflects them.",
+        "",
+        make_markdown_table(
+            ["Candidate", "Observed Amount"],
+            deduction_rows or [["None", "$0.00"]],
+        ),
+        "",
+        "## Adjustment Review",
+        "",
+        f"- Above-the-line adjustments captured so far: {money(adjustment_review.get('total_adjustments'))}",
+        "",
+        make_markdown_table(
+            ["Adjustment", "Observed Amount"],
+            adjustment_rows or [["None", "$0.00"]],
         ),
         "",
         "## State Follow-Up",
