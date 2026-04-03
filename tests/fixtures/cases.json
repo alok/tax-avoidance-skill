@@ -167,6 +167,64 @@
       "line_20": 1800
     }
   },
+  "deduction_review_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 118000,
+            "federal_withholding": 15400
+          }
+        },
+        {
+          "id": "mortgage-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://mortgage-1098",
+          "fields": {
+            "mortgage_interest": 7800
+          }
+        },
+        {
+          "id": "church-donations",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://church-donations",
+          "fields": {
+            "cash_donations": 600
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 11800
+      },
+      "user_request": "Keep my deduction support docs organized before I choose the final deduction values."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_reported": 6500,
+      "itemized_inputs_total": 8400
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

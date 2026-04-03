@@ -39,6 +39,12 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def format_source_refs(sources: list[dict[str, Any]]) -> str:
+    refs = [source.get("source_ref", "unknown") for source in sources if source.get("source_ref")]
+    unique_refs = list(dict.fromkeys(refs))
+    return ", ".join(unique_refs) if unique_refs else "TBD"
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -316,6 +322,57 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_review = normalized.get("deduction_review", {})
+    deduction_review_rows = [
+        [
+            "Potential itemized inputs (1098 + donations)",
+            money(deduction_review.get("itemized_deduction_inputs_total")),
+            "Review standard-vs-itemized choice",
+            "TBD",
+        ],
+        [
+            "Mortgage interest from Form 1098",
+            money(deduction_review.get("mortgage_interest", {}).get("value")),
+            "Observed from documents",
+            format_source_refs(deduction_review.get("mortgage_interest", {}).get("sources", [])),
+        ],
+        [
+            "Cash donations from receipts",
+            money(deduction_review.get("charitable_cash", {}).get("value")),
+            "Observed from documents",
+            format_source_refs(deduction_review.get("charitable_cash", {}).get("sources", [])),
+        ],
+        [
+            "Student loan interest from Form 1098-E",
+            money(deduction_review.get("student_loan_interest_deduction", {}).get("value")),
+            "Eligibility still depends on taxpayer facts",
+            format_source_refs(deduction_review.get("student_loan_interest_deduction", {}).get("sources", [])),
+        ],
+        [
+            "IRA contributions reported on Form 5498",
+            money(deduction_review.get("ira_contributions_reported", {}).get("value")),
+            "Review before treating as deductible",
+            format_source_refs(deduction_review.get("ira_contributions_reported", {}).get("sources", [])),
+        ],
+        [
+            "IRA deduction selected for draft return",
+            money(deduction_review.get("ira_contribution_deduction", {}).get("value")),
+            "User-confirmed draft amount",
+            format_source_refs(deduction_review.get("ira_contribution_deduction", {}).get("sources", [])),
+        ],
+        [
+            "HSA deduction selected for draft return",
+            money(deduction_review.get("hsa_deduction", {}).get("value")),
+            "User-confirmed draft amount",
+            format_source_refs(deduction_review.get("hsa_deduction", {}).get("sources", [])),
+        ],
+        [
+            "Deduction amount selected for Form 1040 line 12",
+            money(deduction_review.get("deduction_amount", {}).get("value")),
+            "User-confirmed draft amount",
+            format_source_refs(deduction_review.get("deduction_amount", {}).get("sources", [])),
+        ],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +398,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        "- Preserve deduction and adjustment evidence here before finalizing standard-vs-itemized choices or deductible IRA treatment.",
+        "- Amounts shown from Forms 1098-E and 5498 are review inputs, not automatic eligibility decisions.",
+        "",
+        make_markdown_table(
+            ["Review Item", "Amount", "Interpretation", "Sources"],
+            deduction_review_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",
@@ -386,7 +453,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
 def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
     rows: list[list[str]] = []
     for item in line_items:
-        doc_sources = ", ".join(src.get("source_ref", "unknown") for src in item.get("sources", [])) or "TBD"
+        doc_sources = format_source_refs(item.get("sources", []))
         rule_sources = ", ".join(src["title"] for src in item.get("rule_citations", [])) or "TBD"
         rows.append(
             [
