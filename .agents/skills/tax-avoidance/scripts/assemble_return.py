@@ -185,7 +185,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Standard or itemized deduction",
             "value": deduction_amount or None,
             "sources": fact_sources(normalized, "deduction_amount"),
-            "rule_citations": [],
+            "rule_citations": rule_citations("standard_deduction"),
         },
         {
             "form": "Form 1040",
@@ -316,6 +316,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_source_kind = deduction_summary.get("source_kind", "missing")
+    deduction_mode_map = {
+        "user_provided": "User-provided amount",
+        "standard_default": "Auto-defaulted standard deduction",
+        "missing": "Still missing",
+    }
 
     sections = [
         "# Tax Dossier",
@@ -326,6 +333,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         f"Tax year: {normalized['tax_year']}",
         f"Filing status: {normalized.get('filing_status') or 'TBD'}",
+        f"Deduction mode: {deduction_mode_map.get(deduction_source_kind, deduction_source_kind)}",
         "",
         "## Connector Notes",
         "",

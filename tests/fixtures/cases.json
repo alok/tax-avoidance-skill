@@ -167,6 +167,76 @@
       "line_20": 1800
     }
   },
+  "standard_deduction_default": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-defaulted",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-defaulted",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 9100
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 7000
+      },
+      "user_request": "Draft a simple return without making me type the standard deduction."
+    },
+    "expect": {
+      "status": "ok",
+      "deduction_amount": 15750.0
+    }
+  },
+  "standard_deduction_itemized_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-itemized-review",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-itemized-review",
+          "fields": {
+            "wages": 142000,
+            "federal_withholding": 17000
+          }
+        },
+        {
+          "id": "mortgage-interest",
+          "doc_type": "1098",
+          "source_type": "upload",
+          "source_ref": "upload://mortgage-interest",
+          "fields": {
+            "mortgage_interest": 12000
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 13800
+      },
+      "user_request": "Use the simple path first, but keep itemized-review risk visible."
+    },
+    "expect": {
+      "status": "ok",
+      "deduction_amount": 31500.0,
+      "missing": "Review whether itemizing would produce a better result before filing."
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

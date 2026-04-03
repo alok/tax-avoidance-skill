@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "standard_deduction_default",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -68,10 +69,22 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "deduction_amount" in expected:
+                    self.assertIn(f"${expected['deduction_amount']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_standard_deduction_default_with_itemized_review(self) -> None:
+        normalized, artifacts = self.run_case("standard_deduction_itemized_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_summary"]["source_kind"], "standard_default")
+        self.assertIn("$31,500.00", artifacts["federal-lines.md"])
+        self.assertIn(
+            "Review whether itemizing would produce a better result before filing.",
+            artifacts["missing-items.md"],
+        )
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")

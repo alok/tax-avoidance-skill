@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Defaults the draft package to the 2025 standard deduction for supported filing statuses when the user has not chosen an itemized amount yet, while still flagging possible itemized-review cases.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -72,7 +73,7 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
   --out-dir output/example-run
 ```
 
-That should create the same four standard artifacts in `output/example-run/`.
+That should create the same four standard artifacts in `output/example-run/`. The bundled example now omits `deduction_amount` on purpose so the draft uses the 2025 standard deduction automatically for a simple single-filer run.
 
 ## Install In Claude Cowork
 

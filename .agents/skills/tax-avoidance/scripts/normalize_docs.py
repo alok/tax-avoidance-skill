@@ -21,6 +21,7 @@ from tax_flow_common import (  # noqa: E402
     normalize_state_code,
     resolve_state_support,
     safe_float,
+    standard_deduction_amount,
 )
 
 
@@ -104,11 +105,26 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_review_needed = any(document.get("doc_type") in {"1098", "Donation Receipt"} for document in documents)
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
+    deduction_source_kind = "user_provided" if deduction_sources else "missing"
+    if not deduction_sources:
+        standard_deduction = standard_deduction_amount(tax_year, payload.get("filing_status"))
+        if standard_deduction is not None:
+            deduction_amount = standard_deduction
+            deduction_source_kind = "standard_default"
+            deduction_sources = [
+                {
+                    "source_type": "rule_default",
+                    "source_ref": f"standard_deduction:{tax_year}:{payload.get('filing_status')}",
+                    "field": "deduction_amount",
+                    "value": standard_deduction,
+                }
+            ]
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
@@ -175,8 +191,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
-    if deduction_amount == 0.0 and "deduction_amount" not in answers:
+    if deduction_source_kind == "missing":
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    elif deduction_source_kind == "standard_default" and itemized_review_needed:
+        missing_items.append(
+            "The draft package defaulted to the 2025 standard deduction for the filing status. Review whether itemizing would produce a better result before filing."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -291,6 +311,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "deduction_summary": {
+            "amount": deduction_amount,
+            "source_kind": deduction_source_kind,
+            "itemized_review_needed": itemized_review_needed,
+        },
         "facts": facts,
     }
     return normalized
