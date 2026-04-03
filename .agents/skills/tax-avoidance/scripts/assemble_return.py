@@ -39,6 +39,19 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def deduction_choice_summary(normalized: dict[str, Any]) -> tuple[str, float]:
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    itemized_candidate_total = mortgage_interest + charitable_cash
+
+    if deduction_amount <= 0.0:
+        return "TBD", itemized_candidate_total
+    if itemized_candidate_total > 0.0 and abs(deduction_amount - itemized_candidate_total) < 0.01:
+        return "Itemized deduction amount supplied", itemized_candidate_total
+    return "Standard or blended deduction amount supplied", itemized_candidate_total
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -295,6 +308,31 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_choice, itemized_candidate_total = deduction_choice_summary(normalized)
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    deduction_review_rows = [
+        [
+            "Mortgage interest (Form 1098)",
+            money(mortgage_interest),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "mortgage_interest")) or "TBD",
+        ],
+        [
+            "Cash charitable giving",
+            money(charitable_cash),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "charitable_cash")) or "TBD",
+        ],
+        [
+            "Candidate itemized subtotal",
+            money(itemized_candidate_total),
+            "Computed from supported deduction documents",
+        ],
+        [
+            "Chosen deduction amount",
+            money(fact_value(normalized, "deduction_amount")) if fact_value(normalized, "deduction_amount") > 0.0 else "TBD",
+            deduction_choice,
+        ],
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +387,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Review",
+        "",
+        "- Mortgage interest and charitable receipts are surfaced as itemized-deduction candidates for comparison against the chosen deduction amount.",
+        "",
+        make_markdown_table(
+            ["Item", "Amount", "Sources / Notes"],
+            deduction_review_rows,
         ),
         "",
         "## State Follow-Up",

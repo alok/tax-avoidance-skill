@@ -167,6 +167,54 @@
       "line_20": 1800
     }
   },
+  "itemized_deduction_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 110000,
+            "federal_withholding": 13000
+          }
+        },
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 9600
+          }
+        },
+        {
+          "id": "charity-bundle",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://charity-bundle",
+          "fields": {
+            "cash_donations": 2400
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 12000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Assemble the return package and show me whether my itemized docs matter."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
