@@ -84,6 +84,48 @@
       "line_25a": 14800
     }
   },
+  "ira_deduction_from_5498": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 12500
+          }
+        },
+        {
+          "id": "5498-traditional-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-traditional-ira",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Use my retirement contribution form to prefill the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 91000,
+      "line_25a": 12500,
+      "ira_contribution_deduction": 6500
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,

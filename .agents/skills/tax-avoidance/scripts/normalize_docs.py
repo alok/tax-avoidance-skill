@@ -104,8 +104,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_5498_contributions, ira_5498_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
+    traditional_ira_5498_contributions, traditional_ira_5498_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
+    if "ira_contribution_deduction" not in answers:
+        ira_deduction = ira_5498_contributions + traditional_ira_5498_contributions
+        ira_sources = ira_5498_sources + traditional_ira_5498_sources
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")

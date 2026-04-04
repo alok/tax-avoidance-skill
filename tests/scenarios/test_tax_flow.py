@@ -48,6 +48,7 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "w2_single",
             "mfj_common_deductions",
+            "ira_deduction_from_5498",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -72,6 +73,27 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_ira_deduction_from_5498(self) -> None:
+        normalized, artifacts = self.run_case("ira_deduction_from_5498")
+        self.assertEqual(normalized["status"], "ok")
+        ira_fact = normalized["facts"]["ira_contribution_deduction"]
+        self.assertEqual(ira_fact["value"], 6500)
+        self.assertEqual(
+            ira_fact["sources"],
+            [
+                {
+                    "doc_id": "5498-traditional-ira",
+                    "doc_type": "5498",
+                    "source_type": "google_drive",
+                    "source_ref": "drive://5498-traditional-ira",
+                    "dedupe_key": None,
+                    "field": "ira_contributions",
+                    "value": 6500.0,
+                }
+            ],
+        )
+        self.assertIn("| Form 1040 | 10 | Adjustments to income | $6,500.00 |", artifacts["federal-lines.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
