@@ -34,6 +34,7 @@ For a plain Codex app user:
 - Search for obvious receipts and invoices after document discovery, not before.
 - Prefer vendors that look plausibly work-related: AI model providers, developer tooling, conferencing, hosting, and issue-tracking tools.
 - Do not silently convert every receipt into a deduction. Surface them as candidate expenses with totals and source links, then ask the user to confirm inclusion.
+- Treat Form 5498 the same way for IRA deductions: preserve the traditional IRA contribution amount, but ask for the actually deductible amount before applying it to the return draft.
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
 
