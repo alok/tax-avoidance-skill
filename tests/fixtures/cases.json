@@ -135,6 +135,70 @@
       "line_3b": 1400
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 500
+      },
+      "user_request": "Draft my return package with my Social Security benefits."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Provide the taxable portion of Social Security benefits",
+      "line_6a": 24000
+    }
+  },
+  "social_security_taxable_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 10200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 500
+      },
+      "user_request": "Use my confirmed taxable Social Security amount in the draft return."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 24000,
+      "line_6b": 10200,
+      "line_9": 10200
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,

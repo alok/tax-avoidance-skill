@@ -110,5 +110,6 @@ Primary command:
 
 - This project does **not** e-file.
 - This project does **not** give personalized legal advice.
+- Social Security benefits are not assumed to be fully taxable. When `SSA-1099` income is present, the workflow preserves the gross benefits and asks for the taxable portion used on Form 1040 line 6b.
 - Illegal requests such as hiding income, concealing ownership, or skipping required reporting must be refused and redirected to lawful compliance.
 - If a portal notice exists but the actual form does not, the workflow should stop and ask for the downloadable PDF or the line-item figures.
