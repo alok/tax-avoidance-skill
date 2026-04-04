@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    capital_gains_from_1099b,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -30,6 +31,55 @@ def build_fact(
     sources: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {"key": key, "value": value, "sources": sources}
+
+
+def aggregate_capital_gains(documents: list[dict[str, Any]]) -> tuple[float, list[dict[str, Any]]]:
+    total, sources = aggregate_numeric(documents, {"1099-DIV"}, "capital_gains")
+    dedupe_groups: dict[str, list[dict[str, Any]]] = {}
+
+    def source_rank(document: dict[str, Any]) -> tuple[int, int]:
+        content_status = document.get("content_status", "")
+        status_score = {
+            "available": 4,
+            "metadata_only": 3,
+            "unreadable_encrypted_attachment": 2,
+            "portal_notice_only": 1,
+        }.get(content_status, 0)
+        value = capital_gains_from_1099b(document)
+        value_score = 1 if value not in (None, 0.0) else 0
+        return (value_score, status_score)
+
+    grouped_documents: list[dict[str, Any]] = []
+    for document in documents:
+        if document.get("doc_type") != "1099-B":
+            continue
+        dedupe_key = document.get("dedupe_key")
+        if dedupe_key:
+            dedupe_groups.setdefault(dedupe_key, []).append(document)
+        else:
+            grouped_documents.append(document)
+
+    for group in dedupe_groups.values():
+        grouped_documents.append(max(group, key=source_rank))
+
+    for document in grouped_documents:
+        value = capital_gains_from_1099b(document)
+        if value in (None, 0.0):
+            continue
+        total += value
+        sources.append(
+            {
+                "doc_id": document.get("id"),
+                "doc_type": document.get("doc_type"),
+                "source_type": document.get("source_type"),
+                "source_ref": document.get("source_ref"),
+                "dedupe_key": document.get("dedupe_key"),
+                "field": "capital_gains_derived",
+                "value": value,
+            }
+        )
+
+    return total, sources
 
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -52,11 +102,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     )
     interest, interest_sources = aggregate_numeric(documents, {"1099-INT"}, "interest_income")
     dividends, dividends_sources = aggregate_numeric(documents, {"1099-DIV"}, "ordinary_dividends")
-    capital_gains, capital_gains_sources = aggregate_numeric(
-        documents,
-        {"1099-B", "1099-DIV"},
-        "capital_gains",
-    )
+    capital_gains, capital_gains_sources = aggregate_capital_gains(documents)
     social_security, social_security_sources = aggregate_numeric(
         documents,
         {"SSA-1099"},
@@ -190,7 +236,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
-    if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
+    if any(doc.get("doc_type") == "1099-B" and capital_gains_from_1099b(doc) is None for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
     for document in documents:
         content_status = document.get("content_status")

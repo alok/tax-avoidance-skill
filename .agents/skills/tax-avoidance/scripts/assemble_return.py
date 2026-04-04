@@ -141,7 +141,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Capital gain or loss",
             "value": capital_gains or None,
             "sources": fact_sources(normalized, "capital_gains"),
-            "rule_citations": rule_citations("capital_gains"),
+            "rule_citations": rule_citations("capital_gains", "schedule_d"),
         },
         {
             "form": "Form 1040",
@@ -154,6 +154,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
+                "schedule_d",
                 "schedule_c",
             ),
         },

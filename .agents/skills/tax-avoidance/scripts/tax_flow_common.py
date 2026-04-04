@@ -13,6 +13,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
+    "schedule_d": {
+        "title": "About Schedule D (Form 1040)",
+        "url": "https://www.irs.gov/forms-pubs/about-schedule-d-form-1040",
+    },
     "social_security_benefits": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ira_contribution_deduction": {
         "title": "IRS Publication 590-A",
@@ -177,6 +181,25 @@ def aggregate_numeric(
             }
         )
     return total, sources
+
+
+def capital_gains_from_1099b(document: dict[str, Any]) -> float | None:
+    fields = document.get("fields", {})
+
+    for key in ("capital_gains", "net_capital_gain", "realized_gain_loss"):
+        if key in fields and fields.get(key) not in (None, ""):
+            return safe_float(fields.get(key))
+
+    proceeds_keys = ("proceeds", "gross_proceeds", "sales_proceeds")
+    basis_keys = ("cost_basis", "basis", "cost_or_other_basis")
+    proceeds = next((safe_float(fields.get(key)) for key in proceeds_keys if key in fields), None)
+    basis = next((safe_float(fields.get(key)) for key in basis_keys if key in fields), None)
+
+    if proceeds is None or basis is None:
+        return None
+
+    wash_sale_disallowed = safe_float(fields.get("wash_sale_disallowed"))
+    return proceeds - basis + wash_sale_disallowed
 
 
 def answer_fact(

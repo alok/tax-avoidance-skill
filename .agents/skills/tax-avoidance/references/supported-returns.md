@@ -15,7 +15,7 @@
 - W-2
 - 1099-INT
 - 1099-DIV
-- 1099-B summary data
+- 1099-B summary data, including simple proceeds-minus-basis summaries and wash-sale adjustments
 - 1098
 - 1098-E
 - 5498
