@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER = REPO_ROOT / ".agents/skills/tax-avoidance/scripts/run_tax_flow.py"
 FIXTURES = REPO_ROOT / "tests/fixtures/cases.json"
 EXAMPLE_INPUT = REPO_ROOT / "examples/contractor-and-investment-input.json"
+FAMILY_EXAMPLE_INPUT = REPO_ROOT / "examples/family-dependent-input.json"
 
 
 class TaxFlowTest(unittest.TestCase):
@@ -122,6 +123,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_intake_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_intake_scaffolding")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["household_summary"]["dependent_count"], 2)
+        self.assertEqual(normalized["household_summary"]["qualifying_child_candidates"], 1)
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Kid A", artifacts["tax-dossier.md"])
+        self.assertIn("Kid B", artifacts["tax-dossier.md"])
+        self.assertIn("Review dependent-credit eligibility", artifacts["missing-items.md"])
+        self.assertIn("Dependent intake for Kid B", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -140,6 +152,20 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_family_example_input_smoke(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir) / "out"
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(FAMILY_EXAMPLE_INPUT), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+            dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
+            missing = (out_dir / "missing-items.md").read_text(encoding="utf-8")
+            self.assertIn("Household And Dependents", dossier)
+            self.assertIn("Kid A", dossier)
+            self.assertIn("dependent-care credit eligibility", missing)
 
 
 if __name__ == "__main__":

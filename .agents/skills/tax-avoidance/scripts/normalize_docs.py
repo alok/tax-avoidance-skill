@@ -39,6 +39,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -121,6 +122,91 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    dependents_raw = household.get("dependents", [])
+    dependents: list[dict[str, Any]] = []
+    dependent_missing_items: list[str] = []
+    qualifying_child_count = 0
+    childcare_expense_total = 0.0
+    for index, dependent in enumerate(dependents_raw, start=1):
+        label = (
+            dependent.get("label")
+            or dependent.get("nickname")
+            or dependent.get("first_name")
+            or f"Dependent {index}"
+        )
+        relationship = dependent.get("relationship") or "unspecified"
+        months_in_home = dependent.get("months_in_home")
+        support_percent = dependent.get("support_from_taxpayer_percent")
+        childcare_expenses = safe_float(dependent.get("childcare_expenses"))
+        age = dependent.get("age")
+        birth_year = dependent.get("birth_year")
+        student = dependent.get("is_full_time_student")
+        disabled = dependent.get("is_permanently_disabled")
+        has_tax_id = dependent.get("has_ssn_or_itin")
+        claimed_elsewhere = dependent.get("claimed_by_someone_else")
+        shared_custody = dependent.get("has_shared_custody")
+        citizenship = dependent.get("us_citizen_or_resident")
+        relationship_test = dependent.get("relationship_test_met")
+        support_test = dependent.get("support_test_met")
+        qualifying_child = dependent.get("qualifying_child_candidate")
+
+        if qualifying_child is True:
+            qualifying_child_count += 1
+        childcare_expense_total += childcare_expenses
+
+        dependent_record = {
+            "label": label,
+            "relationship": relationship,
+            "age": age,
+            "birth_year": birth_year,
+            "months_in_home": months_in_home,
+            "support_from_taxpayer_percent": support_percent,
+            "is_full_time_student": student,
+            "is_permanently_disabled": disabled,
+            "has_ssn_or_itin": has_tax_id,
+            "claimed_by_someone_else": claimed_elsewhere,
+            "has_shared_custody": shared_custody,
+            "us_citizen_or_resident": citizenship,
+            "relationship_test_met": relationship_test,
+            "support_test_met": support_test,
+            "qualifying_child_candidate": qualifying_child,
+            "childcare_expenses": childcare_expenses,
+        }
+        dependents.append(dependent_record)
+
+        missing_fields: list[str] = []
+        if months_in_home is None:
+            missing_fields.append("months lived with you in 2025")
+        if support_percent is None and support_test is None:
+            missing_fields.append("whether you provided more than half of their support")
+        if citizenship is None:
+            missing_fields.append("whether they were a U.S. citizen or resident")
+        if has_tax_id is None:
+            missing_fields.append("whether they had an SSN or ITIN issued by the filing deadline")
+        if claimed_elsewhere is None:
+            missing_fields.append("whether someone else can claim them")
+        if shared_custody is None and relationship in {"child", "stepchild", "foster_child"}:
+            missing_fields.append("whether there is a shared-custody or split-claim arrangement")
+        if relationship_test is None:
+            missing_fields.append("whether the relationship test is met")
+        if qualifying_child is None:
+            missing_fields.append("whether they appear to be a qualifying child candidate")
+        if not age and not birth_year and disabled is None and student is None:
+            missing_fields.append("their age, birth year, student status, or disability status")
+
+        if missing_fields:
+            dependent_missing_items.append(
+                f"Dependent intake for {label}: confirm " + ", ".join(missing_fields) + "."
+            )
+
+    household_summary = {
+        "filers_have_dependents": household.get("has_dependents"),
+        "dependents": dependents,
+        "dependent_count": len(dependents),
+        "qualifying_child_candidates": qualifying_child_count,
+        "childcare_expense_total": childcare_expense_total,
+    }
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -192,6 +278,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    if household.get("has_dependents") and not dependents:
+        missing_items.append("List each dependent candidate with public-safe intake details before drafting dependent credits.")
+    if dependents and "child_tax_credit" not in answers:
+        missing_items.append(
+            "Review dependent-credit eligibility and either provide a child tax credit figure or leave dependent credits flagged for review."
+        )
+    if childcare_expense_total > 0.0:
+        missing_items.append(
+            f"Childcare expenses totaling ${childcare_expense_total:,.2f} were noted. Review dependent-care credit eligibility separately before claiming it."
+        )
+    for item in dependent_missing_items:
+        if item not in missing_items:
+            missing_items.append(item)
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -290,6 +389,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "household_summary": household_summary,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

@@ -1,0 +1,56 @@
+{
+  "tax_year": 2025,
+  "filing_status": "married_filing_jointly",
+  "connectors": {
+    "gmail": true,
+    "google_drive": true
+  },
+  "documents": [
+    {
+      "id": "sample-w2-parent-a",
+      "doc_type": "W-2",
+      "source_type": "upload",
+      "source_ref": "upload://sample-w2-parent-a",
+      "fields": {
+        "wages": 82000.0,
+        "federal_withholding": 7600.0
+      }
+    },
+    {
+      "id": "sample-w2-parent-b",
+      "doc_type": "W-2",
+      "source_type": "upload",
+      "source_ref": "upload://sample-w2-parent-b",
+      "fields": {
+        "wages": 41000.0,
+        "federal_withholding": 3300.0
+      }
+    }
+  ],
+  "household": {
+    "has_dependents": true,
+    "dependents": [
+      {
+        "label": "Kid A",
+        "relationship": "child",
+        "birth_year": 2018,
+        "months_in_home": 12,
+        "is_full_time_student": false,
+        "is_permanently_disabled": false,
+        "has_ssn_or_itin": true,
+        "claimed_by_someone_else": false,
+        "has_shared_custody": false,
+        "us_citizen_or_resident": true,
+        "relationship_test_met": true,
+        "support_from_taxpayer_percent": 100,
+        "qualifying_child_candidate": true,
+        "childcare_expenses": 3200.0
+      }
+    ]
+  },
+  "answers": {
+    "deduction_amount": 29200.0,
+    "tax_before_credits": 12600.0
+  },
+  "user_request": "Build a sample family return package and keep dependent follow-up visible."
+}

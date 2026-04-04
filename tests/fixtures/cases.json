@@ -563,6 +563,74 @@
       "unsupported": "Equity compensation"
     }
   },
+  "dependent_intake_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-parent-a",
+          "fields": {
+            "wages": 82000,
+            "federal_withholding": 7600
+          }
+        },
+        {
+          "id": "w2-parent-b",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-parent-b",
+          "fields": {
+            "wages": 41000,
+            "federal_withholding": 3300
+          }
+        }
+      ],
+      "household": {
+        "has_dependents": true,
+        "dependents": [
+          {
+            "label": "Kid A",
+            "relationship": "child",
+            "birth_year": 2018,
+            "months_in_home": 12,
+            "is_full_time_student": false,
+            "is_permanently_disabled": false,
+            "has_ssn_or_itin": true,
+            "claimed_by_someone_else": false,
+            "has_shared_custody": false,
+            "us_citizen_or_resident": true,
+            "relationship_test_met": true,
+            "support_from_taxpayer_percent": 100,
+            "qualifying_child_candidate": true,
+            "childcare_expenses": 3200
+          },
+          {
+            "label": "Kid B",
+            "relationship": "child",
+            "birth_year": 2021
+          }
+        ]
+      },
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 12600
+      },
+      "user_request": "Prepare a family return package and keep the dependent follow-up visible."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Review dependent-credit eligibility",
+      "dossier_text": "Household And Dependents"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

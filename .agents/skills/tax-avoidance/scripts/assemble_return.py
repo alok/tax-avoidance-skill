@@ -215,6 +215,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             + fact_sources(normalized, "other_nonrefundable_credits"),
             "rule_citations": rule_citations(
                 "education_credit",
+                "child_tax_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
             ),
@@ -296,6 +297,19 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    household_summary = normalized.get("household_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("label") or "Unknown",
+            dependent.get("relationship") or "Unknown",
+            str(dependent.get("age") or dependent.get("birth_year") or "TBD"),
+            str(dependent.get("months_in_home") if dependent.get("months_in_home") is not None else "TBD"),
+            "Yes" if dependent.get("qualifying_child_candidate") is True else "No" if dependent.get("qualifying_child_candidate") is False else "TBD",
+            money(dependent.get("childcare_expenses")),
+            "Yes" if dependent.get("has_ssn_or_itin") is True else "No" if dependent.get("has_ssn_or_itin") is False else "TBD",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
     state_rows = [
         [
             module.get("code", ""),
@@ -349,6 +363,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents flagged: {household_summary.get('dependent_count', 0)}",
+        f"- Qualifying child candidates: {household_summary.get('qualifying_child_candidates', 0)}",
+        f"- Childcare expenses noted: {money(household_summary.get('childcare_expense_total'))}",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Age/Birth Year", "Months In Home", "Qualifying Child Candidate", "Childcare Expenses", "SSN/ITIN Ready"],
+            dependent_rows or [["None", "None", "None", "None", "None", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",
