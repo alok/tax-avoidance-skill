@@ -196,7 +196,53 @@
     "expect": {
       "status": "ok",
       "schedule_c_line_1": 108000.0,
-      "schedule_c_line_31": 89658.47
+      "schedule_c_line_31": 89658.47,
+      "schedule_se_line_12": 12668.34,
+      "schedule_1_line_15": 6334.17
+    }
+  },
+  "schedule_c_with_w2_and_additional_medicare": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 190000.0,
+            "federal_withholding": 31000.0
+          }
+        },
+        {
+          "id": "1099-nec-sidegig",
+          "doc_type": "1099-NEC",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099-nec-sidegig",
+          "fields": {
+            "nonemployee_compensation": 40000.0
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 5000.0,
+        "deduction_amount": 15000.0,
+        "tax_before_credits": 42000.0
+      },
+      "user_request": "Use my W-2 and side-gig 1099 to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 190000.0,
+      "schedule_c_line_31": 35000.0,
+      "schedule_se_line_12": 1138.26,
+      "schedule_1_line_15": 569.13
     }
   },
   "schedule_c_missing_expenses": {

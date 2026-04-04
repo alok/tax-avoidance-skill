@@ -62,6 +62,19 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "additional_medicare_tax": {
+        "title": "Instructions for Form 8959",
+        "url": "https://www.irs.gov/forms-pubs/about-form-8959",
+    },
+}
+
+SOCIAL_SECURITY_WAGE_BASE_BY_YEAR: dict[int, float] = {
+    2025: 176100.0,
+}
+
+ADDITIONAL_MEDICARE_THRESHOLDS: dict[str, float] = {
+    "single": 200000.0,
+    "married_filing_jointly": 250000.0,
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {
@@ -302,4 +315,73 @@ def resolve_state_support(code: str | None) -> dict[str, str] | None:
         "resident_form": "Unknown",
         "nonresident_form": "Unknown",
         "source_url": "",
+    }
+
+
+def compute_self_employment_scaffolding(
+    *,
+    filing_status: str,
+    tax_year: int,
+    wages: float,
+    nonemployee_compensation: float,
+    business_expenses: float,
+    has_business_expenses: bool,
+) -> dict[str, float | bool | None]:
+    net_profit = None
+    if nonemployee_compensation and has_business_expenses:
+        net_profit = nonemployee_compensation - business_expenses
+
+    if net_profit is None or net_profit <= 0.0:
+        return {
+            "applies": False,
+            "net_profit": net_profit,
+            "net_earnings": None,
+            "social_security_taxable_earnings": None,
+            "social_security_tax": None,
+            "medicare_tax": None,
+            "additional_medicare_tax": None,
+            "total_self_employment_tax": None,
+            "deductible_half": None,
+        }
+
+    net_earnings = net_profit * 0.9235
+    if net_earnings < 400.0:
+        return {
+            "applies": False,
+            "net_profit": net_profit,
+            "net_earnings": net_earnings,
+            "social_security_taxable_earnings": 0.0,
+            "social_security_tax": 0.0,
+            "medicare_tax": 0.0,
+            "additional_medicare_tax": 0.0,
+            "total_self_employment_tax": 0.0,
+            "deductible_half": 0.0,
+        }
+
+    social_security_wage_base = SOCIAL_SECURITY_WAGE_BASE_BY_YEAR.get(tax_year, 0.0)
+    remaining_social_security_base = max(social_security_wage_base - wages, 0.0)
+    social_security_taxable_earnings = min(net_earnings, remaining_social_security_base)
+    social_security_tax = social_security_taxable_earnings * 0.124
+    medicare_tax = net_earnings * 0.029
+
+    medicare_threshold = ADDITIONAL_MEDICARE_THRESHOLDS.get(filing_status)
+    additional_medicare_tax = 0.0
+    if medicare_threshold is not None:
+        remaining_threshold_after_wages = max(medicare_threshold - wages, 0.0)
+        additional_medicare_base = max(net_earnings - remaining_threshold_after_wages, 0.0)
+        additional_medicare_tax = additional_medicare_base * 0.009
+
+    total_self_employment_tax = social_security_tax + medicare_tax + additional_medicare_tax
+    deductible_half = total_self_employment_tax / 2.0
+
+    return {
+        "applies": True,
+        "net_profit": net_profit,
+        "net_earnings": net_earnings,
+        "social_security_taxable_earnings": social_security_taxable_earnings,
+        "social_security_tax": social_security_tax,
+        "medicare_tax": medicare_tax,
+        "additional_medicare_tax": additional_medicare_tax,
+        "total_self_employment_tax": total_self_employment_tax,
+        "deductible_half": deductible_half,
     }

@@ -13,6 +13,7 @@ from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
+    compute_self_employment_scaffolding,
     connector_notes,
     detect_illegal_request,
     detect_unsupported,
@@ -265,6 +266,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         ),
     }
 
+    self_employment = compute_self_employment_scaffolding(
+        filing_status=payload.get("filing_status", ""),
+        tax_year=tax_year,
+        wages=wages,
+        nonemployee_compensation=nonemployee_compensation,
+        business_expenses=business_expenses,
+        has_business_expenses=bool(facts["business_expenses"]["sources"]) or business_expenses > 0.0,
+    )
+
     normalized: dict[str, Any] = {
         "status": status,
         "tax_year": tax_year,
@@ -292,6 +302,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
+        "derived": {
+            "self_employment": self_employment,
+        },
     }
     return normalized
 

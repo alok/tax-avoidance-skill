@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_with_w2_and_additional_medicare",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -72,6 +73,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "schedule_se_line_12" in expected:
+                    self.assertIn(f"${expected['schedule_se_line_12']:,.2f}", federal_lines)
+                if "schedule_1_line_15" in expected:
+                    self.assertIn(f"${expected['schedule_1_line_15']:,.2f}", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -139,6 +144,7 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Contractor Tax Scaffolding", dossier)
             self.assertIn("$48,000.00", dossier)
 
 
