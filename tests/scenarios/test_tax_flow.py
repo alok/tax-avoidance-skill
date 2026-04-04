@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "document_backed_adjustments",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -64,6 +65,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_10" in expected:
+                    self.assertIn(f"${expected['line_10']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -107,6 +110,14 @@ class TaxFlowTest(unittest.TestCase):
         self.assertEqual(normalized["status"], "ok")
         self.assertIn("$48.00", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts totaling $48.00", artifacts["missing-items.md"])
+
+    def test_document_backed_adjustment_sources(self) -> None:
+        normalized, artifacts = self.run_case("document_backed_adjustments")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contribution_deduction"]["value"], 3200)
+        self.assertEqual(normalized["facts"]["hsa_deduction"]["value"], 1800)
+        self.assertIn("upload://ira-5498", artifacts["federal-lines.md"])
+        self.assertIn("upload://hsa-summary", artifacts["federal-lines.md"])
 
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")

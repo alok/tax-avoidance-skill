@@ -32,6 +32,17 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def answer_or_document_fact(
+    answers: dict[str, Any],
+    key: str,
+    document_value: float,
+    document_sources: list[dict[str, Any]],
+) -> tuple[float, list[dict[str, Any]]]:
+    if key in answers:
+        return answer_fact(answers, key)
+    return document_value, document_sources
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -72,6 +83,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_deduction_from_docs, ira_sources_from_docs = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contribution_deduction",
+    )
+    hsa_deduction_from_docs, hsa_sources_from_docs = aggregate_numeric(
+        documents,
+        {"5498-SA", "HSA Contribution Statement"},
+        "hsa_contribution_deduction",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -105,8 +126,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "cash_donations",
     )
 
-    ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
-    hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
+    ira_deduction, ira_sources = answer_or_document_fact(
+        answers,
+        "ira_contribution_deduction",
+        ira_deduction_from_docs,
+        ira_sources_from_docs,
+    )
+    hsa_deduction, hsa_sources = answer_or_document_fact(
+        answers,
+        "hsa_deduction",
+        hsa_deduction_from_docs,
+        hsa_sources_from_docs,
+    )
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")

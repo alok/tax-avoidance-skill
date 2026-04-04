@@ -19,6 +19,7 @@
 - 1098
 - 1098-E
 - 5498
+- 5498-SA or HSA contribution summaries when the deductible contribution amount is explicitly available
 - SSA-1099
 - donation receipts
 

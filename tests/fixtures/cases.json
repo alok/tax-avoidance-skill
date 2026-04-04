@@ -167,6 +167,55 @@
       "line_20": 1800
     }
   },
+  "document_backed_adjustments": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-main",
+          "fields": {
+            "wages": 92000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "upload",
+          "source_ref": "upload://ira-5498",
+          "fields": {
+            "ira_contribution_deduction": 3200
+          }
+        },
+        {
+          "id": "hsa-summary",
+          "doc_type": "HSA Contribution Statement",
+          "source_type": "upload",
+          "source_ref": "upload://hsa-summary",
+          "fields": {
+            "hsa_contribution_deduction": 1800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Use my uploaded contribution forms to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_10": 5000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
