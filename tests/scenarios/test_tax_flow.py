@@ -64,6 +64,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -121,6 +125,23 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_social_security_requires_taxable_amount_review(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn(
+            "Confirm the taxable Social Security amount to place on Form 1040 line 6b",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("$24,000.00", artifacts["federal-lines.md"])
+        self.assertNotIn("$131,000.00", artifacts["federal-lines.md"])
+
+    def test_social_security_taxable_amount_is_used(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_amount")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("$24,000.00", artifacts["federal-lines.md"])
+        self.assertIn("$10,200.00", artifacts["federal-lines.md"])
+        self.assertIn("$117,200.00", artifacts["federal-lines.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

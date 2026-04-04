@@ -395,6 +395,90 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-salary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-salary",
+          "fields": {
+            "wages": 107000,
+            "federal_withholding": 15200
+          }
+        },
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 11900
+      },
+      "user_request": "Use my wage and Social Security tax docs to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 107000,
+      "line_6a": 24000
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-salary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-salary",
+          "fields": {
+            "wages": 107000,
+            "federal_withholding": 15200
+          }
+        },
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 10200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 11900
+      },
+      "user_request": "Use my wage and Social Security tax docs to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 107000,
+      "line_6a": 24000,
+      "line_6b": 10200
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

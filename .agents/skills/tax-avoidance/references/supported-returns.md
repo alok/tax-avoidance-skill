@@ -19,7 +19,7 @@
 - 1098
 - 1098-E
 - 5498
-- SSA-1099
+- SSA-1099 total-benefit intake, with taxable-benefit review still required before filling Form 1040 line 6b
 - donation receipts
 
 ## Unsupported In V1
