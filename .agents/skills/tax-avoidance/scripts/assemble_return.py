@@ -316,6 +316,47 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_input_rows = [
+        [
+            "Student loan interest deduction",
+            money(fact_value(normalized, "student_loan_interest_deduction")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "student_loan_interest_deduction"))
+            or "TBD",
+            "Applied as an above-the-line adjustment when present.",
+        ],
+        [
+            "IRA contribution deduction",
+            money(fact_value(normalized, "ira_contribution_deduction")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contribution_deduction"))
+            or "TBD",
+            "Applied as an above-the-line adjustment when present.",
+        ],
+        [
+            "HSA deduction",
+            money(fact_value(normalized, "hsa_deduction")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "hsa_deduction")) or "TBD",
+            "Applied as an above-the-line adjustment when present.",
+        ],
+        [
+            "Mortgage interest",
+            money(fact_value(normalized, "mortgage_interest")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "mortgage_interest")) or "TBD",
+            "Not auto-applied unless the deduction path reflects itemizing.",
+        ],
+        [
+            "Charitable cash contributions",
+            money(fact_value(normalized, "charitable_cash")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "charitable_cash")) or "TBD",
+            "Not auto-applied unless the deduction path reflects itemizing.",
+        ],
+        [
+            "Itemized deduction candidates",
+            money(fact_value(normalized, "itemized_deduction_candidates")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "itemized_deduction_candidates"))
+            or "TBD",
+            "Documented support gathered so far before itemized-deduction validation.",
+        ],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +382,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction And Adjustment Inputs",
+        "",
+        make_markdown_table(
+            ["Input", "Amount", "Document Sources", "Treatment"],
+            deduction_input_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",

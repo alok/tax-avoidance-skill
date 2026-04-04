@@ -167,6 +167,65 @@
       "line_20": 1800
     }
   },
+  "deduction_scaffolding_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 11000
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 7200
+          }
+        },
+        {
+          "id": "donation-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-1",
+          "fields": {
+            "cash_donations": 650
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 12600
+      },
+      "user_request": "Gather the forms and show me what still matters before I pick my deduction path."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 98000,
+      "student_loan_interest": 1800,
+      "itemized_candidate_total": 7850
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
