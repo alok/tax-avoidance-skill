@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    estimated_payments, estimated_payment_sources = aggregate_numeric(
+        documents,
+        {"1040-ES Payment"},
+        "amount",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -111,7 +116,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
-    other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    other_payments_answer, other_payments_answer_sources = answer_fact(answers, "other_payments")
+    other_payments = estimated_payments + other_payments_answer
+    other_payments_sources = estimated_payment_sources + other_payments_answer_sources
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")

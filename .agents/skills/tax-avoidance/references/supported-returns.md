@@ -20,6 +20,7 @@
 - 1098-E
 - 5498
 - SSA-1099
+- 1040-ES payment records
 - donation receipts
 
 ## Unsupported In V1
