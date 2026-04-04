@@ -32,6 +32,20 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_deduction_candidate(
+    label: str,
+    amount: float,
+    sources: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if amount == 0.0:
+        return None
+    return {
+        "label": label,
+        "amount": amount,
+        "sources": sources,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -103,6 +117,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"Donation Receipt"},
         "cash_donations",
+    )
+    itemized_deduction_candidates = [
+        candidate
+        for candidate in (
+            build_deduction_candidate("Mortgage interest", mortgage_interest, mortgage_interest_sources),
+            build_deduction_candidate("Cash charitable donations", charitable_cash, charitable_sources),
+        )
+        if candidate is not None
+    ]
+    itemized_deduction_total = sum(
+        candidate["amount"] for candidate in itemized_deduction_candidates
     )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
@@ -176,7 +201,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if itemized_deduction_total > 0.0:
+            deduction_labels = ", ".join(candidate["label"].lower() for candidate in itemized_deduction_candidates)
+            missing_items.append(
+                "Choose between the standard deduction and itemizing. "
+                f"Current itemized-deduction candidates total ${itemized_deduction_total:,.2f} from {deduction_labels}."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -289,6 +321,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "selected_deduction_amount": deduction_amount if deduction_sources else None,
+            "itemized_candidates": itemized_deduction_candidates,
+            "itemized_candidate_total": itemized_deduction_total,
+            "student_loan_interest": student_loan_interest if student_loan_interest_sources else None,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

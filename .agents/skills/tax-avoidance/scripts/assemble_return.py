@@ -280,6 +280,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    deduction_summary = normalized.get("deduction_summary", {})
+    itemized_candidate_rows = [
+        [
+            candidate.get("label", "Unknown"),
+            money(candidate.get("amount")),
+            ", ".join(source.get("source_ref", "unknown") for source in candidate.get("sources", [])) or "unknown",
+        ]
+        for candidate in deduction_summary.get("itemized_candidates", [])
+    ]
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -341,6 +350,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Intake",
+        "",
+        f"- Selected deduction amount: {money(deduction_summary.get('selected_deduction_amount'))}",
+        f"- Itemized-deduction candidates total: {money(deduction_summary.get('itemized_candidate_total'))}",
+        f"- Student loan interest deduction input: {money(deduction_summary.get('student_loan_interest'))}",
+        "",
+        make_markdown_table(
+            ["Candidate", "Amount", "Document Sources"],
+            itemized_candidate_rows or [["None", "$0.00", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",
