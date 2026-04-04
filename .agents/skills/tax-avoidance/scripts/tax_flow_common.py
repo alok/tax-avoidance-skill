@@ -18,6 +18,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",
     },
+    "ira_contributions_reported": {
+        "title": "IRS Publication 590-A",
+        "url": "https://www.irs.gov/publications/p590a",
+    },
     "hsa_deduction": {
         "title": "IRS Publication 969",
         "url": "https://www.irs.gov/forms-pubs/about-publication-969",
