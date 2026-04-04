@@ -165,6 +165,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    calculation_notes: list[str] = []
+    if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
+        calculation_notes.append(
+            "Form 1040 totals stay provisional until deductible business expenses are confirmed for the 1099-NEC work."
+        )
+    if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
+        calculation_notes.append(
+            "Form 1040 income totals stay provisional until net capital gains or losses are summarized from the 1099-B support documents."
+        )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -276,6 +286,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "calculation_notes": calculation_notes,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

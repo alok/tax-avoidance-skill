@@ -27,6 +27,8 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `missing-items.md`
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
+- Preserves an explicit `business_expenses: 0` answer as a real confirmation, so simple Schedule C drafts can proceed when the user had no deductible expenses.
+- Keeps downstream Form 1040 totals marked as provisional when supported inputs such as Schedule C expenses or 1099-B capital-gain summaries are still missing.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
 
 ## Scope

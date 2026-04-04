@@ -39,6 +39,10 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def fact_is_known(normalized: dict[str, Any], key: str) -> bool:
+    return bool(fact_sources(normalized, key))
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -47,22 +51,31 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
-    has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
+    has_business_expenses = fact_is_known(normalized, "business_expenses")
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    has_unresolved_schedule_c = nonemployee_compensation > 0.0 and not has_business_expenses
+    has_unresolved_capital_gains = any(
+        document.get("doc_type") == "1099-B" and "capital_gains" not in document.get("fields", {})
+        for document in normalized.get("documents", [])
+    )
+    total_income = None
+    if not has_unresolved_schedule_c and not has_unresolved_capital_gains:
+        total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
     student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
     adjustments_total = ira + hsa + student_loan_interest
 
-    agi = total_income - adjustments_total
+    agi = total_income - adjustments_total if total_income is not None else None
     deduction_amount = fact_value(normalized, "deduction_amount")
     qbi_deduction = fact_value(normalized, "qbi_deduction")
-    taxable_income = max(agi - deduction_amount - qbi_deduction, 0.0) if deduction_amount else None
+    taxable_income = None
+    if agi is not None and fact_is_known(normalized, "deduction_amount"):
+        taxable_income = max(agi - deduction_amount - qbi_deduction, 0.0)
 
     tax_before_credits = fact_value(normalized, "tax_before_credits")
     nonrefundable_credits = (
@@ -282,6 +295,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
+    calculation_lines = [f"- {note}" for note in normalized.get("calculation_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
@@ -330,6 +344,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Connector Notes",
         "",
         *connector_lines,
+        "",
+        "## Draft Calculation Notes",
+        "",
+        *calculation_lines,
         "",
         "## Document Inventory",
         "",

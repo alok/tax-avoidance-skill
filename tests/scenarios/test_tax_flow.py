@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_zero_expenses_confirmed",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -68,6 +69,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_15" in expected:
+                    self.assertIn(f"${expected['line_15']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -93,6 +96,12 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_schedule_c_missing_expenses_blocks_taxable_income(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_missing_expenses")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Form 1040 totals stay provisional", artifacts["tax-dossier.md"])
+        self.assertIn("| Form 1040 | 15 | Taxable income | TBD |", artifacts["federal-lines.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
