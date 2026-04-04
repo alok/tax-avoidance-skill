@@ -103,6 +103,10 @@ UNSUPPORTED_DOC_TYPES = {
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
 
+DOC_TYPE_ALIASES: dict[str, set[str]] = {
+    "Consolidated 1099": {"Consolidated 1099", "1099-INT", "1099-DIV", "1099-B"},
+}
+
 
 def load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
@@ -132,6 +136,11 @@ def aggregate_numeric(
     doc_types: set[str],
     field_name: str,
 ) -> tuple[float, list[dict[str, Any]]]:
+    def matches_doc_type(document: dict[str, Any]) -> bool:
+        doc_type = str(document.get("doc_type", ""))
+        expanded_types = DOC_TYPE_ALIASES.get(doc_type, {doc_type})
+        return not doc_types.isdisjoint(expanded_types)
+
     def source_rank(document: dict[str, Any]) -> tuple[int, int]:
         content_status = document.get("content_status", "")
         status_score = {
@@ -146,7 +155,7 @@ def aggregate_numeric(
     grouped_documents: list[dict[str, Any]] = []
     dedupe_groups: dict[str, list[dict[str, Any]]] = {}
     for document in documents:
-        if document.get("doc_type") not in doc_types:
+        if not matches_doc_type(document):
             continue
         dedupe_key = document.get("dedupe_key")
         if dedupe_key:

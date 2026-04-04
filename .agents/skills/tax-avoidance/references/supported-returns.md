@@ -16,6 +16,7 @@
 - 1099-INT
 - 1099-DIV
 - 1099-B summary data
+- Consolidated 1099 brokerage packets when interest, dividend, and capital-gain summary fields are available
 - 1098
 - 1098-E
 - 5498
