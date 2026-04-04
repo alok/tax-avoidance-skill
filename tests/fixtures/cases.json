@@ -507,6 +507,62 @@
       "schedule_c_line_1": 108000.0
     }
   },
+  "deduction_signal_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 97000,
+            "federal_withholding": 14000
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        },
+        {
+          "id": "student-loan-1098e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://student-loan-1098e",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "upload",
+          "source_ref": "upload://donation-receipt",
+          "fields": {
+            "cash_donations": 900
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 11300
+      },
+      "user_request": "Build my draft package and show me which deduction-related forms still need review."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "unsupported_schedule_c": {
     "input": {
       "tax_year": 2025,

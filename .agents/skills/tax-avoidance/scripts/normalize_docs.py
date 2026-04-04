@@ -32,6 +32,22 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_review_signal(
+    key: str,
+    label: str,
+    value: float,
+    sources: list[dict[str, Any]],
+    review_note: str,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": label,
+        "value": value,
+        "sources": sources,
+        "review_note": review_note,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -61,6 +77,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"SSA-1099"},
         "benefits",
+    )
+    ira_contributions, ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
     )
     mortgage_interest, mortgage_interest_sources = aggregate_numeric(
         documents,
@@ -121,6 +142,48 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    deduction_review_signals: list[dict[str, Any]] = []
+    if ira_contributions > 0.0:
+        deduction_review_signals.append(
+            build_review_signal(
+                "ira_contributions",
+                "Form 5498 IRA contributions",
+                ira_contributions,
+                ira_contribution_sources,
+                "Review the deductible IRA contribution amount before carrying anything to Schedule 1.",
+            )
+        )
+    if student_loan_interest > 0.0:
+        deduction_review_signals.append(
+            build_review_signal(
+                "student_loan_interest",
+                "Form 1098-E student loan interest",
+                student_loan_interest,
+                student_loan_interest_sources,
+                "Review the deductible student loan interest amount before carrying it to Schedule 1.",
+            )
+        )
+    if mortgage_interest > 0.0:
+        deduction_review_signals.append(
+            build_review_signal(
+                "mortgage_interest",
+                "Form 1098 mortgage interest",
+                mortgage_interest,
+                mortgage_interest_sources,
+                "Compare itemized deductions against the standard deduction before using this amount.",
+            )
+        )
+    if charitable_cash > 0.0:
+        deduction_review_signals.append(
+            build_review_signal(
+                "charitable_cash",
+                "Donation receipt cash gifts",
+                charitable_cash,
+                charitable_sources,
+                "Compare itemized deductions against the standard deduction before using this amount.",
+            )
+        )
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -177,8 +240,20 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if deduction_review_signals and "deduction_amount" not in answers:
+        missing_items.append(
+            "Review the extracted deduction and adjustment signals before finalizing the deduction amount or itemized-deduction path."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 5498 IRA contributions totaling ${ira_contributions:,.2f} and confirm the deductible IRA contribution amount."
+        )
+    if student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 1098-E student loan interest totaling ${student_loan_interest:,.2f} and confirm the deductible amount."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -291,6 +366,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "deduction_review_signals": deduction_review_signals,
         "facts": facts,
     }
     return normalized

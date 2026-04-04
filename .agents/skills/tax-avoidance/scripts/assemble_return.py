@@ -295,6 +295,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_signal_rows = [
+        [
+            signal.get("label", ""),
+            money(signal.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in signal.get("sources", [])) or "unknown",
+            signal.get("review_note", ""),
+        ]
+        for signal in normalized.get("deduction_review_signals", [])
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +358,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction And Adjustment Signals",
+        "",
+        "- These extracted forms can guide the next interview step, but they are not silently applied unless the workflow has enough support to do so.",
+        "",
+        make_markdown_table(
+            ["Signal", "Amount", "Document Sources", "Review Note"],
+            deduction_signal_rows or [["None", "$0.00", "None", "None"]],
         ),
         "",
         "## State Follow-Up",

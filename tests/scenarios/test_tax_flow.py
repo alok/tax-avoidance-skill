@@ -122,6 +122,16 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_deduction_signals(self) -> None:
+        normalized, artifacts = self.run_case("deduction_signal_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Deduction And Adjustment Signals", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498 IRA contributions", artifacts["tax-dossier.md"])
+        self.assertIn("Form 1098-E student loan interest", artifacts["tax-dossier.md"])
+        self.assertIn("Donation receipt cash gifts", artifacts["tax-dossier.md"])
+        self.assertIn("Review the Form 5498 IRA contributions totaling $6,500.00", artifacts["missing-items.md"])
+        self.assertIn("Review the Form 1098-E student loan interest totaling $1,800.00", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
