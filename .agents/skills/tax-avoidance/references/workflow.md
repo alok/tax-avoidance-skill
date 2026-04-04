@@ -23,6 +23,7 @@ For a plain Codex app user:
 6. Normalize everything into structured facts.
 7. Assemble the artifact set.
 8. Flag unsupported complexity and illegal requests explicitly.
+9. Keep deduction-review evidence visible when the user has not finalized the standard-vs-itemized choice or IRA deductibility yet.
 
 ## Connector Priority
 
@@ -36,6 +37,12 @@ For a plain Codex app user:
 - Do not silently convert every receipt into a deduction. Surface them as candidate expenses with totals and source links, then ask the user to confirm inclusion.
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
+
+## Deduction Review
+
+- Keep mortgage-interest, student-loan-interest, donation, and Form 5498 contribution evidence visible in the artifacts even when the final deduction decision is still pending.
+- Treat Form 5498 as contribution evidence, not an automatic IRA deduction. The user still needs an explicit deductibility review.
+- If itemized-deduction evidence exists and the deduction choice is still missing, ask for the deduction decision instead of guessing.
 
 ## Interview Principles
 

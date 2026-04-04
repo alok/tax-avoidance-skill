@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contribution_candidate, ira_contribution_candidate_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -177,8 +182,27 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if (
+        deduction_amount == 0.0
+        and "deduction_amount" not in answers
+        and (mortgage_interest > 0.0 or charitable_cash > 0.0)
+    ):
+        itemized_evidence: list[str] = []
+        if mortgage_interest > 0.0:
+            itemized_evidence.append(f"mortgage interest of ${mortgage_interest:,.2f}")
+        if charitable_cash > 0.0:
+            itemized_evidence.append(f"cash donations of ${charitable_cash:,.2f}")
+        missing_items.append(
+            "Review whether to take the standard deduction or itemize using "
+            + " and ".join(itemized_evidence)
+            + "."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if ira_contribution_candidate > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review whether any of the ${ira_contribution_candidate:,.2f} reported on Form 5498 is deductible as an IRA contribution adjustment."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -241,6 +265,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             student_loan_interest,
             student_loan_interest_sources,
         ),
+        "ira_contribution_candidate": build_fact(
+            "ira_contribution_candidate",
+            ira_contribution_candidate,
+            ira_contribution_candidate_sources,
+        ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
@@ -288,6 +317,60 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     "withholding": totals["withholding"],
                 }
                 for code, totals in sorted(state_allocation_totals.items())
+            ],
+        },
+        "deduction_review": {
+            "selected_deduction_amount": deduction_amount if "deduction_amount" in answers else None,
+            "itemized_candidates": {
+                "mortgage_interest": {
+                    "value": mortgage_interest,
+                    "sources": mortgage_interest_sources,
+                },
+                "charitable_cash": {
+                    "value": charitable_cash,
+                    "sources": charitable_sources,
+                },
+            },
+            "adjustment_candidates": {
+                "student_loan_interest": {
+                    "value": student_loan_interest,
+                    "sources": student_loan_interest_sources,
+                },
+                "ira_contribution_candidate": {
+                    "value": ira_contribution_candidate,
+                    "sources": ira_contribution_candidate_sources,
+                },
+                "ira_contribution_deduction": {
+                    "value": ira_deduction,
+                    "sources": ira_sources,
+                },
+                "hsa_deduction": {
+                    "value": hsa_deduction,
+                    "sources": hsa_sources,
+                },
+            },
+            "review_notes": [
+                *(
+                    [
+                        "Form 5498 contributions are not automatically deductible; confirm IRA deduction eligibility before applying them on Form 1040 Schedule 1."
+                    ]
+                    if ira_contribution_candidate > 0.0
+                    else []
+                ),
+                *(
+                    [
+                        "Mortgage interest and donation receipts are evidence for an itemized-deduction review, but the return still needs an explicit deduction decision."
+                    ]
+                    if mortgage_interest > 0.0 or charitable_cash > 0.0
+                    else []
+                ),
+                *(
+                    [
+                        "Student loan interest can be carried as an adjustment candidate when a 1098-E is present."
+                    ]
+                    if student_loan_interest > 0.0
+                    else []
+                ),
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,

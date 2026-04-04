@@ -39,6 +39,10 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def source_refs(sources: list[dict[str, Any]]) -> str:
+    return ", ".join(src.get("source_ref", "unknown") for src in sources) or "TBD"
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -296,6 +300,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    deduction_review = normalized.get("deduction_review", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +321,53 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    itemized_candidates = deduction_review.get("itemized_candidates", {})
+    adjustment_candidates = deduction_review.get("adjustment_candidates", {})
+    deduction_rows = [
+        [
+            "Itemized candidate",
+            "Mortgage interest",
+            money(itemized_candidates.get("mortgage_interest", {}).get("value")),
+            source_refs(itemized_candidates.get("mortgage_interest", {}).get("sources", [])),
+        ],
+        [
+            "Itemized candidate",
+            "Cash donations",
+            money(itemized_candidates.get("charitable_cash", {}).get("value")),
+            source_refs(itemized_candidates.get("charitable_cash", {}).get("sources", [])),
+        ],
+        [
+            "Adjustment candidate",
+            "Student loan interest",
+            money(adjustment_candidates.get("student_loan_interest", {}).get("value")),
+            source_refs(adjustment_candidates.get("student_loan_interest", {}).get("sources", [])),
+        ],
+        [
+            "Adjustment candidate",
+            "Form 5498 IRA contributions",
+            money(adjustment_candidates.get("ira_contribution_candidate", {}).get("value")),
+            source_refs(adjustment_candidates.get("ira_contribution_candidate", {}).get("sources", [])),
+        ],
+        [
+            "Chosen adjustment",
+            "IRA contribution deduction",
+            money(adjustment_candidates.get("ira_contribution_deduction", {}).get("value")),
+            source_refs(adjustment_candidates.get("ira_contribution_deduction", {}).get("sources", [])),
+        ],
+        [
+            "Chosen adjustment",
+            "HSA deduction",
+            money(adjustment_candidates.get("hsa_deduction", {}).get("value")),
+            source_refs(adjustment_candidates.get("hsa_deduction", {}).get("sources", [])),
+        ],
+        [
+            "Selected deduction",
+            "Deduction amount used in draft",
+            money(deduction_review.get("selected_deduction_amount")),
+            "answer:deduction_amount" if deduction_review.get("selected_deduction_amount") is not None else "TBD",
+        ],
+    ]
+    deduction_note_lines = [f"- {item}" for item in deduction_review.get("review_notes", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +393,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        make_markdown_table(
+            ["Bucket", "Field", "Value", "Sources"],
+            deduction_rows,
+        ),
+        "",
+        *deduction_note_lines,
         "",
         "## Candidate Business Expenses",
         "",
@@ -386,7 +447,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
 def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
     rows: list[list[str]] = []
     for item in line_items:
-        doc_sources = ", ".join(src.get("source_ref", "unknown") for src in item.get("sources", [])) or "TBD"
+        doc_sources = source_refs(item.get("sources", []))
         rule_sources = ", ".join(src["title"] for src in item.get("rule_citations", [])) or "TBD"
         rows.append(
             [

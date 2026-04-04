@@ -321,6 +321,72 @@
       "candidate_total": 48.0
     }
   },
+  "deduction_review_candidates": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 12000
+          }
+        },
+        {
+          "id": "form-5498",
+          "doc_type": "5498",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        },
+        {
+          "id": "mortgage-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://mortgage-1098",
+          "fields": {
+            "mortgage_interest": 9100
+          }
+        },
+        {
+          "id": "donation",
+          "doc_type": "Donation Receipt",
+          "source_type": "upload",
+          "source_ref": "upload://donation",
+          "fields": {
+            "cash_donations": 1200
+          }
+        },
+        {
+          "id": "student-loan-1098e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://student-loan-1098e",
+          "fields": {
+            "student_loan_interest": 700
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9800
+      },
+      "user_request": "Pull together my deduction evidence and show me what still needs review."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_candidate": 6500
+    }
+  },
   "state_follow_up": {
     "input": {
       "tax_year": 2025,
