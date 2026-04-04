@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    household_summary = normalized.get("household_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,19 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_rows = [
+        [
+            dependent.get("display_name", "Unknown"),
+            dependent.get("relationship") or "TBD",
+            str(dependent.get("birth_year") or "TBD"),
+            str(dependent.get("months_in_home") if dependent.get("months_in_home") is not None else "TBD"),
+            f"{dependent['support_percent']:.0f}%" if dependent.get("support_percent") is not None else "TBD",
+            dependent.get("tin_status") or "unknown",
+            money(dependent.get("care_expenses")),
+            dependent.get("notes") or "None",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +363,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependent count captured: {household_summary.get('dependent_count', 0)}",
+        "- This scaffold captures public-safe review fields only. Do not store full SSNs in these artifacts.",
+        "",
+        make_markdown_table(
+            ["Name", "Relationship", "Birth Year", "Months In Home", "Support Share", "TIN Status", "Care Expenses", "Notes"],
+            dependent_rows or [["None", "None", "None", "None", "None", "None", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",

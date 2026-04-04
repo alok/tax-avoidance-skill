@@ -32,6 +32,52 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def safe_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, int):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    return int(float(text))
+
+
+def normalize_dependents(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+    raw_dependents = payload.get("dependents", [])
+    if not isinstance(raw_dependents, list):
+        return [], ["Dependents must be provided as a list of household entries."]
+
+    normalized: list[dict[str, Any]] = []
+    notes: list[str] = []
+    for index, item in enumerate(raw_dependents, start=1):
+        if not isinstance(item, dict):
+            notes.append(f"Dependent entry {index} was ignored because it was not an object.")
+            continue
+
+        display_name = str(item.get("display_name") or f"Dependent {index}").strip() or f"Dependent {index}"
+        relationship = str(item.get("relationship") or "").strip()
+        birth_year = item.get("birth_year")
+        months_in_home = item.get("months_in_home")
+        support_percent = item.get("support_percent")
+        tin_status = str(item.get("tin_status") or "").strip()
+
+        normalized.append(
+            {
+                "display_name": display_name,
+                "relationship": relationship,
+                "birth_year": safe_int(birth_year),
+                "months_in_home": safe_int(months_in_home),
+                "support_percent": safe_float(support_percent) if support_percent not in (None, "") else None,
+                "tin_status": tin_status or "unknown",
+                "care_expenses": safe_float(item.get("care_expenses")) if item.get("care_expenses") not in (None, "") else None,
+                "notes": str(item.get("notes") or "").strip(),
+            }
+        )
+
+    return normalized, notes
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +85,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    dependents, dependent_notes = normalize_dependents(payload)
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -217,6 +264,33 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
 
+    dependent_missing_items: list[str] = []
+    if dependents:
+        if "child_tax_credit" not in answers:
+            dependent_missing_items.append(
+                "Review dependent eligibility and confirm whether Child Tax Credit or Credit for Other Dependents should be applied."
+            )
+        for dependent in dependents:
+            label = dependent["display_name"]
+            if not dependent.get("relationship"):
+                dependent_missing_items.append(f"Confirm the relationship for {label}.")
+            if dependent.get("birth_year") is None:
+                dependent_missing_items.append(f"Provide the birth year for {label} so age-based credit review can be scoped.")
+            if dependent.get("months_in_home") is None:
+                dependent_missing_items.append(f"Confirm how many months {label} lived in the household during the tax year.")
+            if dependent.get("tin_status") == "unknown":
+                dependent_missing_items.append(
+                    f"Confirm whether {label} has a valid SSN, ATIN, or ITIN. Do not place the actual number in this public-safe intake scaffold."
+                )
+            support_percent = dependent.get("support_percent")
+            if support_percent is None:
+                dependent_missing_items.append(
+                    f"Estimate what share of support you provided for {label} so dependency review has the minimum household context."
+                )
+    for item in dependent_notes + dependent_missing_items:
+        if item not in missing_items:
+            missing_items.append(item)
+
     status = "ok"
     if illegal_reasons:
         status = "refused"
@@ -289,6 +363,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "dependent_count": len(dependents),
+            "dependents": dependents,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

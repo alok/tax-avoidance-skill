@@ -24,6 +24,7 @@ Supported:
 - Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows
+- Public-safe dependent intake scaffolding for household review without collecting full SSNs in the working artifacts
 
 Unsupported by default:
 
@@ -48,6 +49,7 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
 3. Search for likely tax documents using opinionated queries rather than asking the user to browse manually.
 4. Build a document inventory that names each candidate document, source, and confidence.
 5. Ask only the missing interview questions needed to assemble the supported return.
+   Capture dependent review fields such as relationship, birth year, months in home, support share, and whether a valid TIN exists, but do not request or store the full number in public-safe artifacts.
 6. Write an input JSON payload and run the deterministic script:
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
 7. Return the artifact set:

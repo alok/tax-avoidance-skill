@@ -563,6 +563,65 @@
       "unsupported": "Equity compensation"
     }
   },
+  "dependent_household_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 11500
+          }
+        },
+        {
+          "id": "w2-parent-b",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent-b",
+          "fields": {
+            "wages": 42000,
+            "federal_withholding": 4100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 12600
+      },
+      "dependents": [
+        {
+          "display_name": "Ava",
+          "relationship": "Daughter",
+          "birth_year": 2019,
+          "months_in_home": 12,
+          "support_percent": 100,
+          "tin_status": "verified",
+          "care_expenses": 3200,
+          "notes": "Daycare receipts gathered separately."
+        },
+        {
+          "display_name": "Noah",
+          "relationship": "Son",
+          "months_in_home": 12
+        }
+      ],
+      "user_request": "Draft our joint return and keep the household context organized."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 2,
+      "missing": "Child Tax Credit or Credit for Other Dependents"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

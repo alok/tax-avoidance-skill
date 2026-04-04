@@ -62,5 +62,17 @@
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
+  "dependents": [
+    {
+      "display_name": "Maya",
+      "relationship": "Daughter",
+      "birth_year": 2018,
+      "months_in_home": 12,
+      "support_percent": 100,
+      "tin_status": "verified",
+      "care_expenses": 2400,
+      "notes": "After-school care receipts exist but still need credit review."
+    }
+  ],
   "user_request": "Build a sample contractor plus investment return package."
 }

@@ -9,6 +9,7 @@
 - Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
+- Dependent-review scaffolding with public-safe fields only: relationship, birth year, months in home, support share, care-expense capture, and TIN-status confirmation without storing the full number
 
 ## Supported Documents
 

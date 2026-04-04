@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "dependent_household_scaffolding",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -122,6 +123,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_household_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household_scaffolding")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["household_summary"]["dependent_count"], 2)
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Ava", artifacts["tax-dossier.md"])
+        self.assertIn("Noah", artifacts["tax-dossier.md"])
+        self.assertIn("Do not store full SSNs", artifacts["tax-dossier.md"])
+        self.assertIn("Child Tax Credit or Credit for Other Dependents", artifacts["missing-items.md"])
+        self.assertIn("valid SSN, ATIN, or ITIN", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -139,6 +151,7 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Household And Dependents", dossier)
             self.assertIn("$48,000.00", dossier)
 
 
