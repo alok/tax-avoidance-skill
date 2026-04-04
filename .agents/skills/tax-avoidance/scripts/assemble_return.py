@@ -185,7 +185,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Standard or itemized deduction",
             "value": deduction_amount or None,
             "sources": fact_sources(normalized, "deduction_amount"),
-            "rule_citations": [],
+            "rule_citations": rule_citations("standard_deduction"),
         },
         {
             "form": "Form 1040",

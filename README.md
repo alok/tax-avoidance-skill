@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Defaults to the 2025 IRS standard deduction for supported filing statuses, while still allowing an explicit deduction override for itemized or hand-checked cases.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -112,3 +113,4 @@ Primary command:
 - This project does **not** give personalized legal advice.
 - Illegal requests such as hiding income, concealing ownership, or skipping required reporting must be refused and redirected to lawful compliance.
 - If a portal notice exists but the actual form does not, the workflow should stop and ask for the downloadable PDF or the line-item figures.
+- If the user does not provide a deduction amount, the deterministic flow uses the 2025 standard deduction for `single` and `married_filing_jointly` returns and preserves any explicit override the user supplies.

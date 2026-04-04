@@ -20,7 +20,6 @@
         }
       ],
       "answers": {
-        "deduction_amount": 15000,
         "tax_before_credits": 14000
       },
       "user_request": "Help me do my taxes with the docs you can find."
@@ -28,6 +27,7 @@
     "expect": {
       "status": "ok",
       "line_1a": 95000,
+      "line_12": 15750,
       "line_25a": 14000
     }
   },
@@ -71,7 +71,6 @@
         }
       ],
       "answers": {
-        "deduction_amount": 29200,
         "ira_contribution_deduction": 4000,
         "hsa_deduction": 1800,
         "tax_before_credits": 15800
@@ -81,6 +80,7 @@
     "expect": {
       "status": "ok",
       "line_1a": 133000,
+      "line_12": 31500,
       "line_25a": 14800
     }
   },
@@ -124,13 +124,13 @@
         }
       ],
       "answers": {
-        "deduction_amount": 15000,
         "tax_before_credits": 24000
       },
       "user_request": "Gather my simple investment tax docs."
     },
     "expect": {
       "status": "ok",
+      "line_12": 15750,
       "line_2b": 850,
       "line_3b": 1400
     }
@@ -156,7 +156,6 @@
         }
       ],
       "answers": {
-        "deduction_amount": 29200,
         "education_credit": 1800,
         "tax_before_credits": 11800
       },
@@ -164,6 +163,7 @@
     },
     "expect": {
       "status": "ok",
+      "line_12": 31500,
       "line_20": 1800
     }
   },
@@ -188,13 +188,13 @@
       ],
       "answers": {
         "business_expenses": 18341.53,
-        "deduction_amount": 15000,
         "tax_before_credits": 13200
       },
       "user_request": "Use my contractor 1099 to draft the return package."
     },
     "expect": {
       "status": "ok",
+      "line_12": 15750,
       "schedule_c_line_1": 108000.0,
       "schedule_c_line_31": 89658.47
     }
@@ -218,9 +218,7 @@
           }
         }
       ],
-      "answers": {
-        "deduction_amount": 15000
-      },
+      "answers": {},
       "user_request": "Prepare my contractor taxes."
     },
     "expect": {
@@ -269,9 +267,7 @@
           }
         }
       ],
-      "answers": {
-        "deduction_amount": 15000
-      },
+      "answers": {},
       "user_request": "Find my contractor income and likely software receipts."
     },
     "expect": {
@@ -346,7 +342,6 @@
         }
       ],
       "answers": {
-        "deduction_amount": 15000,
         "tax_before_credits": 8400
       },
       "user_request": "Prepare my return and keep track of state filing follow-up."
@@ -385,7 +380,6 @@
         }
       ],
       "answers": {
-        "deduction_amount": 15000,
         "tax_before_credits": 8400
       },
       "user_request": "Keep my state wage allocations visible for later state filing work."
@@ -416,7 +410,6 @@
         }
       ],
       "answers": {
-        "deduction_amount": 15000,
         "tax_before_credits": 6200
       },
       "user_request": "I uploaded the PDF because I am lazy."
@@ -453,9 +446,7 @@
           "fields": {}
         }
       ],
-      "answers": {
-        "deduction_amount": 15000
-      },
+      "answers": {},
       "user_request": "Use the tax emails you found and tell me what is still missing."
     },
     "expect": {
@@ -497,7 +488,6 @@
       ],
       "answers": {
         "business_expenses": 8341.53,
-        "deduction_amount": 15000,
         "tax_before_credits": 12000
       },
       "user_request": "Use all the tax copies you found."
@@ -526,9 +516,7 @@
           }
         }
       ],
-      "answers": {
-        "deduction_amount": 15000
-      },
+      "answers": {},
       "user_request": "Do my self-employment taxes too."
     },
     "expect": {
@@ -553,9 +541,7 @@
           "fields": {}
         }
       ],
-      "answers": {
-        "deduction_amount": 15000
-      },
+      "answers": {},
       "user_request": "I exercised options and sold some shares."
     },
     "expect": {

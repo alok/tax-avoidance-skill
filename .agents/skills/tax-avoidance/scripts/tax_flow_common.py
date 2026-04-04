@@ -10,6 +10,7 @@ WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 RULE_SOURCES: dict[str, dict[str, str]] = {
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "standard_deduction": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
@@ -103,6 +104,13 @@ UNSUPPORTED_DOC_TYPES = {
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
 
+STANDARD_DEDUCTION_BY_YEAR_AND_STATUS: dict[int, dict[str, float]] = {
+    2025: {
+        "single": 15_750.0,
+        "married_filing_jointly": 31_500.0,
+    }
+}
+
 
 def load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
@@ -190,6 +198,23 @@ def answer_fact(
     if value == 0.0:
         return value, []
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
+
+
+def default_standard_deduction(
+    tax_year: int,
+    filing_status: str,
+) -> tuple[float | None, list[dict[str, Any]]]:
+    amount = STANDARD_DEDUCTION_BY_YEAR_AND_STATUS.get(tax_year, {}).get(filing_status)
+    if amount is None:
+        return None, []
+    return amount, [
+        {
+            "source_type": "irs_rule",
+            "source_ref": f"rule:standard_deduction:{tax_year}:{filing_status}",
+            "field": "deduction_amount",
+            "value": amount,
+        }
+    ]
 
 
 def detect_illegal_request(user_request: str) -> list[str]:

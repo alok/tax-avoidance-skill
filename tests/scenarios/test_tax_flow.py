@@ -60,6 +60,8 @@ class TaxFlowTest(unittest.TestCase):
                 federal_lines = artifacts["federal-lines.md"]
                 if "line_1a" in expected:
                     self.assertIn(f"${expected['line_1a']:,.2f}", federal_lines)
+                if "line_12" in expected:
+                    self.assertIn(f"${expected['line_12']:,.2f}", federal_lines)
                 if "line_2b" in expected:
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
@@ -138,8 +140,10 @@ class TaxFlowTest(unittest.TestCase):
                 cwd=REPO_ROOT,
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
+            federal_lines = (out_dir / "federal-lines.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+            self.assertIn("$15,750.00", federal_lines)
 
 
 if __name__ == "__main__":

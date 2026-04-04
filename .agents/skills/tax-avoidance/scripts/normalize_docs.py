@@ -14,6 +14,7 @@ from tax_flow_common import (  # noqa: E402
     aggregate_numeric,
     categorize_expense_vendor,
     connector_notes,
+    default_standard_deduction,
     detect_illegal_request,
     detect_unsupported,
     dump_json,
@@ -109,6 +110,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
+    if "deduction_amount" not in answers:
+        default_deduction_amount, default_deduction_sources = default_standard_deduction(
+            tax_year,
+            payload.get("filing_status", ""),
+        )
+        if default_deduction_amount is not None:
+            deduction_amount = default_deduction_amount
+            deduction_sources = default_deduction_sources
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
@@ -176,7 +185,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        missing_items.append(
+            "Choose the deduction path and provide the deduction amount to use in the draft package."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
