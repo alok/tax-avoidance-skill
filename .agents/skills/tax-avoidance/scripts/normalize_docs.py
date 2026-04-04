@@ -10,6 +10,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from tax_flow_common import (  # noqa: E402
+    OTHER_PAYMENT_DOC_TYPES,
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
@@ -104,6 +105,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    documented_other_payments, documented_other_payment_sources = aggregate_numeric(
+        documents,
+        OTHER_PAYMENT_DOC_TYPES,
+        "amount",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -111,7 +117,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
-    other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    answered_other_payments = "other_payments" in answers
+    answered_other_payments_value, answered_other_payments_sources = answer_fact(answers, "other_payments")
+    if answered_other_payments:
+        other_payments = answered_other_payments_value
+        other_payments_sources = answered_other_payments_sources + documented_other_payment_sources
+    else:
+        other_payments = documented_other_payments
+        other_payments_sources = documented_other_payment_sources
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
@@ -179,6 +192,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if answered_other_payments and documented_other_payments and abs(other_payments - documented_other_payments) > 0.009:
+        missing_items.append(
+            f"Reconcile the manual other-payments answer of ${other_payments:,.2f} against documented estimated or extension payments totaling ${documented_other_payments:,.2f}."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."

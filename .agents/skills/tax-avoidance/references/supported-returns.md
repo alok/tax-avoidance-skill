@@ -20,6 +20,8 @@
 - 1098-E
 - 5498
 - SSA-1099
+- 1040-ES payment confirmations
+- 4868 extension payment confirmations
 - donation receipts
 
 ## Unsupported In V1

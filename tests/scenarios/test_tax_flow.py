@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "estimated_and_extension_payments",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -68,6 +69,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_26" in expected:
+                    self.assertIn(f"${expected['line_26']:,.2f}", federal_lines)
+                if "line_33" in expected:
+                    self.assertIn(f"${expected['line_33']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -121,6 +126,15 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_documented_other_payments_reconciliation(self) -> None:
+        normalized, artifacts = self.run_case("documented_other_payments_reconciliation")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn(
+            "Reconcile the manual other-payments answer of $1,000.00 against documented estimated or extension payments totaling $1,300.00.",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("$1,000.00", artifacts["federal-lines.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

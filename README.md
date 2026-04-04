@@ -28,6 +28,7 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Carries documented quarterly estimated payments and Form 4868 extension payments into the draft federal payment lines.
 
 ## Scope
 
@@ -73,6 +74,8 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 ```
 
 That should create the same four standard artifacts in `output/example-run/`.
+
+The sample input also includes documented estimated and extension payments so you can verify the payment-line scaffolding without using private tax data.
 
 ## Install In Claude Cowork
 

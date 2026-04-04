@@ -507,6 +507,97 @@
       "schedule_c_line_1": 108000.0
     }
   },
+  "estimated_and_extension_payments": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 100000,
+            "federal_withholding": 14000
+          }
+        },
+        {
+          "id": "q1-estimate",
+          "doc_type": "1040-ES Payment",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://q1-estimate",
+          "fields": {
+            "amount": 1200
+          }
+        },
+        {
+          "id": "extension-payment",
+          "doc_type": "4868 Extension Payment",
+          "source_type": "google_drive",
+          "source_ref": "drive://extension-payment",
+          "fields": {
+            "amount": 800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 15000
+      },
+      "user_request": "Use my wage docs and payment confirmations to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 100000,
+      "line_25a": 14000,
+      "line_26": 2000,
+      "line_33": 16000
+    }
+  },
+  "documented_other_payments_reconciliation": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "q1-estimate",
+          "doc_type": "1040-ES Payment",
+          "source_type": "gmail_receipt",
+          "source_ref": "gmail://q1-estimate",
+          "fields": {
+            "amount": 500
+          }
+        },
+        {
+          "id": "extension-payment",
+          "doc_type": "4868 Extension Payment",
+          "source_type": "google_drive",
+          "source_ref": "drive://extension-payment",
+          "fields": {
+            "amount": 800
+          }
+        }
+      ],
+      "answers": {
+        "other_payments": 1000,
+        "deduction_amount": 15000
+      },
+      "user_request": "Use my payment confirmations and the payment amount I already entered."
+    },
+    "expect": {
+      "status": "ok",
+      "line_26": 1000
+    }
+  },
   "unsupported_schedule_c": {
     "input": {
       "tax_year": 2025,

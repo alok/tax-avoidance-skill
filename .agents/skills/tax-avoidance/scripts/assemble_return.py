@@ -237,6 +237,14 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "26",
+            "label": "Estimated tax and extension payments",
+            "value": other_payments or None,
+            "sources": fact_sources(normalized, "other_payments"),
+            "rule_citations": rule_citations("other_payments"),
+        },
+        {
+            "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
             "value": total_payments or None,
