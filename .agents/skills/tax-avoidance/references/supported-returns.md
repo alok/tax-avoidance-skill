@@ -22,6 +22,11 @@
 - SSA-1099
 - donation receipts
 
+## Conservative Review Rules
+
+- Form 5498 should be surfaced as IRA contribution evidence and review scaffolding, not treated as an automatic deductible amount on its own.
+- Mortgage-interest and donation documents should stay visible in the artifacts even when the deduction path still needs user confirmation.
+
 ## Unsupported In V1
 
 - automated state tax calculations

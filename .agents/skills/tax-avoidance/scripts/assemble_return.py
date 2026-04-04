@@ -295,6 +295,42 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_signal_rows = [
+        [
+            "Traditional IRA contributions (Form 5498)",
+            money(fact_value(normalized, "traditional_ira_contributions")),
+            ", ".join(
+                src.get("source_ref", "unknown")
+                for src in fact_sources(normalized, "traditional_ira_contributions")
+            )
+            or "None",
+            "Confirm deductible amount before applying to Form 1040 line 10.",
+        ],
+        [
+            "Student loan interest (Form 1098-E)",
+            money(fact_value(normalized, "student_loan_interest_deduction")),
+            ", ".join(
+                src.get("source_ref", "unknown")
+                for src in fact_sources(normalized, "student_loan_interest_deduction")
+            )
+            or "None",
+            "Included in adjustment total when the form provides the amount.",
+        ],
+        [
+            "Mortgage interest (Form 1098)",
+            money(fact_value(normalized, "mortgage_interest")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "mortgage_interest"))
+            or "None",
+            "Use as itemized-deduction evidence when comparing against the standard deduction.",
+        ],
+        [
+            "Cash donations (donation receipts)",
+            money(fact_value(normalized, "charitable_cash")),
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "charitable_cash"))
+            or "None",
+            "Keep receipt support visible; apply only after itemized-deduction review.",
+        ],
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +385,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Adjustment And Deduction Signals",
+        "",
+        make_markdown_table(
+            ["Item", "Amount", "Sources", "Review Note"],
+            deduction_signal_rows,
         ),
         "",
         "## State Follow-Up",

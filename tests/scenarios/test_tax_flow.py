@@ -88,7 +88,12 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "ira_contribution_review",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
@@ -121,6 +126,18 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_ira_contribution_review(self) -> None:
+        normalized, artifacts = self.run_case("ira_contribution_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["traditional_ira_contributions"]["value"], 7000)
+        self.assertIn("Adjustment And Deduction Signals", artifacts["tax-dossier.md"])
+        self.assertIn("Traditional IRA contributions (Form 5498)", artifacts["tax-dossier.md"])
+        self.assertIn("drive://traditional-ira-5498", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review Form 5498 traditional IRA contributions totaling $7,000.00",
+            artifacts["missing-items.md"],
+        )
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

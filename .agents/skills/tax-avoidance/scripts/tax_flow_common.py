@@ -132,6 +132,22 @@ def aggregate_numeric(
     doc_types: set[str],
     field_name: str,
 ) -> tuple[float, list[dict[str, Any]]]:
+    return aggregate_numeric_fields(documents, doc_types, (field_name,))
+
+
+def aggregate_numeric_fields(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: tuple[str, ...],
+) -> tuple[float, list[dict[str, Any]]]:
+    def extract_value(document: dict[str, Any]) -> tuple[str, float]:
+        fields = document.get("fields", {})
+        for field_name in field_names:
+            value = safe_float(fields.get(field_name))
+            if value != 0.0:
+                return field_name, value
+        return field_names[0], 0.0
+
     def source_rank(document: dict[str, Any]) -> tuple[int, int]:
         content_status = document.get("content_status", "")
         status_score = {
@@ -140,7 +156,8 @@ def aggregate_numeric(
             "unreadable_encrypted_attachment": 2,
             "portal_notice_only": 1,
         }.get(content_status, 0)
-        value_score = 1 if safe_float(document.get("fields", {}).get(field_name)) != 0.0 else 0
+        _, value = extract_value(document)
+        value_score = 1 if value != 0.0 else 0
         return (value_score, status_score)
 
     grouped_documents: list[dict[str, Any]] = []
@@ -161,7 +178,7 @@ def aggregate_numeric(
     sources: list[dict[str, Any]] = []
     for document in grouped_documents:
         dedupe_key = document.get("dedupe_key")
-        value = safe_float(document.get("fields", {}).get(field_name))
+        field_name, value = extract_value(document)
         if value == 0.0:
             continue
         total += value
