@@ -54,6 +54,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 334",
         "url": "https://www.irs.gov/publications/p334",
     },
+    "self_employment_tax": {
+        "title": "IRS Self-employment tax (Social Security and Medicare taxes)",
+        "url": "https://www.irs.gov/businesses/small-businesses-self-employed/self-employment-tax-social-security-and-medicare-taxes",
+    },
     "schedule_c": {
         "title": "About Schedule C (Form 1040)",
         "url": "https://www.irs.gov/forms-pubs/about-schedule-c-form-1040",
@@ -102,6 +106,13 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+SOCIAL_SECURITY_WAGE_BASE_BY_YEAR: dict[int, float] = {
+    2025: 184500.0,
+}
+ADDITIONAL_MEDICARE_THRESHOLDS: dict[str, float] = {
+    "single": 200000.0,
+    "married_filing_jointly": 250000.0,
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:

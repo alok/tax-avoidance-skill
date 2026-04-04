@@ -270,6 +270,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "tax_year": tax_year,
         "filing_status": payload.get("filing_status", ""),
         "user_request": user_request,
+        "provided_answers": sorted(answers.keys()),
         "documents": documents,
         "connectors": connectors,
         "connector_notes": connector_notes(connectors, documents),
