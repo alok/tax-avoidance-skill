@@ -316,6 +316,63 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    planning_rows = [
+        [
+            "Mortgage interest",
+            money(fact_value(normalized, "mortgage_interest")),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "mortgage_interest"))
+            or "None",
+            ", ".join(source["title"] for source in rule_citations("mortgage_interest")) or "TBD",
+        ],
+        [
+            "Charitable cash",
+            money(fact_value(normalized, "charitable_cash")),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "charitable_cash"))
+            or "None",
+            ", ".join(source["title"] for source in rule_citations("charitable_cash")) or "TBD",
+        ],
+        [
+            "Student loan interest deduction",
+            money(fact_value(normalized, "student_loan_interest_deduction")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in fact_sources(normalized, "student_loan_interest_deduction")
+            )
+            or "None",
+            ", ".join(source["title"] for source in rule_citations("student_loan_interest_deduction")) or "TBD",
+        ],
+        [
+            "Education credit",
+            money(fact_value(normalized, "education_credit")),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "education_credit"))
+            or "None",
+            ", ".join(source["title"] for source in rule_citations("education_credit")) or "TBD",
+        ],
+        [
+            "Clean vehicle credit",
+            money(fact_value(normalized, "clean_vehicle_credit")),
+            ", ".join(
+                source.get("source_ref", "unknown")
+                for source in fact_sources(normalized, "clean_vehicle_credit")
+            )
+            or "None",
+            ", ".join(source["title"] for source in rule_citations("clean_vehicle_credit")) or "TBD",
+        ],
+        [
+            "Clean energy credit",
+            money(fact_value(normalized, "clean_energy_credit")),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "clean_energy_credit"))
+            or "None",
+            ", ".join(source["title"] for source in rule_citations("clean_energy_credit")) or "TBD",
+        ],
+        [
+            "Child tax credit",
+            money(fact_value(normalized, "child_tax_credit")),
+            ", ".join(source.get("source_ref", "unknown") for source in fact_sources(normalized, "child_tax_credit"))
+            or "None",
+            "User-provided interview answer" if fact_sources(normalized, "child_tax_credit") else "TBD",
+        ],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +398,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Planning Inputs",
+        "",
+        make_markdown_table(
+            ["Input", "Value", "Sources", "Rule Sources"],
+            planning_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",

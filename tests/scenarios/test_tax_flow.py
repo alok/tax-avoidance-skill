@@ -94,6 +94,18 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
 
+    def test_deduction_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("deduction_scaffolding")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Known deduction inputs so far", artifacts["missing-items.md"])
+        self.assertIn("mortgage interest $8,200.00", artifacts["missing-items.md"])
+        self.assertIn("charitable cash donations $600.00", artifacts["missing-items.md"])
+        self.assertIn("student loan interest $1,450.00", artifacts["missing-items.md"])
+        self.assertIn("## Planning Inputs", artifacts["tax-dossier.md"])
+        self.assertIn("Mortgage interest", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest deduction", artifacts["tax-dossier.md"])
+        self.assertIn("Charitable cash", artifacts["tax-dossier.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")
