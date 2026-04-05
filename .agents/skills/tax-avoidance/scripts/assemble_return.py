@@ -215,6 +215,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             + fact_sources(normalized, "other_nonrefundable_credits"),
             "rule_citations": rule_citations(
                 "education_credit",
+                "child_tax_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
             ),
@@ -316,6 +317,31 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_summary = normalized.get("dependent_summary", {})
+    dependents = normalized.get("dependents", [])
+    dependent_rows = [
+        [
+            dependent.get("label", "Unknown"),
+            dependent.get("relationship") or "TBD",
+            str(dependent.get("birth_year") or "TBD"),
+            str(dependent.get("months_lived_with_taxpayer") or "TBD"),
+            "Yes" if dependent.get("full_time_student") is True else "No" if dependent.get("full_time_student") is False else "TBD",
+            "Yes" if dependent.get("disabled") is True else "No" if dependent.get("disabled") is False else "TBD",
+            "Yes"
+            if dependent.get("provided_over_half_own_support") is True
+            else "No"
+            if dependent.get("provided_over_half_own_support") is False
+            else "TBD",
+            "Provided"
+            if dependent.get("tin_provided") is True
+            else "Missing"
+            if dependent.get("tin_provided") is False
+            else "TBD",
+            "; ".join(dependent.get("notes", [])) or "None",
+        ]
+        for dependent in dependents
+    ]
+    child_tax_credit = fact_value(normalized, "child_tax_credit")
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +375,27 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Dependents And Credit Follow-Up",
+        "",
+        f"- Listed dependents: {dependent_summary.get('count', 0)}",
+        f"- Possible child-credit candidates based on birth year only: {dependent_summary.get('possible_child_tax_credit_count', 0)}",
+        f"- Draft child tax credit currently captured: {money(child_tax_credit) if child_tax_credit else '$0.00'}",
+        "",
+        make_markdown_table(
+            [
+                "Label",
+                "Relationship",
+                "Birth Year",
+                "Months With Taxpayer",
+                "Full-Time Student",
+                "Disabled",
+                "Provided > Half Own Support",
+                "TIN Status",
+                "Notes",
+            ],
+            dependent_rows or [["None", "None", "TBD", "TBD", "TBD", "TBD", "TBD", "TBD", "None"]],
         ),
         "",
         "## State Follow-Up",

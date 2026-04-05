@@ -59,8 +59,19 @@
   ],
   "answers": {
     "business_expenses": 9000.0,
+    "child_tax_credit": 2000.0,
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
+  "dependents": [
+    {
+      "label": "Avery",
+      "relationship": "child",
+      "birth_year": 2017,
+      "months_lived_with_taxpayer": 12,
+      "provided_over_half_own_support": false,
+      "tin_provided": true
+    }
+  ],
   "user_request": "Build a sample contractor plus investment return package."
 }

@@ -395,6 +395,53 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "dependent_household_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "sample-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://sample-w2",
+          "fields": {
+            "wages": 128000,
+            "federal_withholding": 15400
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 11400
+      },
+      "dependents": [
+        {
+          "label": "Avery",
+          "relationship": "child",
+          "birth_year": 2017,
+          "months_lived_with_taxpayer": 12,
+          "provided_over_half_own_support": false,
+          "tin_provided": true
+        },
+        {
+          "label": "Jordan",
+          "relationship": "child",
+          "birth_year": 2006,
+          "full_time_student": true
+        }
+      ],
+      "user_request": "Keep track of our dependent details while drafting the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "possible_child_credit_count": 1
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

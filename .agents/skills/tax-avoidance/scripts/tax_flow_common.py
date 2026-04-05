@@ -38,6 +38,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
     },
+    "child_tax_credit": {
+        "title": "IRS Child Tax Credit",
+        "url": "https://www.irs.gov/credits-deductions/individuals/child-tax-credit",
+    },
     "clean_vehicle_credit": {
         "title": "IRS Clean vehicle and energy credits",
         "url": "https://www.irs.gov/credits-deductions/clean-vehicle-and-energy-credits",
@@ -125,6 +129,31 @@ def safe_float(value: Any) -> float:
     if isinstance(value, (int, float)):
         return float(value)
     return float(str(value))
+
+
+def safe_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return int(str(value))
+
+
+def safe_bool(value: Any) -> bool | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized in {"true", "yes", "y", "1"}:
+        return True
+    if normalized in {"false", "no", "n", "0"}:
+        return False
+    return None
 
 
 def aggregate_numeric(

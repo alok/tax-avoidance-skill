@@ -20,7 +20,9 @@ from tax_flow_common import (  # noqa: E402
     load_json,
     normalize_state_code,
     resolve_state_support,
+    safe_bool,
     safe_float,
+    safe_int,
 )
 
 
@@ -30,6 +32,92 @@ def build_fact(
     sources: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {"key": key, "value": value, "sources": sources}
+
+
+def normalize_dependent_label(index: int, dependent: dict[str, Any]) -> str:
+    for key in ("label", "name", "first_name", "nickname"):
+        value = str(dependent.get(key, "")).strip()
+        if value:
+            return value
+    return f"Dependent {index}"
+
+
+def normalize_dependents(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    tax_year = safe_int(payload.get("tax_year")) or 2025
+    dependents_payload = payload.get("dependents", [])
+    normalized_dependents: list[dict[str, Any]] = []
+    possible_child_tax_credit_count = 0
+
+    for index, raw_dependent in enumerate(dependents_payload, start=1):
+        if not isinstance(raw_dependent, dict):
+            continue
+
+        birth_year = safe_int(raw_dependent.get("birth_year"))
+        months_lived_with_taxpayer = safe_int(raw_dependent.get("months_lived_with_taxpayer"))
+        tin_provided = safe_bool(
+            raw_dependent.get("tin_provided", raw_dependent.get("ssn_or_itin_provided"))
+        )
+        appears_under_17 = birth_year is not None and (tax_year - birth_year) <= 16
+        if appears_under_17:
+            possible_child_tax_credit_count += 1
+
+        notes: list[str] = []
+        if appears_under_17:
+            notes.append("Appears under 17 based on birth year only.")
+        if tin_provided is False:
+            notes.append("TIN still needs to be confirmed for credit eligibility.")
+        if months_lived_with_taxpayer is not None and months_lived_with_taxpayer < 6:
+            notes.append("Residency details may not support the main child-credit path.")
+
+        normalized_dependents.append(
+            {
+                "label": normalize_dependent_label(index, raw_dependent),
+                "relationship": str(raw_dependent.get("relationship", "")).strip(),
+                "birth_year": birth_year,
+                "months_lived_with_taxpayer": months_lived_with_taxpayer,
+                "full_time_student": safe_bool(raw_dependent.get("full_time_student")),
+                "disabled": safe_bool(raw_dependent.get("disabled")),
+                "provided_over_half_own_support": safe_bool(
+                    raw_dependent.get("provided_over_half_own_support")
+                ),
+                "tin_provided": tin_provided,
+                "notes": notes,
+            }
+        )
+
+    summary = {
+        "count": len(normalized_dependents),
+        "possible_child_tax_credit_count": possible_child_tax_credit_count,
+    }
+    return normalized_dependents, summary
+
+
+def dependent_missing_items(
+    dependents: list[dict[str, Any]],
+    child_tax_credit: float,
+) -> list[str]:
+    items: list[str] = []
+    if child_tax_credit > 0.0 and not dependents:
+        items.append("Add dependent details that support the claimed child tax credit before treating it as final.")
+
+    for dependent in dependents:
+        label = dependent["label"]
+        if not dependent.get("relationship"):
+            items.append(f"Confirm {label}'s relationship to the taxpayer.")
+        if dependent.get("birth_year") is None:
+            items.append(f"Add {label}'s birth year to preserve dependent and credit context.")
+        if dependent.get("months_lived_with_taxpayer") is None:
+            items.append(f"Confirm how many months {label} lived with the taxpayer during the tax year.")
+        if dependent.get("provided_over_half_own_support") is None:
+            items.append(f"Confirm whether {label} provided over half of their own support.")
+        if dependent.get("tin_provided") is not True:
+            items.append(f"Confirm whether {label} has an SSN or ITIN available for credit eligibility checks.")
+
+    if dependents and child_tax_credit == 0.0:
+        items.append(
+            "Review whether any listed dependents support the Child Tax Credit or Credit for Other Dependents, then confirm the draft credit amount."
+        )
+    return items
 
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -120,6 +208,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    dependents, dependent_summary = normalize_dependents(payload)
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -187,6 +276,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    missing_items.extend(dependent_missing_items(dependents, child_tax_credit))
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -291,6 +381,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "dependents": dependents,
+        "dependent_summary": dependent_summary,
         "facts": facts,
     }
     return normalized
