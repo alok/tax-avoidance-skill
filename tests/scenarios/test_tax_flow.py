@@ -64,10 +64,16 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_25b" in expected:
+                    self.assertIn(f"${expected['line_25b']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -121,6 +127,20 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_social_security_review_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_needed")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("social_security_taxable_benefits", artifacts["missing-items.md"])
+        self.assertIn("$24,000.00", artifacts["tax-dossier.md"])
+
+    def test_social_security_taxable_benefits(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_benefits")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_taxable_benefits"]["value"], 10200)
+        self.assertIn("$24,000.00", artifacts["federal-lines.md"])
+        self.assertIn("$10,200.00", artifacts["federal-lines.md"])
+        self.assertIn("$1,800.00", artifacts["federal-lines.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

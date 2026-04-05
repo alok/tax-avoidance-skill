@@ -536,6 +536,84 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "social_security_review_needed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000,
+            "federal_withholding": 1800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Draft my return package and flag anything you still need reviewed."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 24000,
+      "line_25b": 1800
+    }
+  },
+  "social_security_taxable_benefits": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000,
+            "federal_withholding": 1800
+          }
+        },
+        {
+          "id": "w2-side",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-side",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 900
+          }
+        }
+      ],
+      "answers": {
+        "social_security_taxable_benefits": 10200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 2600
+      },
+      "user_request": "Use my SSA-1099 and wages to draft the federal package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 18000,
+      "line_6a": 24000,
+      "line_6b": 10200,
+      "line_25a": 900,
+      "line_25b": 1800
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,

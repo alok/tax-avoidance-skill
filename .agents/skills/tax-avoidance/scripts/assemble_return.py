@@ -47,12 +47,13 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
+    social_security_taxable = fact_value(normalized, "social_security_taxable_benefits")
     has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = wages + interest + dividends + capital_gains + social_security_taxable + (net_profit or 0.0)
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -76,7 +77,8 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
 
     withholding = fact_value(normalized, "federal_withholding")
     other_payments = fact_value(normalized, "other_payments")
-    total_payments = withholding + other_payments
+    social_security_withholding = fact_value(normalized, "social_security_withholding")
+    total_payments = withholding + social_security_withholding + other_payments
 
     refund = None
     amount_owed = None
@@ -137,6 +139,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "6a",
+            "label": "Social Security benefits",
+            "value": social_security or None,
+            "sources": fact_sources(normalized, "social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "6b",
+            "label": "Taxable Social Security benefits",
+            "value": social_security_taxable or None,
+            "sources": fact_sources(normalized, "social_security_taxable_benefits"),
+            "rule_citations": rule_citations("social_security_taxable_benefits"),
+        },
+        {
+            "form": "Form 1040",
             "line": "7",
             "label": "Capital gain or loss",
             "value": capital_gains or None,
@@ -154,6 +172,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
+                "social_security_taxable_benefits",
                 "schedule_c",
             ),
         },
@@ -237,10 +256,20 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "25b",
+            "label": "Federal income tax withheld from Forms 1099 and SSA-1099",
+            "value": social_security_withholding or None,
+            "sources": fact_sources(normalized, "social_security_withholding"),
+            "rule_citations": rule_citations("federal_withholding"),
+        },
+        {
+            "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
             "value": total_payments or None,
-            "sources": fact_sources(normalized, "federal_withholding") + fact_sources(normalized, "other_payments"),
+            "sources": fact_sources(normalized, "federal_withholding")
+            + fact_sources(normalized, "social_security_withholding")
+            + fact_sources(normalized, "other_payments"),
             "rule_citations": rule_citations("federal_withholding"),
         },
         {
