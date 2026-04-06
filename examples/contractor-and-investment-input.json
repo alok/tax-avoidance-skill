@@ -55,12 +55,22 @@
         "amount": 48.0,
         "vendor": "GitHub"
       }
+    },
+    {
+      "id": "sample-q1-estimated-payment",
+      "doc_type": "Estimated Tax Payment",
+      "source_type": "upload",
+      "source_ref": "upload://sample-q1-estimated-payment",
+      "fields": {
+        "payment_amount": 1200.0
+      }
     }
   ],
   "answers": {
     "business_expenses": 9000.0,
     "deduction_amount": 15000.0,
-    "tax_before_credits": 6200.0
+    "tax_before_credits": 6200.0,
+    "estimated_tax_payments": 1200.0
   },
   "user_request": "Build a sample contractor plus investment return package."
 }

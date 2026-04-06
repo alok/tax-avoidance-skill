@@ -45,6 +45,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    estimated_tax_payments_from_docs, estimated_tax_payment_doc_sources = aggregate_numeric(
+        documents,
+        {"Estimated Tax Payment"},
+        "payment_amount",
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -111,6 +116,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
+    estimated_tax_payments_from_answers, estimated_tax_payment_answer_sources = answer_fact(
+        answers,
+        "estimated_tax_payments",
+    )
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
@@ -166,6 +175,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    estimated_tax_payments = estimated_tax_payments_from_docs
+    estimated_tax_payment_sources = estimated_tax_payment_doc_sources
+    if estimated_tax_payment_answer_sources:
+        if estimated_tax_payment_doc_sources:
+            if abs(estimated_tax_payments_from_docs - estimated_tax_payments_from_answers) > 0.009:
+                missing_items.append(
+                    "Reconcile estimated tax payments before filing: the document-backed total is "
+                    f"${estimated_tax_payments_from_docs:,.2f} but the interview answer says "
+                    f"${estimated_tax_payments_from_answers:,.2f}."
+                )
+        else:
+            estimated_tax_payments = estimated_tax_payments_from_answers
+            estimated_tax_payment_sources = estimated_tax_payment_answer_sources
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -231,6 +253,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             nonemployee_compensation_sources,
         ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "estimated_tax_payments": build_fact(
+            "estimated_tax_payments",
+            estimated_tax_payments,
+            estimated_tax_payment_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
