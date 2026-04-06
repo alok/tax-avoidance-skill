@@ -295,6 +295,42 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    ira_contributions_documented = fact_value(normalized, "ira_contributions_documented")
+    ira_contribution_sources = fact_sources(normalized, "ira_contributions_documented")
+    ira_contribution_rows = [
+        [
+            source.get("doc_id", "unknown"),
+            source.get("source_ref", "unknown"),
+            money(source.get("value")),
+        ]
+        for source in ira_contribution_sources
+    ]
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    ira_review_section: list[str] = []
+    if ira_contributions_documented > 0.0:
+        ira_review_lines: list[str] = []
+        ira_review_lines.append(
+            f"- Form 5498 documents {money(ira_contributions_documented)} of IRA contributions for review."
+        )
+        if ira_deduction > 0.0:
+            ira_review_lines.append(
+                f"- The current draft uses {money(ira_deduction)} as the IRA deduction, subject to IRS deductibility rules."
+            )
+        else:
+            ira_review_lines.append(
+                "- No IRA deduction has been applied yet. Confirm the deductible amount before updating Form 1040 line 10."
+            )
+        ira_review_section = [
+            "## IRA Contribution Review",
+            "",
+            *ira_review_lines,
+            "",
+            make_markdown_table(
+                ["Document ID", "Source", "Documented Contribution"],
+                ira_contribution_rows or [["None", "None", "$0.00"]],
+            ),
+            "",
+        ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -351,6 +387,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
         "",
+        *ira_review_section,
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
