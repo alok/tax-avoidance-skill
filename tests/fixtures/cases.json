@@ -167,6 +167,57 @@
       "line_20": 1800
     }
   },
+  "estimated_tax_payments": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 9500
+          }
+        },
+        {
+          "id": "irs-q1-payment",
+          "doc_type": "IRS Payment Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://irs-q1-payment",
+          "fields": {
+            "amount": 1200
+          }
+        },
+        {
+          "id": "irs-q2-payment",
+          "doc_type": "Estimated Tax Payment",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://irs-q2-payment",
+          "fields": {
+            "amount": 800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 10200
+      },
+      "user_request": "Build my return package and include my estimated payments."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 91000,
+      "line_25a": 9500,
+      "line_26": 2000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
