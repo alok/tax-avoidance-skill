@@ -295,6 +295,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    review_rows = [
+        [
+            item.get("title", "Unknown"),
+            money(item.get("amount")),
+            ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "TBD",
+            item.get("prompt", ""),
+        ]
+        for item in normalized.get("review_items", [])
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -349,6 +358,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Review",
+        "",
+        make_markdown_table(
+            ["Review Item", "Observed Amount", "Document Sources", "Prompt"],
+            review_rows or [["None", "$0.00", "None", "No deduction review items are currently queued."]],
         ),
         "",
         "## State Follow-Up",

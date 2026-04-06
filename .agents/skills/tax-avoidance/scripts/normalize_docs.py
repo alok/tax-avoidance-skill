@@ -32,6 +32,22 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_review_item(
+    topic: str,
+    title: str,
+    amount: float,
+    sources: list[dict[str, Any]],
+    prompt: str,
+) -> dict[str, Any]:
+    return {
+        "topic": topic,
+        "title": title,
+        "amount": amount,
+        "sources": sources,
+        "prompt": prompt,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -72,6 +88,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contributions_reported, ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
+    if ira_contributions_reported == 0.0:
+        ira_contributions_reported, ira_contribution_sources = aggregate_numeric(
+            documents,
+            {"5498"},
+            "ira_contribution_amount",
+        )
     expense_documents_for_year = [
         document
         for document in documents
@@ -166,6 +193,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    review_items: list[dict[str, Any]] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -176,9 +204,49 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if mortgage_interest > 0.0 or charitable_cash > 0.0:
+            review_items.append(
+                build_review_item(
+                    "itemized_deduction_review",
+                    "Itemized deduction review",
+                    mortgage_interest + charitable_cash,
+                    mortgage_interest_sources + charitable_sources,
+                    "Review mortgage interest and charitable receipts before choosing the deduction amount for the draft package.",
+                )
+            )
+            missing_items.append(
+                "Choose the deduction path after reviewing the current itemized-deduction candidates from your source documents."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if ira_contributions_reported > 0.0 and "ira_contribution_deduction" not in answers:
+        review_items.append(
+            build_review_item(
+                "ira_contribution_deduction",
+                "Traditional IRA contribution review",
+                ira_contributions_reported,
+                ira_contribution_sources,
+                "Confirm how much of the reported IRA contribution should be treated as a deductible traditional IRA contribution.",
+            )
+        )
+        missing_items.append(
+            f"Review Form 5498 contributions totaling ${ira_contributions_reported:,.2f} and confirm the deductible traditional IRA amount, if any."
+        )
+    if student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        review_items.append(
+            build_review_item(
+                "student_loan_interest_deduction",
+                "Student loan interest deduction review",
+                student_loan_interest,
+                student_loan_interest_sources,
+                "Confirm the deductible student loan interest amount supported by the 1098-E documents.",
+            )
+        )
+        missing_items.append(
+            f"Review 1098-E student loan interest totaling ${student_loan_interest:,.2f} and confirm the deductible amount."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -276,6 +344,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "review_items": review_items,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,
