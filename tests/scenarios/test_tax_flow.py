@@ -64,6 +64,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_9" in expected:
+                    self.assertIn(f"| Form 1040 | 9 | Total income | ${expected['line_9']:,.2f} |", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -114,6 +118,18 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Follow-Up", artifacts["tax-dossier.md"])
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
+
+    def test_social_security_review_required(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_required")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18000)
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 0.0)
+        self.assertIn("Social Security benefits", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
+        self.assertIn(
+            "provide the taxable Social Security benefits amount for Form 1040 line 6b",
+            artifacts["missing-items.md"],
+        )
 
     def test_state_allocations(self) -> None:
         normalized, artifacts = self.run_case("state_allocations")

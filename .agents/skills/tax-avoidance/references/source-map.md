@@ -10,6 +10,7 @@ Use IRS or Treasury sources for all substantive tax guidance. Use Wikipedia only
 - [Publication 590-A](https://www.irs.gov/publications/p590a): IRA contribution rules
 - [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969): HSA and related account rules
 - [Publication 970](https://www.irs.gov/publications/p970): education benefits
+- [Publication 915](https://www.irs.gov/publications/p915): Social Security and equivalent railroad retirement benefit income
 - [Publication 526](https://www.irs.gov/publications/p526): charitable contributions
 - [Publication 936](https://www.irs.gov/publications/p936): home mortgage interest deduction
 - [Clean vehicle and energy credits](https://www.irs.gov/credits-deductions/clean-vehicle-and-energy-credits): vehicle and home-energy credit workflows
