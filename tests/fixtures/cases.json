@@ -153,6 +153,16 @@
             "wages": 102000,
             "federal_withholding": 12000
           }
+        },
+        {
+          "id": "1098t-student",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-student",
+          "fields": {
+            "qualified_tuition_and_fees": 6400,
+            "scholarships_or_grants": 2200
+          }
         }
       ],
       "answers": {
@@ -165,6 +175,58 @@
     "expect": {
       "status": "ok",
       "line_20": 1800
+    }
+  },
+  "education_and_ira_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-main",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 8900
+          }
+        },
+        {
+          "id": "1098t-student",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-student",
+          "fields": {
+            "qualified_tuition_and_fees": 9200,
+            "scholarships_or_grants": 2500
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ira-5498",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7800
+      },
+      "user_request": "Use my tax docs and tell me what answers you still need."
+    },
+    "expect": {
+      "status": "ok",
+      "qualified_tuition": 9200,
+      "scholarships": 2500,
+      "ira_contributions": 7000
     }
   },
   "schedule_c_contractor": {

@@ -94,6 +94,18 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
 
+    def test_education_and_ira_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("education_and_ira_scaffolding")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["education_qualified_tuition_observed"]["value"], 9200)
+        self.assertEqual(normalized["facts"]["education_scholarships_observed"]["value"], 2500)
+        self.assertEqual(normalized["facts"]["ira_contributions_observed"]["value"], 7000)
+        self.assertIn("Review the 1098-T tuition documents", artifacts["missing-items.md"])
+        self.assertIn("Review the 5498 IRA contribution documents totaling $7,000.00", artifacts["missing-items.md"])
+        self.assertIn("Observed 5498 IRA contributions: $7,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("Observed 1098-T qualified tuition and fees: $9,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("Observed 1098-T scholarships or grants: $2,500.00", artifacts["tax-dossier.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

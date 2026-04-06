@@ -18,6 +18,7 @@ from tax_flow_common import (  # noqa: E402
     detect_unsupported,
     dump_json,
     load_json,
+    money,
     normalize_state_code,
     resolve_state_support,
     safe_float,
@@ -67,10 +68,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
+    qualified_tuition, qualified_tuition_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "qualified_tuition_and_fees",
+    )
+    scholarships_or_grants, scholarships_or_grants_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "scholarships_or_grants",
+    )
     student_loan_interest, student_loan_interest_sources = aggregate_numeric(
         documents,
         {"1098-E"},
         "student_loan_interest",
+    )
+    ira_contributions, ira_contributions_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
     )
     expense_documents_for_year = [
         document
@@ -179,6 +195,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if (
+        qualified_tuition > 0.0 or scholarships_or_grants > 0.0
+    ) and "education_credit" not in answers:
+        missing_items.append(
+            "Review the 1098-T tuition documents and confirm the student, dependency status, qualified tuition/required expenses, scholarships, and education credit amount to use in the draft return package."
+        )
+    if ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the 5498 IRA contribution documents totaling {money(ira_contributions)} and confirm how much is deductible for the return."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -236,10 +262,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "education_qualified_tuition_observed": build_fact(
+            "education_qualified_tuition_observed",
+            qualified_tuition,
+            qualified_tuition_sources,
+        ),
+        "education_scholarships_observed": build_fact(
+            "education_scholarships_observed",
+            scholarships_or_grants,
+            scholarships_or_grants_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "ira_contributions_observed": build_fact(
+            "ira_contributions_observed",
+            ira_contributions,
+            ira_contributions_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
