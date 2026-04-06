@@ -115,6 +115,32 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
 
+    def test_social_security_review_needed(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_needed")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18000)
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 0.0)
+        self.assertIn("Social Security benefits", artifacts["federal-lines.md"])
+        self.assertIn("Taxable Social Security benefits", artifacts["federal-lines.md"])
+        self.assertIn("$18,000.00", artifacts["federal-lines.md"])
+        self.assertIn("TBD", artifacts["federal-lines.md"])
+        self.assertIn(
+            "Review the taxable portion of Social Security benefits before treating SSA-1099 benefits as taxable income in the draft return.",
+            artifacts["missing-items.md"],
+        )
+
+    def test_social_security_taxable_amount(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_amount")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18000)
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 10200)
+        self.assertNotIn(
+            "Review the taxable portion of Social Security benefits before treating SSA-1099 benefits as taxable income in the draft return.",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("$10,200.00", artifacts["federal-lines.md"])
+        self.assertIn("$30,200.00", artifacts["federal-lines.md"])
+
     def test_state_allocations(self) -> None:
         normalized, artifacts = self.run_case("state_allocations")
         self.assertEqual(normalized["status"], "ok")
