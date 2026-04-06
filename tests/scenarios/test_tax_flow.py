@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "social_security_income",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -64,6 +65,12 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
+                if "line_9" in expected:
+                    self.assertIn(f"${expected['line_9']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -107,6 +114,32 @@ class TaxFlowTest(unittest.TestCase):
         self.assertEqual(normalized["status"], "ok")
         self.assertIn("$48.00", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts totaling $48.00", artifacts["missing-items.md"])
+
+    def test_social_security_requires_taxable_amount_review(self) -> None:
+        case = json.loads(json.dumps(self.cases["social_security_income"]["input"]))
+        del case["answers"]["taxable_social_security_benefits"]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_path = temp_path / "input.json"
+            out_dir = temp_path / "out"
+            input_path.write_text(json.dumps(case, indent=2), encoding="utf-8")
+
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(input_path), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+
+            normalized = json.loads((out_dir / "return-data.json").read_text(encoding="utf-8"))
+            federal_lines = (out_dir / "federal-lines.md").read_text(encoding="utf-8")
+            missing_items = (out_dir / "missing-items.md").read_text(encoding="utf-8")
+
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Provide the taxable Social Security benefits amount", missing_items)
+        self.assertIn("$18,000.00", federal_lines)
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", federal_lines)
+        self.assertIn("| Form 1040 | 9 | Total income | $24,000.00 |", federal_lines)
 
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")

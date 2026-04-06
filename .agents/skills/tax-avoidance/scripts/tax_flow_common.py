@@ -26,6 +26,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
     },
+    "taxable_social_security_benefits": {
+        "title": "IRS Publication 915",
+        "url": "https://www.irs.gov/publications/p915",
+    },
     "mortgage_interest": {
         "title": "IRS Publication 936",
         "url": "https://www.irs.gov/publications/p936",

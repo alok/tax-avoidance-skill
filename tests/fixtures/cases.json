@@ -167,6 +167,51 @@
       "line_20": 1800
     }
   },
+  "social_security_income": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18000
+          }
+        },
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 24000,
+            "federal_withholding": 2100
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 6200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1800
+      },
+      "user_request": "Use my wage and Social Security forms to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 24000,
+      "line_25a": 2100,
+      "line_6a": 18000,
+      "line_6b": 6200,
+      "line_9": 30200
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
