@@ -47,7 +47,10 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
-    has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
+    self_employment_tax_deduction = fact_value(normalized, "deductible_part_of_self_employment_tax")
+    self_employment_tax = fact_value(normalized, "self_employment_tax")
+    explicit_business_expenses = "business_expenses" in normalized.get("answered_keys", [])
+    has_business_expenses = explicit_business_expenses or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
@@ -57,7 +60,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
     student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
-    adjustments_total = ira + hsa + student_loan_interest
+    adjustments_total = ira + hsa + student_loan_interest + self_employment_tax_deduction
 
     agi = total_income - adjustments_total
     deduction_amount = fact_value(normalized, "deduction_amount")
@@ -72,7 +75,9 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         + fact_value(normalized, "child_tax_credit")
         + fact_value(normalized, "other_nonrefundable_credits")
     )
-    total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
+    total_tax = None
+    if tax_before_credits or self_employment_tax:
+        total_tax = max(tax_before_credits + self_employment_tax - nonrefundable_credits, 0.0)
 
     withholding = fact_value(normalized, "federal_withholding")
     other_payments = fact_value(normalized, "other_payments")
@@ -110,6 +115,30 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "value": net_profit,
             "sources": fact_sources(normalized, "nonemployee_compensation") + fact_sources(normalized, "business_expenses"),
             "rule_citations": rule_citations("schedule_c", "schedule_se"),
+        },
+        {
+            "form": "Schedule SE",
+            "line": "4a",
+            "label": "Net earnings from self-employment",
+            "value": normalized.get("schedule_se_summary", {}).get("net_earnings"),
+            "sources": fact_sources(normalized, "nonemployee_compensation") + fact_sources(normalized, "business_expenses"),
+            "rule_citations": rule_citations("schedule_se"),
+        },
+        {
+            "form": "Schedule SE",
+            "line": "6",
+            "label": "Social Security portion of self-employment tax",
+            "value": normalized.get("schedule_se_summary", {}).get("social_security_portion"),
+            "sources": fact_sources(normalized, "self_employment_tax"),
+            "rule_citations": rule_citations("schedule_se", "self_employment_tax"),
+        },
+        {
+            "form": "Schedule SE",
+            "line": "12",
+            "label": "Self-employment tax",
+            "value": self_employment_tax or None,
+            "sources": fact_sources(normalized, "self_employment_tax"),
+            "rule_citations": rule_citations("schedule_se", "self_employment_tax"),
         },
         {
             "form": "Form 1040",
@@ -172,12 +201,25 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             ),
         },
         {
+            "form": "Schedule 1",
+            "line": "15",
+            "label": "Deductible part of self-employment tax",
+            "value": self_employment_tax_deduction or None,
+            "sources": fact_sources(normalized, "deductible_part_of_self_employment_tax"),
+            "rule_citations": rule_citations("deductible_part_of_self_employment_tax", "schedule_se"),
+        },
+        {
             "form": "Form 1040",
             "line": "11",
             "label": "Adjusted gross income",
             "value": agi or None,
             "sources": [],
-            "rule_citations": rule_citations("wages", "ira_contribution_deduction", "hsa_deduction"),
+            "rule_citations": rule_citations(
+                "wages",
+                "ira_contribution_deduction",
+                "hsa_deduction",
+                "deductible_part_of_self_employment_tax",
+            ),
         },
         {
             "form": "Form 1040",
@@ -218,6 +260,14 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "clean_vehicle_credit",
                 "clean_energy_credit",
             ),
+        },
+        {
+            "form": "Schedule 2",
+            "line": "4",
+            "label": "Self-employment tax",
+            "value": self_employment_tax or None,
+            "sources": fact_sources(normalized, "self_employment_tax"),
+            "rule_citations": rule_citations("schedule_se", "self_employment_tax"),
         },
         {
             "form": "Form 1040",
@@ -295,6 +345,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    schedule_se_summary = normalized.get("schedule_se_summary", {})
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -350,6 +401,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Schedule SE Summary",
+        "",
+        f"- Net earnings from self-employment: {money(schedule_se_summary.get('net_earnings'))}",
+        f"- Social Security portion: {money(schedule_se_summary.get('social_security_portion'))}",
+        f"- Medicare portion: {money(schedule_se_summary.get('medicare_portion'))}",
+        f"- Total self-employment tax: {money(schedule_se_summary.get('total'))}",
+        f"- Deductible half of self-employment tax: {money(schedule_se_summary.get('deduction'))}",
         "",
         "## State Follow-Up",
         "",

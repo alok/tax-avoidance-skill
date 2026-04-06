@@ -13,6 +13,7 @@ from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
+    compute_self_employment_tax,
     connector_notes,
     detect_illegal_request,
     detect_unsupported,
@@ -120,6 +121,35 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+
+    net_business_profit = nonemployee_compensation - business_expenses if nonemployee_compensation > 0.0 else 0.0
+    self_employment_tax_data = compute_self_employment_tax(
+        tax_year=tax_year,
+        wages=wages,
+        net_profit=net_business_profit,
+    )
+    self_employment_tax = float(self_employment_tax_data["total"] or 0.0)
+    deductible_self_employment_tax = float(self_employment_tax_data["deduction"] or 0.0)
+    if self_employment_tax > 0.0:
+        self_employment_tax_sources = [
+            {
+                "source_type": "derived_schedule_se",
+                "source_ref": "computed:schedule-se",
+                "field": "self_employment_tax",
+                "value": self_employment_tax,
+            }
+        ]
+        deductible_self_employment_tax_sources = [
+            {
+                "source_type": "derived_schedule_se",
+                "source_ref": "computed:schedule-se",
+                "field": "deductible_part_of_self_employment_tax",
+                "value": deductible_self_employment_tax,
+            }
+        ]
+    else:
+        self_employment_tax_sources = []
+        deductible_self_employment_tax_sources = []
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -253,6 +283,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
         "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
         "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
+        "self_employment_tax": build_fact(
+            "self_employment_tax",
+            self_employment_tax,
+            self_employment_tax_sources,
+        ),
+        "deductible_part_of_self_employment_tax": build_fact(
+            "deductible_part_of_self_employment_tax",
+            deductible_self_employment_tax,
+            deductible_self_employment_tax_sources,
+        ),
         "other_payments": build_fact("other_payments", other_payments, other_payments_sources),
         "education_credit": build_fact("education_credit", education_credit, education_credit_sources),
         "clean_vehicle_credit": build_fact("clean_vehicle_credit", clean_vehicle_credit, clean_vehicle_credit_sources),
@@ -270,6 +310,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "tax_year": tax_year,
         "filing_status": payload.get("filing_status", ""),
         "user_request": user_request,
+        "answered_keys": sorted(answers.keys()),
         "documents": documents,
         "connectors": connectors,
         "connector_notes": connector_notes(connectors, documents),
@@ -291,6 +332,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "schedule_se_summary": self_employment_tax_data,
         "facts": facts,
     }
     return normalized

@@ -62,6 +62,14 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "self_employment_tax": {
+        "title": "Instructions for Schedule SE (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
+    "deductible_part_of_self_employment_tax": {
+        "title": "IRS Publication 334",
+        "url": "https://www.irs.gov/publications/p334",
+    },
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {
@@ -102,6 +110,9 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+SOCIAL_SECURITY_WAGE_BASE_BY_YEAR = {
+    2025: 176_100.0,
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -125,6 +136,54 @@ def safe_float(value: Any) -> float:
     if isinstance(value, (int, float)):
         return float(value)
     return float(str(value))
+
+
+def social_security_wage_base(tax_year: int) -> float | None:
+    return SOCIAL_SECURITY_WAGE_BASE_BY_YEAR.get(tax_year)
+
+
+def compute_self_employment_tax(
+    *,
+    tax_year: int,
+    wages: float,
+    net_profit: float,
+) -> dict[str, float | None]:
+    if net_profit <= 0.0:
+        return {
+            "net_earnings": 0.0,
+            "social_security_portion": 0.0,
+            "medicare_portion": 0.0,
+            "total": 0.0,
+            "deduction": 0.0,
+            "wage_base": social_security_wage_base(tax_year),
+        }
+
+    net_earnings = round(net_profit * 0.9235, 2)
+    if net_earnings < 400.0:
+        return {
+            "net_earnings": net_earnings,
+            "social_security_portion": 0.0,
+            "medicare_portion": 0.0,
+            "total": 0.0,
+            "deduction": 0.0,
+            "wage_base": social_security_wage_base(tax_year),
+        }
+
+    wage_base = social_security_wage_base(tax_year)
+    social_security_base_remaining = max(wage_base - wages, 0.0) if wage_base is not None else net_earnings
+    social_security_taxable = min(net_earnings, social_security_base_remaining)
+    social_security_portion = round(social_security_taxable * 0.124, 2)
+    medicare_portion = round(net_earnings * 0.029, 2)
+    total = round(social_security_portion + medicare_portion, 2)
+    deduction = round(total / 2.0, 2)
+    return {
+        "net_earnings": net_earnings,
+        "social_security_portion": social_security_portion,
+        "medicare_portion": medicare_portion,
+        "total": total,
+        "deduction": deduction,
+        "wage_base": wage_base,
+    }
 
 
 def aggregate_numeric(

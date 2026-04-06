@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_se_wage_base_cap",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -72,6 +73,15 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "schedule_se_line_12" in expected:
+                    self.assertIn("Schedule SE | 12 | Self-employment tax", federal_lines)
+                    self.assertIn(f"${expected['schedule_se_line_12']:,.2f}", federal_lines)
+                if "schedule_1_line_15" in expected:
+                    self.assertIn("Schedule 1 | 15 | Deductible part of self-employment tax", federal_lines)
+                    self.assertIn(f"${expected['schedule_1_line_15']:,.2f}", federal_lines)
+                if "form_1040_line_22" in expected:
+                    self.assertIn("Form 1040 | 22 | Total tax", federal_lines)
+                    self.assertIn(f"${expected['form_1040_line_22']:,.2f}", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -107,6 +117,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertEqual(normalized["status"], "ok")
         self.assertIn("$48.00", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts totaling $48.00", artifacts["missing-items.md"])
+
+    def test_schedule_se_summary(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_contractor")
+        self.assertEqual(normalized["status"], "ok")
+        schedule_se = normalized["schedule_se_summary"]
+        self.assertEqual(schedule_se["wage_base"], 176100.0)
+        self.assertAlmostEqual(schedule_se["net_earnings"], 82799.60, places=2)
+        self.assertAlmostEqual(schedule_se["social_security_portion"], 10267.15, places=2)
+        self.assertAlmostEqual(schedule_se["medicare_portion"], 2401.19, places=2)
+        self.assertAlmostEqual(schedule_se["total"], 12668.34, places=2)
+        self.assertAlmostEqual(schedule_se["deduction"], 6334.17, places=2)
+        self.assertIn("## Schedule SE Summary", artifacts["tax-dossier.md"])
+        self.assertIn("Deductible half of self-employment tax: $6,334.17", artifacts["tax-dossier.md"])
 
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")

@@ -196,7 +196,54 @@
     "expect": {
       "status": "ok",
       "schedule_c_line_1": 108000.0,
-      "schedule_c_line_31": 89658.47
+      "schedule_c_line_31": 89658.47,
+      "schedule_se_line_12": 12668.34,
+      "schedule_1_line_15": 6334.17,
+      "form_1040_line_22": 25868.34
+    }
+  },
+  "schedule_se_wage_base_cap": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 170000,
+            "federal_withholding": 30000
+          }
+        },
+        {
+          "id": "1099-nec-side",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-side",
+          "fields": {
+            "nonemployee_compensation": 20000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 0,
+        "deduction_amount": 15000,
+        "tax_before_credits": 28000
+      },
+      "user_request": "Draft the return package for my side consulting income too."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_31": 20000,
+      "schedule_se_line_12": 1292.03,
+      "schedule_1_line_15": 646.01,
+      "form_1040_line_22": 29292.03
     }
   },
   "schedule_c_missing_expenses": {
