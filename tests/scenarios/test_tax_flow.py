@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "documented_adjustments_and_itemized_review",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -66,12 +67,35 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "line_10" in expected:
+                    self.assertIn(f"${expected['line_10']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_documented_tax_inputs_section(self) -> None:
+        normalized, artifacts = self.run_case("documented_adjustments_and_itemized_review")
+        self.assertEqual(normalized["status"], "ok")
+        dossier = artifacts["tax-dossier.md"]
+        missing = artifacts["missing-items.md"]
+        federal_lines = artifacts["federal-lines.md"]
+        self.assertIn("## Documented Tax Inputs", dossier)
+        self.assertIn("Student loan interest deduction", dossier)
+        self.assertIn("Charitable cash contributions", dossier)
+        self.assertIn("Preserved for standard-vs-itemized review", dossier)
+        self.assertIn("IRS Publication 970", dossier)
+        self.assertIn("IRS Publication 526", dossier)
+        self.assertIn(
+            "currently documented itemized-only subtotal is $10,600.00",
+            missing,
+        )
+        self.assertIn(
+            "[IRS Publication 970](https://www.irs.gov/publications/p970)",
+            federal_lines,
+        )
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")

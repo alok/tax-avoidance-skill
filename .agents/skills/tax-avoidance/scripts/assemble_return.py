@@ -39,6 +39,186 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+FACT_SUMMARY_CONFIG: list[dict[str, str]] = [
+    {"key": "wages", "category": "Income", "label": "Wages, salaries, tips", "draft_use": "Form 1040 line 1a"},
+    {
+        "key": "nonemployee_compensation",
+        "category": "Income",
+        "label": "1099-NEC gross receipts",
+        "draft_use": "Schedule C line 1",
+    },
+    {
+        "key": "taxable_interest",
+        "category": "Income",
+        "label": "Taxable interest",
+        "draft_use": "Form 1040 line 2b",
+    },
+    {
+        "key": "ordinary_dividends",
+        "category": "Income",
+        "label": "Ordinary dividends",
+        "draft_use": "Form 1040 line 3b",
+    },
+    {
+        "key": "capital_gains",
+        "category": "Income",
+        "label": "Capital gains",
+        "draft_use": "Form 1040 line 7",
+    },
+    {
+        "key": "social_security_benefits",
+        "category": "Income",
+        "label": "Social Security benefits",
+        "draft_use": "Preserved for review",
+    },
+    {
+        "key": "ira_contribution_deduction",
+        "category": "Adjustments",
+        "label": "IRA contribution deduction",
+        "draft_use": "Form 1040 line 10",
+    },
+    {
+        "key": "hsa_deduction",
+        "category": "Adjustments",
+        "label": "HSA deduction",
+        "draft_use": "Form 1040 line 10",
+    },
+    {
+        "key": "student_loan_interest_deduction",
+        "category": "Adjustments",
+        "label": "Student loan interest deduction",
+        "draft_use": "Form 1040 line 10",
+    },
+    {
+        "key": "mortgage_interest",
+        "category": "Deductions",
+        "label": "Mortgage interest",
+        "draft_use": "Preserved for standard-vs-itemized review",
+    },
+    {
+        "key": "charitable_cash",
+        "category": "Deductions",
+        "label": "Charitable cash contributions",
+        "draft_use": "Preserved for standard-vs-itemized review",
+    },
+    {
+        "key": "business_expenses",
+        "category": "Business",
+        "label": "Confirmed Schedule C expenses",
+        "draft_use": "Schedule C line 28",
+    },
+    {
+        "key": "candidate_business_expenses",
+        "category": "Business",
+        "label": "Candidate Schedule C expenses",
+        "draft_use": "Review only until confirmed",
+    },
+    {
+        "key": "deduction_amount",
+        "category": "Deductions",
+        "label": "Chosen deduction amount",
+        "draft_use": "Form 1040 line 12",
+    },
+    {
+        "key": "qbi_deduction",
+        "category": "Deductions",
+        "label": "Qualified business income deduction",
+        "draft_use": "Form 1040 line 15",
+    },
+    {
+        "key": "education_credit",
+        "category": "Credits",
+        "label": "Education credit",
+        "draft_use": "Form 1040 line 20",
+    },
+    {
+        "key": "clean_vehicle_credit",
+        "category": "Credits",
+        "label": "Clean vehicle credit",
+        "draft_use": "Form 1040 line 20",
+    },
+    {
+        "key": "clean_energy_credit",
+        "category": "Credits",
+        "label": "Clean energy credit",
+        "draft_use": "Form 1040 line 20",
+    },
+    {
+        "key": "child_tax_credit",
+        "category": "Credits",
+        "label": "Child tax credit",
+        "draft_use": "Form 1040 line 20",
+    },
+    {
+        "key": "other_nonrefundable_credits",
+        "category": "Credits",
+        "label": "Other nonrefundable credits",
+        "draft_use": "Form 1040 line 20",
+    },
+    {
+        "key": "tax_before_credits",
+        "category": "Tax",
+        "label": "Tax before credits",
+        "draft_use": "Form 1040 line 16",
+    },
+    {
+        "key": "federal_withholding",
+        "category": "Payments",
+        "label": "Federal income tax withholding",
+        "draft_use": "Form 1040 line 25a",
+    },
+    {
+        "key": "other_payments",
+        "category": "Payments",
+        "label": "Other payments",
+        "draft_use": "Form 1040 line 33",
+    },
+]
+
+
+def format_document_sources(sources: list[dict[str, Any]]) -> str:
+    if not sources:
+        return "TBD"
+    rendered = []
+    for source in sources:
+        source_ref = source.get("source_ref", "unknown")
+        doc_type = source.get("doc_type")
+        field_name = source.get("field")
+        parts = [f"`{source_ref}`"]
+        if doc_type:
+            parts.append(doc_type)
+        if field_name:
+            parts.append(field_name)
+        rendered.append(" / ".join(parts))
+    return "<br>".join(rendered)
+
+
+def format_rule_sources(sources: list[dict[str, str]]) -> str:
+    if not sources:
+        return "TBD"
+    return "<br>".join(f"[{source['title']}]({source['url']})" for source in sources)
+
+
+def build_fact_summary_rows(normalized: dict[str, Any]) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for item in FACT_SUMMARY_CONFIG:
+        value = fact_value(normalized, item["key"])
+        sources = fact_sources(normalized, item["key"])
+        if value == 0.0 and not sources:
+            continue
+        rows.append(
+            [
+                item["category"],
+                item["label"],
+                money(value),
+                format_document_sources(sources),
+                format_rule_sources(rule_citations(item["key"])),
+                item["draft_use"],
+            ]
+        )
+    return rows
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -279,6 +459,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         [item["form"], item["line"], item["label"], money(item["value"])]
         for item in line_items
     ]
+    fact_summary_rows = build_fact_summary_rows(normalized)
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
@@ -342,6 +523,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
         "",
+        "## Documented Tax Inputs",
+        "",
+        make_markdown_table(
+            ["Category", "Item", "Value", "Document Sources", "IRS Sources", "Draft Use"],
+            fact_summary_rows or [["None", "None", "$0.00", "None", "None", "None"]],
+        ),
+        "",
         "## Candidate Business Expenses",
         "",
         f"- Found candidate expense receipts totaling {money(candidate_business_expenses) if candidate_business_expenses else '$0.00'} that are not yet applied to Schedule C.",
@@ -386,8 +574,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
 def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
     rows: list[list[str]] = []
     for item in line_items:
-        doc_sources = ", ".join(src.get("source_ref", "unknown") for src in item.get("sources", [])) or "TBD"
-        rule_sources = ", ".join(src["title"] for src in item.get("rule_citations", [])) or "TBD"
+        doc_sources = format_document_sources(item.get("sources", []))
+        rule_sources = format_rule_sources(item.get("rule_citations", []))
         rows.append(
             [
                 item["form"],

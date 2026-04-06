@@ -167,6 +167,64 @@
       "line_20": 1800
     }
   },
+  "documented_adjustments_and_itemized_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 8600
+          }
+        },
+        {
+          "id": "1098-e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-e-servicer",
+          "fields": {
+            "student_loan_interest": 2300
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 9400
+          }
+        },
+        {
+          "id": "donation-bundle",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-bundle",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 7200
+      },
+      "user_request": "Gather the forms, keep the deduction decision visible, and draft what you can."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 78000,
+      "line_10": 2300
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
