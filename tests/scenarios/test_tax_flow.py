@@ -64,6 +64,15 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"| Form 1040 | 6a | Social Security benefits | ${expected['line_6a']:,.2f} |", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(
+                        f"| Form 1040 | 6b | Taxable Social Security benefits | ${expected['line_6b']:,.2f} |",
+                        federal_lines,
+                    )
+                if "line_9" in expected:
+                    self.assertIn(f"| Form 1040 | 9 | Total income | ${expected['line_9']:,.2f} |", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -93,6 +102,20 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_social_security_review_flow(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_flow")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Review the SSA-1099 benefits worksheet", artifacts["missing-items.md"])
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $18,000.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
+
+    def test_social_security_taxable_amount_reviewed(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_amount_reviewed")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertNotIn("Review the SSA-1099 benefits worksheet", artifacts["missing-items.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | $4,200.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 9 | Total income | $4,200.00 |", artifacts["federal-lines.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

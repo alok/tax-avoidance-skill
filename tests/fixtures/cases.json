@@ -135,6 +135,69 @@
       "line_3b": 1400
     }
   },
+  "social_security_review_flow": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-primary",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-primary",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Help me draft a return package with my Social Security benefits."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18000
+    }
+  },
+  "social_security_taxable_amount_reviewed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-primary",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-primary",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 4200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 300
+      },
+      "user_request": "Help me draft a return package with my Social Security benefits."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18000,
+      "line_6b": 4200,
+      "line_9": 4200
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
