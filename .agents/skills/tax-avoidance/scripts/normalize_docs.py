@@ -104,6 +104,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_candidates_total = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -177,6 +178,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if itemized_candidates_total > 0.0:
+            missing_items.append(
+                f"Detected at least ${itemized_candidates_total:,.2f} of itemized-deduction support from mortgage interest and cash donation documents. Confirm whether to use the standard deduction or keep gathering itemized categories."
+            )
+        if mortgage_interest > 0.0 or charitable_cash > 0.0:
+            missing_items.append(
+                "If you plan to itemize, gather the remaining categories that often matter most: state and local taxes, additional charitable receipts, and other deductible itemized expenses."
+            )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -291,6 +300,13 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "deduction_summary": {
+            "student_loan_interest": student_loan_interest,
+            "mortgage_interest": mortgage_interest,
+            "charitable_cash": charitable_cash,
+            "itemized_candidates_total": itemized_candidates_total,
+            "deduction_amount": deduction_amount if "deduction_amount" in answers else None,
+        },
         "facts": facts,
     }
     return normalized

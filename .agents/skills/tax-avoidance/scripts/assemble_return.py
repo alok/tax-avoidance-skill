@@ -316,6 +316,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_rows = [
+        ["Student loan interest adjustment", money(deduction_summary.get("student_loan_interest"))],
+        ["Mortgage interest documents found", money(deduction_summary.get("mortgage_interest"))],
+        ["Cash donation receipts found", money(deduction_summary.get("charitable_cash"))],
+        ["Visible itemized subtotal", money(deduction_summary.get("itemized_candidates_total"))],
+        ["Draft deduction amount in use", money(deduction_summary.get("deduction_amount"))],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +358,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Intake",
+        "",
+        make_markdown_table(["Component", "Value"], deduction_rows),
         "",
         "## State Follow-Up",
         "",
