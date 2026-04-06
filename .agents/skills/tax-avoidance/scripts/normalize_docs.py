@@ -104,6 +104,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    deduction_method_raw = str(answers.get("deduction_method", "")).strip().lower()
+    deduction_method = deduction_method_raw if deduction_method_raw in {"standard", "itemized"} else ""
+    itemized_support_documents = [
+        {
+            "id": document.get("id"),
+            "doc_type": document.get("doc_type"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "category": "Mortgage interest" if document.get("doc_type") == "1098" else "Cash donations",
+            "amount": safe_float(
+                document.get("fields", {}).get(
+                    "mortgage_interest" if document.get("doc_type") == "1098" else "cash_donations"
+                )
+            ),
+        }
+        for document in documents
+        if document.get("doc_type") in {"1098", "Donation Receipt"}
+    ]
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -120,6 +138,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    visible_itemized_total = mortgage_interest + charitable_cash
+    deduction_review_notes: list[str] = []
+    if deduction_method == "standard":
+        deduction_review_notes.append(
+            "The draft is marked as using the standard deduction. Itemized-supporting documents remain visible for review."
+        )
+    elif deduction_method == "itemized":
+        if visible_itemized_total == 0.0:
+            deduction_review_notes.append(
+                "The draft is marked as itemized, but no mortgage-interest or cash-donation support is visible yet."
+            )
+        elif deduction_amount and deduction_amount > visible_itemized_total:
+            deduction_review_notes.append(
+                f"The chosen itemized deduction exceeds visible mortgage-interest and cash-donation support by ${deduction_amount - visible_itemized_total:,.2f}."
+            )
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -176,7 +209,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if visible_itemized_total > 0.0:
+            missing_items.append(
+                f"Visible itemized-supporting documents currently total ${visible_itemized_total:,.2f}. Confirm whether to use the standard deduction or itemize, and provide the deduction amount for the draft return."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if deduction_method == "itemized":
+        if visible_itemized_total == 0.0:
+            missing_items.append(
+                "Upload itemized-deduction support such as mortgage-interest statements or donation receipts, or switch the draft to the standard deduction."
+            )
+        elif deduction_amount > visible_itemized_total:
+            missing_items.append(
+                f"The chosen itemized deduction of ${deduction_amount:,.2f} exceeds the currently visible mortgage-interest and cash-donation support by ${deduction_amount - visible_itemized_total:,.2f}. Add the remaining Schedule A support or reduce the draft deduction amount."
+            )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -289,6 +336,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_review": {
+            "method": deduction_method,
+            "chosen_amount": deduction_amount,
+            "visible_itemized_total": visible_itemized_total,
+            "categories": {
+                "mortgage_interest": mortgage_interest,
+                "cash_donations": charitable_cash,
+            },
+            "itemized_support_documents": itemized_support_documents,
+            "notes": deduction_review_notes,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

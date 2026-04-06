@@ -316,6 +316,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_review = normalized.get("deduction_review", {})
+    deduction_support_rows = [
+        ["Mortgage interest", money(deduction_review.get("categories", {}).get("mortgage_interest"))],
+        ["Cash donations", money(deduction_review.get("categories", {}).get("cash_donations"))],
+    ]
+    deduction_support_document_rows = [
+        [
+            document.get("doc_type") or "Unknown",
+            document.get("category") or "Unknown",
+            money(document.get("amount")),
+            document.get("source_ref") or "unknown",
+        ]
+        for document in deduction_review.get("itemized_support_documents", [])
+    ]
+    deduction_review_lines = [f"- {item}" for item in deduction_review.get("notes", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -337,6 +352,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["ID", "Type", "Source", "Reference", "Content Status", "Observed Fields"],
             inventory_rows or [["None", "None", "None", "None", "None", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        f"- Draft deduction method: {deduction_review.get('method') or 'Unspecified'}",
+        f"- Draft deduction amount: {money(deduction_review.get('chosen_amount'))}",
+        f"- Visible itemized support: {money(deduction_review.get('visible_itemized_total'))}",
+        "",
+        make_markdown_table(["Category", "Visible Amount"], deduction_support_rows),
+        "",
+        make_markdown_table(
+            ["Document Type", "Category", "Amount", "Source"],
+            deduction_support_document_rows or [["None", "None", "$0.00", "None"]],
+        ),
+        "",
+        *deduction_review_lines,
         "",
         "## Draft Federal Lines",
         "",

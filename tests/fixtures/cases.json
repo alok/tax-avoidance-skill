@@ -84,6 +84,56 @@
       "line_25a": 14800
     }
   },
+  "itemized_deduction_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-a",
+          "fields": {
+            "wages": 82000,
+            "federal_withholding": 9200
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 7800
+          }
+        },
+        {
+          "id": "donation-bundle",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-bundle",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_method": "itemized",
+        "deduction_amount": 20000,
+        "tax_before_credits": 8400
+      },
+      "user_request": "Show me whether my visible itemized support is enough for the draft deduction."
+    },
+    "expect": {
+      "status": "ok",
+      "visible_itemized_total": 9000
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,

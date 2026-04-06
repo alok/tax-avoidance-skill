@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Adds a deduction-review section that keeps visible mortgage-interest and cash-donation support separate from the chosen draft deduction, so standard-vs-itemized follow-up stays explicit.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -98,7 +99,8 @@ Primary command:
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.
-8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
+8. Keep deduction-path review explicit by showing visible itemized support separately from the chosen draft deduction amount.
+9. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
 
 ## Repository Layout
 
