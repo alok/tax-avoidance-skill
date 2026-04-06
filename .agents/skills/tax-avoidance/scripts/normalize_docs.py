@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_first_field,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -61,6 +62,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"SSA-1099"},
         "benefits",
+    )
+    candidate_ira_contributions, candidate_ira_sources = aggregate_numeric_first_field(
+        documents,
+        {"5498"},
+        ["ira_contributions", "traditional_ira_contributions"],
     )
     mortgage_interest, mortgage_interest_sources = aggregate_numeric(
         documents,
@@ -175,10 +181,23 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
+    candidate_itemized_total = mortgage_interest + charitable_cash
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if candidate_itemized_total > 0.0:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"Current documents show at least ${candidate_itemized_total:,.2f} of potential itemized deductions "
+                "from mortgage interest and cash donation receipts."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if candidate_ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            "Review the Form 5498 traditional IRA contribution evidence totaling "
+            f"${candidate_ira_contributions:,.2f} and confirm the deductible IRA amount, if any, before applying it."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -235,6 +254,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "candidate_ira_contributions": build_fact(
+            "candidate_ira_contributions",
+            candidate_ira_contributions,
+            candidate_ira_sources,
+        ),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",

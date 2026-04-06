@@ -280,11 +280,51 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    candidate_ira_contributions = fact_value(normalized, "candidate_ira_contributions")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
+    deduction_review_rows = [
+        [
+            "Form 5498 traditional IRA contributions",
+            money(candidate_ira_contributions),
+            "Needs deductible-amount confirmation" if candidate_ira_contributions else "Not present",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "candidate_ira_contributions"))
+            or "None",
+        ],
+        [
+            "Mortgage interest statements",
+            money(mortgage_interest),
+            "Use only if itemizing" if mortgage_interest else "Not present",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "mortgage_interest"))
+            or "None",
+        ],
+        [
+            "Cash donation receipts",
+            money(charitable_cash),
+            "Use only if itemizing" if charitable_cash else "Not present",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "charitable_cash")) or "None",
+        ],
+        [
+            "Applied IRA deduction in draft",
+            money(ira_deduction if fact_sources(normalized, "ira_contribution_deduction") else None),
+            "Applied from user-confirmed amount" if fact_sources(normalized, "ira_contribution_deduction") else "Awaiting review",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contribution_deduction"))
+            or "None",
+        ],
+        [
+            "Applied deduction amount in draft",
+            money(deduction_amount if fact_sources(normalized, "deduction_amount") else None),
+            "Applied in Form 1040 line 12" if fact_sources(normalized, "deduction_amount") else "Awaiting deduction-path decision",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "deduction_amount")) or "None",
+        ],
+    ]
     candidate_expense_rows = [
         [
             expense.get("document_date") or "unknown",
@@ -341,6 +381,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction And Adjustment Evidence",
+        "",
+        f"- Potential itemized-deduction evidence total: {money(mortgage_interest + charitable_cash) if (mortgage_interest + charitable_cash) else '$0.00'}",
+        "",
+        make_markdown_table(
+            ["Signal", "Amount", "Draft Status", "Sources"],
+            deduction_review_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",
