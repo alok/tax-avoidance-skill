@@ -167,6 +167,59 @@
       "line_20": 1800
     }
   },
+  "dependent_credit_follow_up": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 87000,
+            "federal_withholding": 9800
+          }
+        }
+      ],
+      "dependents": [
+        {
+          "label": "Ava",
+          "relationship": "daughter",
+          "months_in_home": 12,
+          "support_test_status": "taxpayer_provided_more_than_half",
+          "residency_test_status": "lived_with_taxpayer_more_than_half_year",
+          "taxpayer_intends_to_claim": true,
+          "child_tax_credit_candidate": true,
+          "ssn": "111-22-3333"
+        },
+        {
+          "label": "Max",
+          "relationship": "son",
+          "months_in_home": 12,
+          "support_test_status": "taxpayer_provided_more_than_half",
+          "residency_test_status": "lived_with_taxpayer_more_than_half_year",
+          "taxpayer_intends_to_claim": true,
+          "child_tax_credit_candidate": false,
+          "notes": "Expected to be reviewed for other dependent credit instead."
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 8400
+      },
+      "user_request": "Gather my tax docs and preserve dependent context."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 2
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

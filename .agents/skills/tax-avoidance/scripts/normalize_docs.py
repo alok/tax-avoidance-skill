@@ -32,6 +32,43 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def normalize_dependent_records(
+    dependents: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    normalized_dependents: list[dict[str, Any]] = []
+    redaction_notes: list[str] = []
+    for index, dependent in enumerate(dependents, start=1):
+        label = (
+            dependent.get("label")
+            or dependent.get("first_name")
+            or dependent.get("nickname")
+            or f"Dependent {index}"
+        )
+        normalized_dependent = {
+            "label": str(label),
+            "relationship": dependent.get("relationship", "unspecified"),
+            "months_in_home": int(dependent.get("months_in_home", 0) or 0),
+            "support_test_status": dependent.get("support_test_status", "unknown"),
+            "residency_test_status": dependent.get("residency_test_status", "unknown"),
+            "taxpayer_intends_to_claim": bool(dependent.get("taxpayer_intends_to_claim", True)),
+            "child_tax_credit_candidate": bool(dependent.get("child_tax_credit_candidate", False)),
+            "notes": dependent.get("notes", ""),
+        }
+        normalized_dependents.append(normalized_dependent)
+
+        private_fields = [
+            key
+            for key in ("ssn", "itin", "tax_id", "date_of_birth", "dob")
+            if dependent.get(key)
+        ]
+        if private_fields:
+            redaction_notes.append(
+                f"{normalized_dependent['label']}: omitted private identifiers ({', '.join(private_fields)}) from the public-safe dependent scaffold."
+            )
+
+    return normalized_dependents, redaction_notes
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,9 +76,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    dependents = payload.get("dependents", [])
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
+    normalized_dependents, dependent_redaction_notes = normalize_dependent_records(dependents)
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
@@ -179,6 +218,26 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if normalized_dependents and "child_tax_credit" not in answers:
+        candidate_labels = [
+            dependent["label"]
+            for dependent in normalized_dependents
+            if dependent.get("child_tax_credit_candidate")
+        ]
+        if candidate_labels:
+            missing_items.append(
+                "Review dependent credit eligibility for "
+                + ", ".join(candidate_labels)
+                + ", then provide the child tax credit or other dependent credit amount to use in the draft package."
+            )
+        else:
+            missing_items.append(
+                "Review dependent credit eligibility and provide any child tax credit or other dependent credit amount to use in the draft package."
+            )
+    if normalized_dependents and "dependent_credit_review_notes" not in answers:
+        missing_items.append(
+            "Document the dependent-credit review outcome, including age, residency, support, and filer intent, before treating any dependent-related credits as final."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -289,6 +348,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "dependent_summary": {
+            "count": len(normalized_dependents),
+            "records": normalized_dependents,
+            "child_tax_credit_candidates": sum(
+                1 for dependent in normalized_dependents if dependent.get("child_tax_credit_candidate")
+            ),
+            "redaction_notes": dependent_redaction_notes,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

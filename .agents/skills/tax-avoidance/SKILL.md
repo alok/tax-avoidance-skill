@@ -21,6 +21,7 @@ Supported:
 
 - Single or married-filing-jointly federal individual returns
 - Wage, contractor, and investment income
+- Public-safe household and dependent scaffolding without storing full SSNs in deterministic artifacts
 - Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows

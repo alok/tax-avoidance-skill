@@ -38,6 +38,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
     },
+    "child_tax_credit": {
+        "title": "Instructions for Schedule 8812 (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040s8--2025.pdf",
+    },
     "clean_vehicle_credit": {
         "title": "IRS Clean vehicle and energy credits",
         "url": "https://www.irs.gov/credits-deductions/clean-vehicle-and-energy-credits",

@@ -215,6 +215,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             + fact_sources(normalized, "other_nonrefundable_credits"),
             "rule_citations": rule_citations(
                 "education_credit",
+                "child_tax_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
             ),
@@ -295,6 +296,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    dependent_summary = normalized.get("dependent_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("label", ""),
+            dependent.get("relationship", ""),
+            str(dependent.get("months_in_home", "")),
+            dependent.get("support_test_status", ""),
+            dependent.get("residency_test_status", ""),
+            "Yes" if dependent.get("taxpayer_intends_to_claim") else "No",
+            "Yes" if dependent.get("child_tax_credit_candidate") else "No",
+            dependent.get("notes") or "",
+        ]
+        for dependent in dependent_summary.get("records", [])
+    ]
+    dependent_redaction_lines = [f"- {item}" for item in dependent_summary.get("redaction_notes", [])] or ["- None"]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -350,6 +366,27 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependent records captured: {dependent_summary.get('count', 0)}",
+        f"- Potential child tax credit candidates: {dependent_summary.get('child_tax_credit_candidates', 0)}",
+        "",
+        make_markdown_table(
+            [
+                "Label",
+                "Relationship",
+                "Months In Home",
+                "Support Test",
+                "Residency Test",
+                "Taxpayer Intends To Claim",
+                "CTC Candidate",
+                "Notes",
+            ],
+            dependent_rows or [["None", "None", "0", "None", "None", "None", "None", "None"]],
+        ),
+        "",
+        *dependent_redaction_lines,
         "",
         "## State Follow-Up",
         "",

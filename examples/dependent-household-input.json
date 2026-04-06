@@ -1,0 +1,58 @@
+{
+  "tax_year": 2025,
+  "filing_status": "married_filing_jointly",
+  "connectors": {
+    "gmail": true,
+    "google_drive": true
+  },
+  "documents": [
+    {
+      "id": "sample-w2-parent-a",
+      "doc_type": "W-2",
+      "source_type": "upload",
+      "source_ref": "upload://sample-w2-parent-a",
+      "fields": {
+        "wages": 92000.0,
+        "federal_withholding": 10400.0
+      }
+    },
+    {
+      "id": "sample-w2-parent-b",
+      "doc_type": "W-2",
+      "source_type": "upload",
+      "source_ref": "upload://sample-w2-parent-b",
+      "fields": {
+        "wages": 38000.0,
+        "federal_withholding": 3200.0
+      }
+    }
+  ],
+  "dependents": [
+    {
+      "label": "Older child",
+      "relationship": "daughter",
+      "months_in_home": 12,
+      "support_test_status": "taxpayer_provided_more_than_half",
+      "residency_test_status": "lived_with_taxpayer_more_than_half_year",
+      "taxpayer_intends_to_claim": true,
+      "child_tax_credit_candidate": true,
+      "notes": "Public-safe sample record; keep SSNs out of repo examples."
+    },
+    {
+      "label": "Younger child",
+      "relationship": "son",
+      "months_in_home": 12,
+      "support_test_status": "taxpayer_provided_more_than_half",
+      "residency_test_status": "lived_with_taxpayer_more_than_half_year",
+      "taxpayer_intends_to_claim": true,
+      "child_tax_credit_candidate": true
+    }
+  ],
+  "answers": {
+    "deduction_amount": 29200.0,
+    "tax_before_credits": 9900.0,
+    "child_tax_credit": 4000.0,
+    "dependent_credit_review_notes": "Both children lived with the taxpayers all year and are expected to be claimed on the joint return."
+  },
+  "user_request": "Build a sample joint return package with dependent scaffolding."
+}
