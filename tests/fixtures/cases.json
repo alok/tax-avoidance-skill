@@ -167,6 +167,54 @@
       "line_20": 1800
     }
   },
+  "itemized_deduction_scaffolding": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 118000,
+            "federal_withholding": 14100
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 12640
+          }
+        },
+        {
+          "id": "donation-cash",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-cash",
+          "fields": {
+            "cash_donations": 1800
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 11200
+      },
+      "user_request": "Use my docs to draft the return package and tell me what is missing."
+    },
+    "expect": {
+      "status": "ok",
+      "candidate_itemized_deductions": 14440
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

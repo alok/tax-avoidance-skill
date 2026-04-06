@@ -280,6 +280,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    deduction_review_rows = [
+        ["Draft deduction amount", money(fact_value(normalized, "deduction_amount"))],
+        ["Student loan interest deduction", money(fact_value(normalized, "student_loan_interest_deduction"))],
+        ["IRA deduction", money(fact_value(normalized, "ira_contribution_deduction"))],
+        ["HSA deduction", money(fact_value(normalized, "hsa_deduction"))],
+        ["Mortgage interest documents", money(fact_value(normalized, "mortgage_interest"))],
+        ["Charitable cash receipts", money(fact_value(normalized, "charitable_cash"))],
+        ["Candidate itemized deductions", money(fact_value(normalized, "candidate_itemized_deductions"))],
+    ]
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -341,6 +350,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        make_markdown_table(["Item", "Amount"], deduction_review_rows),
         "",
         "## Candidate Business Expenses",
         "",
