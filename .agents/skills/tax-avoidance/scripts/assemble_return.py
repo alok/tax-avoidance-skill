@@ -296,6 +296,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    deduction_review = normalized.get("deduction_review", {})
+    deduction_review_rows = [
+        [
+            candidate.get("label", ""),
+            money(candidate.get("value")),
+            money(candidate.get("confirmed_value")) if "confirmed_value" in candidate else "Review needed",
+            candidate.get("review_note", ""),
+            ", ".join(source.get("source_ref", "unknown") for source in candidate.get("sources", [])) or "unknown",
+        ]
+        for candidate in deduction_review.get("itemized_candidates", []) + deduction_review.get("adjustment_candidates", [])
+    ]
     state_rows = [
         [
             module.get("code", ""),
@@ -349,6 +360,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Review",
+        "",
+        make_markdown_table(
+            ["Candidate", "Observed Amount", "Confirmed Amount", "Review Note", "Sources"],
+            deduction_review_rows or [["None", "$0.00", "Review needed", "No deduction-sensitive documents found.", "None"]],
         ),
         "",
         "## State Follow-Up",

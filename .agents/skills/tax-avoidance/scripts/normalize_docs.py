@@ -32,6 +32,36 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def aggregate_numeric_fields(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: tuple[str, ...],
+) -> tuple[float, list[dict[str, Any]]]:
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        fields = document.get("fields", {})
+        for field_name in field_names:
+            value = safe_float(fields.get(field_name))
+            if value == 0.0:
+                continue
+            total += value
+            sources.append(
+                {
+                    "doc_id": document.get("id"),
+                    "doc_type": document.get("doc_type"),
+                    "source_type": document.get("source_type"),
+                    "source_ref": document.get("source_ref"),
+                    "dedupe_key": document.get("dedupe_key"),
+                    "field": field_name,
+                    "value": value,
+                }
+            )
+    return total, sources
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -104,6 +134,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_contribution_candidates, ira_candidate_sources = aggregate_numeric_fields(
+        documents,
+        {"5498"},
+        ("traditional_ira_contributions", "ira_contributions"),
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -116,9 +151,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
     child_tax_credit, child_tax_credit_sources = answer_fact(answers, "child_tax_credit")
+    student_loan_interest_answer, student_loan_interest_answer_sources = answer_fact(
+        answers,
+        "student_loan_interest_deduction",
+    )
     other_nonrefundable_credits, other_credit_sources = answer_fact(
         answers,
         "other_nonrefundable_credits",
+    )
+    student_loan_interest_deduction = (
+        student_loan_interest_answer if "student_loan_interest_deduction" in answers else 0.0
+    )
+    student_loan_interest_sources_for_return = (
+        student_loan_interest_answer_sources if "student_loan_interest_deduction" in answers else []
     )
 
     resident_state = normalize_state_code(state.get("resident_state"))
@@ -166,6 +211,54 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    deduction_review = {
+        "itemized_candidates": [],
+        "adjustment_candidates": [],
+    }
+
+    if mortgage_interest > 0.0:
+        deduction_review["itemized_candidates"].append(
+            {
+                "key": "mortgage_interest",
+                "label": "Mortgage interest from Form 1098",
+                "value": mortgage_interest,
+                "sources": mortgage_interest_sources,
+                "review_note": "Useful if you itemize deductions instead of taking the standard deduction.",
+            }
+        )
+    if charitable_cash > 0.0:
+        deduction_review["itemized_candidates"].append(
+            {
+                "key": "charitable_cash",
+                "label": "Cash charitable gifts from donation receipts",
+                "value": charitable_cash,
+                "sources": charitable_sources,
+                "review_note": "Useful if you itemize deductions and have the required receipt support.",
+            }
+        )
+    if student_loan_interest > 0.0:
+        deduction_review["adjustment_candidates"].append(
+            {
+                "key": "student_loan_interest_deduction",
+                "label": "Student loan interest from Form 1098-E",
+                "value": student_loan_interest,
+                "sources": student_loan_interest_sources,
+                "confirmed_value": student_loan_interest_deduction,
+                "review_note": "Confirm the deductible portion because MAGI limits can reduce or eliminate this deduction.",
+            }
+        )
+    if ira_contribution_candidates > 0.0:
+        deduction_review["adjustment_candidates"].append(
+            {
+                "key": "ira_contribution_deduction",
+                "label": "Traditional IRA contributions from Form 5498",
+                "value": ira_contribution_candidates,
+                "sources": ira_candidate_sources,
+                "confirmed_value": ira_deduction,
+                "review_note": "Confirm the deductible portion because IRA deductibility can depend on coverage and income limits.",
+            }
+        )
+
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -177,8 +270,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if deduction_review["itemized_candidates"] and "deduction_amount" not in answers:
+        itemized_summary = ", ".join(
+            f"{candidate['label']} ${candidate['value']:,.2f}"
+            for candidate in deduction_review["itemized_candidates"]
+        )
+        missing_items.append(
+            "Review the itemized-deduction candidates found in your documents "
+            f"({itemized_summary}) and confirm whether the draft should use the standard or itemized deduction."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        missing_items.append(
+            f"Confirm how much of the ${student_loan_interest:,.2f} student loan interest from Form 1098-E is deductible before applying it to the return."
+        )
+    if ira_contribution_candidates > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Confirm the deductible portion of the ${ira_contribution_candidates:,.2f} traditional IRA contributions reported on Form 5498."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -238,8 +348,8 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
-            student_loan_interest,
-            student_loan_interest_sources,
+            student_loan_interest_deduction,
+            student_loan_interest_sources_for_return,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
@@ -247,6 +357,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "ira_contribution_candidates": build_fact(
+            "ira_contribution_candidates",
+            ira_contribution_candidates,
+            ira_candidate_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
@@ -291,6 +406,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "deduction_review": deduction_review,
         "facts": facts,
     }
     return normalized

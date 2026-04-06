@@ -26,6 +26,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `federal-lines.md`
   - `missing-items.md`
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
+- Surfaces deduction-sensitive documents such as Forms 1098, 1098-E, 5498, and donation receipts in a dedicated review section so the user can confirm the deductible amount instead of relying on silent assumptions.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
 
