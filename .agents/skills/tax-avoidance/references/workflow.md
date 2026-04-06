@@ -21,7 +21,7 @@ For a plain Codex app user:
 4. Build a document inventory with source, doc type, and confidence.
 5. Ask only the missing questions needed for supported lines.
 6. Normalize everything into structured facts.
-7. Assemble the artifact set.
+7. Assemble the artifact set, including an adjustment-and-deduction review that makes the deduction path explicit.
 8. Flag unsupported complexity and illegal requests explicitly.
 
 ## Connector Priority

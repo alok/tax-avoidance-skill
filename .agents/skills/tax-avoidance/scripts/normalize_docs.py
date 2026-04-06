@@ -104,6 +104,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_deduction_total = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -176,7 +177,13 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if itemized_deduction_total > 0.0:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"Current itemized-deduction candidates total ${itemized_deduction_total:,.2f} from gathered documents."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -292,6 +299,44 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
+        "deduction_summary": {
+            "adjustments": [
+                {
+                    "key": "ira_contribution_deduction",
+                    "label": "IRA contribution deduction",
+                    "value": ira_deduction,
+                    "sources": ira_sources,
+                },
+                {
+                    "key": "hsa_deduction",
+                    "label": "HSA deduction",
+                    "value": hsa_deduction,
+                    "sources": hsa_sources,
+                },
+                {
+                    "key": "student_loan_interest_deduction",
+                    "label": "Student loan interest deduction",
+                    "value": student_loan_interest,
+                    "sources": student_loan_interest_sources,
+                },
+            ],
+            "itemized_candidates": [
+                {
+                    "key": "mortgage_interest",
+                    "label": "Mortgage interest",
+                    "value": mortgage_interest,
+                    "sources": mortgage_interest_sources,
+                },
+                {
+                    "key": "charitable_cash",
+                    "label": "Charitable cash contributions",
+                    "value": charitable_cash,
+                    "sources": charitable_sources,
+                },
+            ],
+            "itemized_candidate_total": itemized_deduction_total,
+            "selected_deduction_amount": deduction_amount,
+        },
     }
     return normalized
 

@@ -295,6 +295,25 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_summary = normalized.get("deduction_summary", {})
+    adjustment_rows = [
+        [
+            item.get("label", ""),
+            money(item.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "TBD",
+        ]
+        for item in deduction_summary.get("adjustments", [])
+    ]
+    itemized_candidate_rows = [
+        [
+            item.get("label", ""),
+            money(item.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "TBD",
+        ]
+        for item in deduction_summary.get("itemized_candidates", [])
+    ]
+    itemized_candidate_total = deduction_summary.get("itemized_candidate_total")
+    selected_deduction_amount = deduction_summary.get("selected_deduction_amount")
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -341,6 +360,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Adjustment And Deduction Review",
+        "",
+        f"- Selected deduction amount for the draft package: {money(selected_deduction_amount) if selected_deduction_amount else 'TBD'}",
+        f"- Itemized-deduction candidates found in documents: {money(itemized_candidate_total) if itemized_candidate_total else '$0.00'}",
+        "",
+        make_markdown_table(
+            ["Adjustment", "Value", "Sources"],
+            adjustment_rows or [["None", "$0.00", "None"]],
+        ),
+        "",
+        make_markdown_table(
+            ["Itemized Candidate", "Value", "Sources"],
+            itemized_candidate_rows or [["None", "$0.00", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",
