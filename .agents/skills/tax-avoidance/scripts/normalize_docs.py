@@ -50,6 +50,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1099-NEC"},
         "nonemployee_compensation",
     )
+    retirement_distributions, retirement_distribution_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "gross_distribution",
+    )
+    taxable_retirement_distributions, taxable_retirement_distribution_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "taxable_amount",
+        include_zero_sources=True,
+    )
     interest, interest_sources = aggregate_numeric(documents, {"1099-INT"}, "interest_income")
     dividends, dividends_sources = aggregate_numeric(documents, {"1099-DIV"}, "ordinary_dividends")
     capital_gains, capital_gains_sources = aggregate_numeric(
@@ -103,6 +114,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"Donation Receipt"},
         "cash_donations",
+    )
+    form_1099_withholding, form_1099_withholding_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "federal_withholding",
+        include_zero_sources=True,
     )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
@@ -183,6 +200,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    has_retirement_distribution = bool(retirement_distribution_sources)
+    has_taxable_retirement_distribution = bool(taxable_retirement_distribution_sources)
+    if has_retirement_distribution and not has_taxable_retirement_distribution:
+        missing_items.append(
+            "Confirm the taxable amount from each 1099-R or document whether part of the distribution was rolled over or otherwise nontaxable."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -230,7 +253,22 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             nonemployee_compensation,
             nonemployee_compensation_sources,
         ),
+        "retirement_distribution_gross": build_fact(
+            "retirement_distribution_gross",
+            retirement_distributions,
+            retirement_distribution_sources,
+        ),
+        "retirement_distribution_taxable": build_fact(
+            "retirement_distribution_taxable",
+            taxable_retirement_distributions,
+            taxable_retirement_distribution_sources,
+        ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "form_1099_withholding": build_fact(
+            "form_1099_withholding",
+            form_1099_withholding,
+            form_1099_withholding_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),

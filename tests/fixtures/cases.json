@@ -167,6 +167,82 @@
       "line_20": 1800
     }
   },
+  "retirement_distribution_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 66000,
+            "federal_withholding": 7200
+          }
+        },
+        {
+          "id": "1099-r-rollover",
+          "doc_type": "1099-R",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099-r-rollover",
+          "fields": {
+            "gross_distribution": 24000,
+            "taxable_amount": 12000,
+            "federal_withholding": 1800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 8900
+      },
+      "user_request": "Use my wage and retirement tax forms to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 66000,
+      "line_5a": 24000,
+      "line_5b": 12000,
+      "line_25a": 7200,
+      "line_25b": 1800
+    }
+  },
+  "retirement_distribution_missing_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "1099-r-missing-taxable",
+          "doc_type": "1099-R",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-r-missing-taxable",
+          "fields": {
+            "gross_distribution": 18500,
+            "federal_withholding": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Start the draft with my retirement distribution paperwork."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm the taxable amount from each 1099-R"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "retirement_distribution_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -60,6 +61,10 @@ class TaxFlowTest(unittest.TestCase):
                 federal_lines = artifacts["federal-lines.md"]
                 if "line_1a" in expected:
                     self.assertIn(f"${expected['line_1a']:,.2f}", federal_lines)
+                if "line_5a" in expected:
+                    self.assertIn(f"${expected['line_5a']:,.2f}", federal_lines)
+                if "line_5b" in expected:
+                    self.assertIn(f"${expected['line_5b']:,.2f}", federal_lines)
                 if "line_2b" in expected:
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
@@ -68,6 +73,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_25b" in expected:
+                    self.assertIn(f"${expected['line_25b']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -88,11 +95,25 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "retirement_distribution_missing_taxable_amount",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_retirement_distribution_follow_up(self) -> None:
+        normalized, artifacts = self.run_case("retirement_distribution_missing_taxable_amount")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("$18,500.00", artifacts["federal-lines.md"])
+        self.assertIn(
+            "Confirm the taxable amount from each 1099-R",
+            artifacts["missing-items.md"],
+        )
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

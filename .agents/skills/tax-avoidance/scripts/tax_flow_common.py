@@ -10,10 +10,19 @@ WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 RULE_SOURCES: dict[str, dict[str, str]] = {
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "form_1099_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "social_security_benefits": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
+    "retirement_distribution_gross": {
+        "title": "IRS Publication 575",
+        "url": "https://www.irs.gov/publications/p575",
+    },
+    "retirement_distribution_taxable": {
+        "title": "IRS Publication 575",
+        "url": "https://www.irs.gov/publications/p575",
+    },
     "ira_contribution_deduction": {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",
@@ -131,6 +140,8 @@ def aggregate_numeric(
     documents: list[dict[str, Any]],
     doc_types: set[str],
     field_name: str,
+    *,
+    include_zero_sources: bool = False,
 ) -> tuple[float, list[dict[str, Any]]]:
     def source_rank(document: dict[str, Any]) -> tuple[int, int]:
         content_status = document.get("content_status", "")
@@ -161,8 +172,11 @@ def aggregate_numeric(
     sources: list[dict[str, Any]] = []
     for document in grouped_documents:
         dedupe_key = document.get("dedupe_key")
-        value = safe_float(document.get("fields", {}).get(field_name))
-        if value == 0.0:
+        fields = document.get("fields", {})
+        if field_name not in fields:
+            continue
+        value = safe_float(fields.get(field_name))
+        if value == 0.0 and not include_zero_sources:
             continue
         total += value
         sources.append(

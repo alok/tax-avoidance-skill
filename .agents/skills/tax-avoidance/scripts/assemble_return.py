@@ -42,17 +42,29 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
+    retirement_distribution_gross = fact_value(normalized, "retirement_distribution_gross")
+    retirement_distribution_taxable = fact_value(normalized, "retirement_distribution_taxable")
     business_expenses = fact_value(normalized, "business_expenses")
     interest = fact_value(normalized, "taxable_interest")
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
     has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
+    has_retirement_distribution = bool(fact_sources(normalized, "retirement_distribution_gross"))
+    has_taxable_retirement_distribution = bool(fact_sources(normalized, "retirement_distribution_taxable"))
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = (
+        wages
+        + interest
+        + dividends
+        + capital_gains
+        + social_security
+        + (net_profit or 0.0)
+        + (retirement_distribution_taxable if has_taxable_retirement_distribution else 0.0)
+    )
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -75,8 +87,9 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
 
     withholding = fact_value(normalized, "federal_withholding")
+    form_1099_withholding = fact_value(normalized, "form_1099_withholding")
     other_payments = fact_value(normalized, "other_payments")
-    total_payments = withholding + other_payments
+    total_payments = withholding + form_1099_withholding + other_payments
 
     refund = None
     amount_owed = None
@@ -121,6 +134,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "5a",
+            "label": "Pensions and annuities",
+            "value": retirement_distribution_gross if has_retirement_distribution else None,
+            "sources": fact_sources(normalized, "retirement_distribution_gross"),
+            "rule_citations": rule_citations("retirement_distribution_gross"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "5b",
+            "label": "Taxable amount of pensions and annuities",
+            "value": retirement_distribution_taxable if has_taxable_retirement_distribution else None,
+            "sources": fact_sources(normalized, "retirement_distribution_taxable"),
+            "rule_citations": rule_citations("retirement_distribution_taxable"),
+        },
+        {
+            "form": "Form 1040",
             "line": "2b",
             "label": "Taxable interest",
             "value": interest or None,
@@ -151,6 +180,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "sources": [],
             "rule_citations": rule_citations(
                 "wages",
+                "retirement_distribution_taxable",
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
@@ -237,11 +267,21 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "25b",
+            "label": "Federal income tax withheld from Forms 1099",
+            "value": form_1099_withholding if fact_sources(normalized, "form_1099_withholding") else None,
+            "sources": fact_sources(normalized, "form_1099_withholding"),
+            "rule_citations": rule_citations("form_1099_withholding"),
+        },
+        {
+            "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
             "value": total_payments or None,
-            "sources": fact_sources(normalized, "federal_withholding") + fact_sources(normalized, "other_payments"),
-            "rule_citations": rule_citations("federal_withholding"),
+            "sources": fact_sources(normalized, "federal_withholding")
+            + fact_sources(normalized, "form_1099_withholding")
+            + fact_sources(normalized, "other_payments"),
+            "rule_citations": rule_citations("federal_withholding", "form_1099_withholding"),
         },
         {
             "form": "Form 1040",
