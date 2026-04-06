@@ -122,6 +122,18 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_estimated_and_extension_payments(self) -> None:
+        normalized, artifacts = self.run_case("estimated_and_extension_payments")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["estimated_tax_payments"]["value"], 2500)
+        self.assertEqual(normalized["facts"]["extension_payments"]["value"], 1200)
+        self.assertEqual(normalized["facts"]["other_payments"]["value"], 3700)
+        self.assertIn("$18,700.00", artifacts["federal-lines.md"])
+        self.assertIn("Estimated tax payments", artifacts["tax-dossier.md"])
+        self.assertIn("Extension payments", artifacts["tax-dossier.md"])
+        self.assertIn("drive://q1-estimated", artifacts["tax-dossier.md"])
+        self.assertIn("gmail://extension-paid", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

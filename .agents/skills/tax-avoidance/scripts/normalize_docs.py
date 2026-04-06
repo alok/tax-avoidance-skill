@@ -32,6 +32,35 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def aggregate_payment_documents(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+) -> tuple[float, list[dict[str, Any]]]:
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        fields = document.get("fields", {})
+        field_name = "payment_amount" if safe_float(fields.get("payment_amount")) != 0.0 else "amount"
+        value = safe_float(fields.get(field_name))
+        if value == 0.0:
+            continue
+        total += value
+        sources.append(
+            {
+                "doc_id": document.get("id"),
+                "doc_type": document.get("doc_type"),
+                "source_type": document.get("source_type"),
+                "source_ref": document.get("source_ref"),
+                "dedupe_key": document.get("dedupe_key"),
+                "field": field_name,
+                "value": value,
+            }
+        )
+    return total, sources
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -104,6 +133,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    estimated_tax_payments, estimated_tax_payment_sources = aggregate_payment_documents(
+        documents,
+        {"1040-ES Payment", "Estimated Tax Payment"},
+    )
+    extension_payments, extension_payment_sources = aggregate_payment_documents(
+        documents,
+        {"Extension Payment", "4868 Payment"},
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -111,7 +148,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
-    other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    user_reported_other_payments, user_reported_other_payment_sources = answer_fact(answers, "other_payments")
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
@@ -120,6 +157,35 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    other_payments = estimated_tax_payments + extension_payments + user_reported_other_payments
+    other_payments_sources = (
+        estimated_tax_payment_sources + extension_payment_sources + user_reported_other_payment_sources
+    )
+    payment_breakdown: list[dict[str, Any]] = []
+    if estimated_tax_payments or estimated_tax_payment_sources:
+        payment_breakdown.append(
+            {
+                "label": "Estimated tax payments",
+                "value": estimated_tax_payments,
+                "sources": estimated_tax_payment_sources,
+            }
+        )
+    if extension_payments or extension_payment_sources:
+        payment_breakdown.append(
+            {
+                "label": "Extension payments",
+                "value": extension_payments,
+                "sources": extension_payment_sources,
+            }
+        )
+    if user_reported_other_payments or user_reported_other_payment_sources:
+        payment_breakdown.append(
+            {
+                "label": "Other user-reported payments",
+                "value": user_reported_other_payments,
+                "sources": user_reported_other_payment_sources,
+            }
+        )
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -246,6 +312,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_business_expenses,
             candidate_expense_sources,
         ),
+        "estimated_tax_payments": build_fact(
+            "estimated_tax_payments",
+            estimated_tax_payments,
+            estimated_tax_payment_sources,
+        ),
+        "extension_payments": build_fact(
+            "extension_payments",
+            extension_payments,
+            extension_payment_sources,
+        ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
@@ -291,6 +367,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "payment_breakdown": payment_breakdown,
         "facts": facts,
     }
     return normalized
