@@ -356,6 +356,71 @@
       "state_text": "California state return support is planned but not yet automated."
     }
   },
+  "state_missing_context": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "sample-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://sample-w2",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 9700
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 8800
+      },
+      "user_request": "Prepare my return and keep track of anything still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm your resident state for the tax year."
+    }
+  },
+  "state_resident_only_confirmation": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "state": {
+        "resident_state": "CA"
+      },
+      "documents": [
+        {
+          "id": "sample-w2",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://sample-w2",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 9700
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 8800
+      },
+      "user_request": "Prepare my return and keep any later state follow-up visible."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm whether all wages and contractor work were sourced only to CA"
+    }
+  },
   "state_allocations": {
     "input": {
       "tax_year": 2025,

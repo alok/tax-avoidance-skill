@@ -25,9 +25,11 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+  - The dossier and missing-items artifact also surface unresolved state-intake questions when resident-state or work-state context is still missing.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Flags missing resident-state or work-state interview answers directly in the standard artifacts instead of pretending the intake is complete.
 
 ## Scope
 
@@ -94,7 +96,7 @@ Primary command:
 1. Check whether Gmail and Google Drive are available. If they are missing, ask the user to connect them immediately or upload PDFs.
 2. Search for likely tax documents using fixed, opinionated queries instead of asking the user to browse manually.
 3. Capture resident-state and work-state context as early as possible.
-4. Build a document inventory and ask the minimum remaining interview questions.
+4. Build a document inventory and ask the minimum remaining interview questions, including unresolved state-intake questions.
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.

@@ -315,7 +315,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for allocation in state_summary.get("allocations", [])
     ]
+    state_question_lines = [f"- {item}" for item in state_summary.get("questions", [])] or ["- None"]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    state_status = {
+        "needs_input": "Needs interview answers",
+        "needs_follow_up": "Ready for later state filing follow-up",
+        "complete": "State intake captured for this workflow",
+    }.get(state_summary.get("status"), "Unknown")
 
     sections = [
         "# Tax Dossier",
@@ -351,10 +357,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
         "",
-        "## State Follow-Up",
+        "## State Intake And Follow-Up",
         "",
+        f"- Intake status: {state_status}",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
         f"- Work states: {', '.join(state_summary.get('work_states', [])) or 'None provided'}",
+        "",
+        "### Outstanding State Questions",
+        "",
+        *state_question_lines,
         "",
         make_markdown_table(
             ["Code", "State", "Status", "Resident Form", "Nonresident Form", "Official Source"],
@@ -365,6 +376,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["State", "State Wages", "State Withholding"],
             state_allocation_rows or [["None", "$0.00", "$0.00"]],
         ),
+        "",
+        "### State Filing Follow-Up",
         "",
         *state_follow_up_lines,
         "",

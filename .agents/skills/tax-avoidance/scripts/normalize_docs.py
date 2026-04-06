@@ -123,6 +123,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
+    has_explicit_work_states = bool(work_states_raw)
     work_states: list[str] = []
     for item in work_states_raw:
         normalized = normalize_state_code(item)
@@ -145,6 +146,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     state_modules = [resolve_state_support(code) for code in work_states]
     state_modules = [module for module in state_modules if module is not None]
+    state_questions: list[str] = []
+    if not resident_state:
+        state_questions.append("Confirm your resident state for the tax year.")
+    has_income_documents = any(
+        document.get("doc_type") in {"W-2", "1099-NEC"}
+        for document in documents
+    )
+    if resident_state and has_income_documents and not has_explicit_work_states and not state_allocation_totals:
+        state_questions.append(
+            f"Confirm whether all wages and contractor work were sourced only to {resident_state}, or list any other work states that need later filing follow-up."
+        )
     state_follow_up: list[str] = []
     if resident_state:
         resident_module = resolve_state_support(resident_state)
@@ -187,6 +199,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    for question in state_questions:
+        if question not in missing_items:
+            missing_items.append(question)
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -277,8 +292,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
         "state_summary": {
+            "status": "needs_input" if state_questions else ("needs_follow_up" if state_follow_up else "complete"),
             "resident_state": resident_state,
             "work_states": work_states,
+            "questions": state_questions,
             "modules": state_modules,
             "follow_up": state_follow_up,
             "allocations": [

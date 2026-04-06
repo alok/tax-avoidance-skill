@@ -111,9 +111,24 @@ class TaxFlowTest(unittest.TestCase):
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")
         self.assertEqual(normalized["status"], "ok")
-        self.assertIn("State Follow-Up", artifacts["tax-dossier.md"])
+        self.assertIn("State Intake And Follow-Up", artifacts["tax-dossier.md"])
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
+
+    def test_state_intake_questions(self) -> None:
+        normalized, artifacts = self.run_case("state_missing_context")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["state_summary"]["status"], "needs_input")
+        self.assertIn("Confirm your resident state for the tax year.", normalized["state_summary"]["questions"])
+        self.assertIn("Outstanding State Questions", artifacts["tax-dossier.md"])
+        self.assertIn("Confirm your resident state for the tax year.", artifacts["missing-items.md"])
+
+    def test_state_resident_only_confirmation(self) -> None:
+        normalized, artifacts = self.run_case("state_resident_only_confirmation")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["state_summary"]["status"], "needs_input")
+        self.assertIn("Confirm whether all wages and contractor work were sourced only to CA", artifacts["missing-items.md"])
+        self.assertIn("Needs interview answers", artifacts["tax-dossier.md"])
 
     def test_state_allocations(self) -> None:
         normalized, artifacts = self.run_case("state_allocations")
@@ -139,6 +154,7 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Confirm your resident state for the tax year.", dossier)
             self.assertIn("$48,000.00", dossier)
 
 
