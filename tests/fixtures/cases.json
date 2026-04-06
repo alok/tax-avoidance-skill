@@ -196,7 +196,57 @@
     "expect": {
       "status": "ok",
       "schedule_c_line_1": 108000.0,
-      "schedule_c_line_31": 89658.47
+      "schedule_c_line_31": 89658.47,
+      "schedule_se_line_4c": 82799.6,
+      "schedule_se_line_12": 12668.34,
+      "schedule_1_line_15": 6334.17,
+      "line_10": 6334.17
+    }
+  },
+  "w2_and_schedule_c_side_gig": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 150000,
+            "social_security_wages": 150000,
+            "federal_withholding": 26000
+          }
+        },
+        {
+          "id": "1099-nec-side-gig",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-side-gig",
+          "fields": {
+            "nonemployee_compensation": 42000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 12000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 25500
+      },
+      "user_request": "Build my draft return with a W-2 job and side-gig income."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_31": 30000,
+      "schedule_se_line_4c": 27705,
+      "schedule_se_line_6": 26100,
+      "schedule_se_line_12": 4039.85,
+      "schedule_1_line_15": 2019.93
     }
   },
   "schedule_c_missing_expenses": {

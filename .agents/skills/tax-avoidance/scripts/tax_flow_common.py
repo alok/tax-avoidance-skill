@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,18 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "self_employment_tax": {
+        "title": "Instructions for Schedule SE (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
+    "deductible_half_self_employment_tax": {
+        "title": "Instructions for Schedule SE (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
+}
+
+SELF_EMPLOYMENT_SOCIAL_SECURITY_WAGE_BASE = {
+    2025: 176100.0,
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {
@@ -125,6 +138,10 @@ def safe_float(value: Any) -> float:
     if isinstance(value, (int, float)):
         return float(value)
     return float(str(value))
+
+
+def round_money(value: float) -> float:
+    return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
 def aggregate_numeric(
@@ -249,6 +266,74 @@ def money(value: Any) -> str:
     if value is None:
         return "TBD"
     return f"${float(value):,.2f}"
+
+
+def schedule_se_parameters(tax_year: int) -> dict[str, float]:
+    wage_base = SELF_EMPLOYMENT_SOCIAL_SECURITY_WAGE_BASE.get(tax_year, SELF_EMPLOYMENT_SOCIAL_SECURITY_WAGE_BASE[2025])
+    return {
+        "net_earnings_ratio": 0.9235,
+        "social_security_rate": 0.124,
+        "medicare_rate": 0.029,
+        "social_security_wage_base": wage_base,
+    }
+
+
+def compute_self_employment_summary(
+    *,
+    tax_year: int,
+    nonemployee_compensation: float,
+    business_expenses: float,
+    business_expenses_confirmed: bool,
+    w2_social_security_wages: float,
+    w2_social_security_wages_provisional: bool,
+) -> dict[str, Any]:
+    summary = {
+        "status": "not_applicable",
+        "schedule_c_net_profit": 0.0,
+        "net_earnings": 0.0,
+        "social_security_wage_base": schedule_se_parameters(tax_year)["social_security_wage_base"],
+        "w2_social_security_wages": round_money(w2_social_security_wages),
+        "remaining_social_security_wage_base": 0.0,
+        "social_security_taxable_earnings": 0.0,
+        "social_security_tax": 0.0,
+        "medicare_tax": 0.0,
+        "self_employment_tax": 0.0,
+        "deductible_half_self_employment_tax": 0.0,
+        "used_w2_wages_proxy": w2_social_security_wages_provisional,
+    }
+    if nonemployee_compensation <= 0.0:
+        return summary
+    if not business_expenses_confirmed:
+        summary["status"] = "pending_business_expenses"
+        return summary
+
+    params = schedule_se_parameters(tax_year)
+    net_profit = round_money(nonemployee_compensation - business_expenses)
+    summary["status"] = "computed"
+    summary["schedule_c_net_profit"] = net_profit
+    if net_profit <= 0.0:
+        return summary
+
+    net_earnings = round_money(net_profit * params["net_earnings_ratio"])
+    remaining_wage_base = round_money(max(params["social_security_wage_base"] - w2_social_security_wages, 0.0))
+    social_security_taxable_earnings = round_money(min(net_earnings, remaining_wage_base))
+    social_security_tax = round_money(social_security_taxable_earnings * params["social_security_rate"])
+    medicare_tax = round_money(net_earnings * params["medicare_rate"])
+    self_employment_tax = round_money(social_security_tax + medicare_tax)
+    deductible_half = round_money(self_employment_tax / 2.0)
+
+    summary.update(
+        {
+            "net_earnings": net_earnings,
+            "remaining_social_security_wage_base": remaining_wage_base,
+            "social_security_taxable_earnings": social_security_taxable_earnings,
+            "social_security_tax": social_security_tax,
+            "medicare_tax": medicare_tax,
+            "self_employment_tax": self_employment_tax,
+            "deductible_half_self_employment_tax": deductible_half,
+        }
+    )
+    return summary
 
 
 def summarize_fields(fields: dict[str, Any]) -> str:

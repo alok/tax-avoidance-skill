@@ -8,6 +8,7 @@
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
 - Common credits and review workflows: education-credit review, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
+- Basic Schedule SE scaffolding for self-employment tax, including net earnings, wage-base interaction, and deductible half-SE tax
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
 
 ## Supported Documents
@@ -30,6 +31,7 @@
 - options, RSUs, ESPP, or QSBS
 - trust or estate filings
 - multistate or international filings
+- optional Schedule SE methods, clergy/church employee edge cases, or advanced payroll adjustments
 - any concealment or falsification request
 
 ## Behavior On Unsupported Cases
