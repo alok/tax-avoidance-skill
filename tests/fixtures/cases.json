@@ -395,6 +395,70 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "social_security_requires_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Draft the return package with my Social Security benefits."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Determine the taxable portion of SSA-1099 benefits",
+      "line_6a": 18000
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 9000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Draft the return package with my Social Security benefits."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18000,
+      "line_6b": 9000,
+      "line_9": 9000
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,
