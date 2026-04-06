@@ -13,6 +13,7 @@ from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
+    compute_self_employment_summary,
     connector_notes,
     detect_illegal_request,
     detect_unsupported,
@@ -120,6 +121,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    has_business_expenses = bool(business_expense_sources) or business_expenses > 0.0
+    schedule_c_sources = nonemployee_compensation_sources + business_expense_sources
+    self_employment_summary = compute_self_employment_summary(
+        tax_year=tax_year,
+        filing_status=payload.get("filing_status", ""),
+        wages=wages,
+        nonemployee_compensation=nonemployee_compensation,
+        business_expenses=business_expenses,
+        has_business_expenses=has_business_expenses,
+    )
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -187,6 +198,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    for note in self_employment_summary.get("notes", []):
+        if "not yet modeled" in note or note.startswith("For MFJ returns"):
+            missing_items.append(note)
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -263,6 +277,26 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             other_nonrefundable_credits,
             other_credit_sources,
         ),
+        "schedule_c_net_profit": build_fact(
+            "schedule_c_net_profit",
+            safe_float(self_employment_summary.get("net_profit")),
+            schedule_c_sources,
+        ),
+        "self_employment_net_earnings": build_fact(
+            "self_employment_net_earnings",
+            safe_float(self_employment_summary.get("net_earnings")),
+            schedule_c_sources,
+        ),
+        "self_employment_tax": build_fact(
+            "self_employment_tax",
+            safe_float(self_employment_summary.get("self_employment_tax")),
+            schedule_c_sources,
+        ),
+        "deductible_self_employment_tax": build_fact(
+            "deductible_self_employment_tax",
+            safe_float(self_employment_summary.get("deductible_half")),
+            schedule_c_sources,
+        ),
     }
 
     normalized: dict[str, Any] = {
@@ -291,6 +325,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "self_employment_summary": self_employment_summary,
         "facts": facts,
     }
     return normalized

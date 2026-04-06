@@ -102,6 +102,17 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+SOCIAL_SECURITY_WAGE_BASE_BY_YEAR = {
+    2025: 176_100.0,
+}
+SELF_EMPLOYMENT_NET_EARNINGS_FACTOR = 0.9235
+SELF_EMPLOYMENT_SOCIAL_SECURITY_RATE = 0.124
+SELF_EMPLOYMENT_MEDICARE_RATE = 0.029
+SELF_EMPLOYMENT_FILING_THRESHOLD = 400.0
+ADDITIONAL_MEDICARE_THRESHOLDS = {
+    "single": 200_000.0,
+    "married_filing_jointly": 250_000.0,
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -303,3 +314,83 @@ def resolve_state_support(code: str | None) -> dict[str, str] | None:
         "nonresident_form": "Unknown",
         "source_url": "",
     }
+
+
+def compute_self_employment_summary(
+    *,
+    tax_year: int,
+    filing_status: str,
+    wages: float,
+    nonemployee_compensation: float,
+    business_expenses: float,
+    has_business_expenses: bool,
+) -> dict[str, Any]:
+    summary: dict[str, Any] = {
+        "net_profit": None,
+        "net_earnings": None,
+        "social_security_taxable_earnings": None,
+        "self_employment_tax": None,
+        "deductible_half": None,
+        "schedule_se_required": False,
+        "wage_base": SOCIAL_SECURITY_WAGE_BASE_BY_YEAR.get(tax_year),
+        "notes": [],
+    }
+    if nonemployee_compensation <= 0.0 or not has_business_expenses:
+        return summary
+
+    net_profit = nonemployee_compensation - business_expenses
+    summary["net_profit"] = net_profit
+    if net_profit <= 0.0:
+        summary["notes"].append(
+            "Net contractor profit is zero or below zero, so no self-employment tax is currently computed."
+        )
+        return summary
+
+    net_earnings = round(net_profit * SELF_EMPLOYMENT_NET_EARNINGS_FACTOR, 2)
+    summary["net_earnings"] = net_earnings
+    if net_earnings < SELF_EMPLOYMENT_FILING_THRESHOLD:
+        summary["notes"].append(
+            "Net earnings from self-employment are below the $400 Schedule SE filing threshold."
+        )
+        return summary
+
+    wage_base = summary["wage_base"]
+    if wage_base is None:
+        summary["notes"].append(
+            f"Self-employment tax wage-base support is not configured for tax year {tax_year}."
+        )
+        return summary
+
+    schedule_se_required = True
+    remaining_social_security_capacity = max(wage_base - wages, 0.0)
+    social_security_taxable_earnings = min(net_earnings, remaining_social_security_capacity)
+    social_security_tax = social_security_taxable_earnings * SELF_EMPLOYMENT_SOCIAL_SECURITY_RATE
+    medicare_tax = net_earnings * SELF_EMPLOYMENT_MEDICARE_RATE
+    self_employment_tax = round(social_security_tax + medicare_tax, 2)
+
+    summary["schedule_se_required"] = schedule_se_required
+    summary["social_security_taxable_earnings"] = round(social_security_taxable_earnings, 2)
+    summary["self_employment_tax"] = self_employment_tax
+    summary["deductible_half"] = round(self_employment_tax / 2.0, 2)
+
+    if wages >= wage_base:
+        summary["notes"].append(
+            "W-2 wages already reach the 2025 Social Security wage base, so only the Medicare portion of self-employment tax is included."
+        )
+    elif wages + net_earnings > wage_base:
+        summary["notes"].append(
+            "W-2 wages partially use the 2025 Social Security wage base, so the Social Security portion of self-employment tax is capped."
+        )
+
+    additional_medicare_threshold = ADDITIONAL_MEDICARE_THRESHOLDS.get(filing_status)
+    if additional_medicare_threshold is not None and wages + net_earnings > additional_medicare_threshold:
+        summary["notes"].append(
+            "Additional Medicare Tax may apply above the filing-status threshold and is not yet modeled in this scaffold."
+        )
+
+    if filing_status == "married_filing_jointly":
+        summary["notes"].append(
+            "For MFJ returns, confirm which spouse earned the contractor income because each spouse files a separate Schedule SE when both have self-employment earnings."
+        )
+
+    return summary

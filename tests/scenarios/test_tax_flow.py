@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "mfj_schedule_se_wage_cap",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -72,6 +73,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "schedule_se_tax" in expected:
+                    self.assertIn(f"${expected['schedule_se_tax']:,.2f}", federal_lines)
+                if "schedule_se_deduction" in expected:
+                    self.assertIn(f"${expected['schedule_se_deduction']:,.2f}", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -122,6 +127,21 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_self_employment_tax_scaffold(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_contractor")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("## Self-Employment Tax", artifacts["tax-dossier.md"])
+        self.assertIn("Schedule SE", artifacts["federal-lines.md"])
+        self.assertIn("$12,668.34", artifacts["tax-dossier.md"])
+        self.assertIn("$6,334.17", artifacts["federal-lines.md"])
+
+    def test_mfj_self_employment_review_notes(self) -> None:
+        normalized, artifacts = self.run_case("mfj_schedule_se_wage_cap")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Social Security wage base", artifacts["tax-dossier.md"])
+        self.assertIn("separate Schedule SE", artifacts["tax-dossier.md"])
+        self.assertIn("separate Schedule SE", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -139,6 +159,7 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Self-Employment Tax", dossier)
             self.assertIn("$48,000.00", dossier)
 
 
