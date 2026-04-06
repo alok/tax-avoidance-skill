@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "ira_5498_evidence",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -68,6 +69,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "ira_evidence" in expected:
+                    self.assertIn(f"${expected['ira_evidence']:,.2f}", artifacts["tax-dossier.md"])
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -101,6 +104,14 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_ira_5498_evidence_requires_confirmation(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_evidence")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contribution_evidence"]["value"], 4200)
+        self.assertEqual(normalized["facts"]["ira_contribution_deduction"]["value"], 0.0)
+        self.assertIn("traditional IRA contributions", artifacts["tax-dossier.md"])
+        self.assertIn("confirm how much is deductible", artifacts["missing-items.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
