@@ -17,6 +17,7 @@ from tax_flow_common import (  # noqa: E402
     detect_illegal_request,
     detect_unsupported,
     dump_json,
+    find_documents_missing_fields,
     load_json,
     normalize_state_code,
     resolve_state_support,
@@ -45,6 +46,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    retirement_distribution_gross, retirement_distribution_gross_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "gross_distribution",
+    )
+    retirement_distribution_taxable, retirement_distribution_taxable_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "taxable_amount",
+    )
+    other_federal_withholding, other_federal_withholding_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "federal_withholding",
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -183,6 +199,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    for document in find_documents_missing_fields(documents, {"1099-R"}, {"taxable_amount"}):
+        missing_items.append(
+            f"Confirm the taxable amount from box 2a for the 1099-R at {document.get('source_ref', 'unknown source')} before using the retirement distribution in the draft return."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -225,12 +245,27 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
+        "retirement_distribution_gross": build_fact(
+            "retirement_distribution_gross",
+            retirement_distribution_gross,
+            retirement_distribution_gross_sources,
+        ),
+        "retirement_distribution_taxable": build_fact(
+            "retirement_distribution_taxable",
+            retirement_distribution_taxable,
+            retirement_distribution_taxable_sources,
+        ),
         "nonemployee_compensation": build_fact(
             "nonemployee_compensation",
             nonemployee_compensation,
             nonemployee_compensation_sources,
         ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "other_federal_withholding": build_fact(
+            "other_federal_withholding",
+            other_federal_withholding,
+            other_federal_withholding_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),

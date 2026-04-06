@@ -135,6 +135,52 @@
       "line_3b": 1400
     }
   },
+  "retirement_distribution_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 72000,
+            "federal_withholding": 8700
+          }
+        },
+        {
+          "id": "1099-r-main",
+          "doc_type": "1099-R",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099-r-main",
+          "fields": {
+            "gross_distribution": 18000,
+            "taxable_amount": 15000,
+            "federal_withholding": 2200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 10400
+      },
+      "user_request": "Use my pension tax form too when building the draft return."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 72000,
+      "line_25a": 8700,
+      "line_4a": 18000,
+      "line_4b": 15000,
+      "line_25b": 2200
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
@@ -461,6 +507,36 @@
     "expect": {
       "status": "ok",
       "missing": "Download the actual Consolidated 1099"
+    }
+  },
+  "retirement_distribution_missing_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099-r-main",
+          "doc_type": "1099-R",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099-r-main",
+          "fields": {
+            "gross_distribution": 18000,
+            "federal_withholding": 2200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Draft the return package from the retirement form I uploaded."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm the taxable amount from box 2a"
     }
   },
   "duplicate_doc_sources": {

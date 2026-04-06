@@ -49,6 +49,7 @@ class TaxFlowTest(unittest.TestCase):
             "w2_single",
             "mfj_common_deductions",
             "investment_household",
+            "retirement_distribution_household",
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
@@ -64,10 +65,16 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_4a" in expected:
+                    self.assertIn(f"${expected['line_4a']:,.2f}", federal_lines)
+                if "line_4b" in expected:
+                    self.assertIn(f"${expected['line_4b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_25b" in expected:
+                    self.assertIn(f"${expected['line_25b']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -88,11 +95,19 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "retirement_distribution_missing_taxable_amount",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+                expected_missing = self.cases[name]["expect"].get("missing")
+                if expected_missing:
+                    self.assertIn(expected_missing, artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

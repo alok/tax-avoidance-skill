@@ -10,6 +10,18 @@ WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 RULE_SOURCES: dict[str, dict[str, str]] = {
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "retirement_distribution_gross": {
+        "title": "IRS Publication 17",
+        "url": "https://www.irs.gov/publications/p17",
+    },
+    "retirement_distribution_taxable": {
+        "title": "IRS Publication 17",
+        "url": "https://www.irs.gov/publications/p17",
+    },
+    "other_federal_withholding": {
+        "title": "IRS Publication 505",
+        "url": "https://www.irs.gov/publications/p505",
+    },
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
@@ -177,6 +189,21 @@ def aggregate_numeric(
             }
         )
     return total, sources
+
+
+def find_documents_missing_fields(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: set[str],
+) -> list[dict[str, Any]]:
+    missing_documents: list[dict[str, Any]] = []
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        fields = document.get("fields", {})
+        if any(field_name not in fields or fields.get(field_name) in (None, "") for field_name in field_names):
+            missing_documents.append(document)
+    return missing_documents
 
 
 def answer_fact(
