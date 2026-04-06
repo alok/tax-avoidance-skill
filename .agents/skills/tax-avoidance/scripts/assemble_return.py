@@ -316,6 +316,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_review = normalized.get("deduction_review", {})
+    deduction_rows = [
+        [
+            item.get("category", "Unknown"),
+            money(item.get("amount")),
+            ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "unknown",
+        ]
+        for item in deduction_review.get("itemized_candidates", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +350,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        f"- Chosen deduction amount: {money(deduction_review.get('chosen_amount'))}",
+        f"- Known itemized deduction evidence: {money(deduction_review.get('known_itemized_total'))}",
+        f"- Review note: {deduction_review.get('recommendation', 'None')}",
+        "",
+        make_markdown_table(
+            ["Category", "Amount", "Document Sources"],
+            deduction_rows or [["None", "$0.00", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",

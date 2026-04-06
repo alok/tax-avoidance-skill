@@ -122,6 +122,22 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_deduction_review_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("mfj_common_deductions")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_review"]["known_itemized_total"], 7800)
+        self.assertIn("## Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Mortgage interest", artifacts["tax-dossier.md"])
+        self.assertIn("Chosen deduction amount is higher than the known itemized evidence.", artifacts["tax-dossier.md"])
+
+    def test_itemized_deduction_missing_choice(self) -> None:
+        normalized, artifacts = self.run_case("itemized_deduction_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_review"]["known_itemized_total"], 10450)
+        self.assertIn("Known itemized-deduction evidence totals $10,450.00 so far.", artifacts["missing-items.md"])
+        self.assertIn("Charitable cash gifts", artifacts["tax-dossier.md"])
+        self.assertIn("Itemized deduction evidence exists, but the workflow still needs a standard-vs-itemized choice", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

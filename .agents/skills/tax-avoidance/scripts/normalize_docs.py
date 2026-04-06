@@ -32,6 +32,55 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_deduction_review(
+    *,
+    filing_status: str,
+    deduction_amount: float,
+    deduction_sources: list[dict[str, Any]],
+    mortgage_interest: float,
+    mortgage_interest_sources: list[dict[str, Any]],
+    charitable_cash: float,
+    charitable_sources: list[dict[str, Any]],
+) -> dict[str, Any]:
+    itemized_candidates = [
+        {
+            "category": "Mortgage interest",
+            "amount": mortgage_interest,
+            "sources": mortgage_interest_sources,
+        },
+        {
+            "category": "Charitable cash gifts",
+            "amount": charitable_cash,
+            "sources": charitable_sources,
+        },
+    ]
+    itemized_candidates = [item for item in itemized_candidates if item["amount"] > 0.0]
+    known_itemized_total = sum(item["amount"] for item in itemized_candidates)
+
+    recommendation = "Need deduction-path confirmation."
+    if deduction_sources:
+        if deduction_amount <= 0.0:
+            recommendation = "User confirmed a zero deduction amount; review before filing."
+        elif known_itemized_total <= 0.0:
+            recommendation = "Chosen deduction amount is present, but no itemized deduction evidence is in the current document set."
+        elif deduction_amount > known_itemized_total:
+            recommendation = "Chosen deduction amount is higher than the known itemized evidence. Confirm whether the return is using the standard deduction or whether more Schedule A support is still missing."
+        else:
+            recommendation = "Chosen deduction amount is backed by the currently known itemized evidence."
+    elif known_itemized_total > 0.0:
+        recommendation = "Itemized deduction evidence exists, but the workflow still needs a standard-vs-itemized choice and a draft deduction amount."
+    elif filing_status:
+        recommendation = "No deduction evidence has been gathered yet. Confirm whether the return should use the standard deduction or itemized deductions."
+
+    return {
+        "chosen_amount": deduction_amount,
+        "chosen_amount_sources": deduction_sources,
+        "known_itemized_total": known_itemized_total,
+        "itemized_candidates": itemized_candidates,
+        "recommendation": recommendation,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -166,6 +215,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    deduction_review = build_deduction_review(
+        filing_status=payload.get("filing_status", ""),
+        deduction_amount=deduction_amount,
+        deduction_sources=deduction_sources,
+        mortgage_interest=mortgage_interest,
+        mortgage_interest_sources=mortgage_interest_sources,
+        charitable_cash=charitable_cash,
+        charitable_sources=charitable_sources,
+    )
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -176,7 +234,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if deduction_review["known_itemized_total"] > 0.0:
+            missing_items.append(
+                f"Choose the deduction path and provide the deduction amount to use in the draft package. Known itemized-deduction evidence totals ${deduction_review['known_itemized_total']:,.2f} so far."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -292,6 +355,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
+        "deduction_review": deduction_review,
     }
     return normalized
 
