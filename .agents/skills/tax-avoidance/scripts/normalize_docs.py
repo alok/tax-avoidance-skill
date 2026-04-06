@@ -10,10 +10,12 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from tax_flow_common import (  # noqa: E402
+    STANDARD_DEDUCTION_AMOUNTS,
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
     connector_notes,
+    deduction_source,
     detect_illegal_request,
     detect_unsupported,
     dump_json,
@@ -30,6 +32,84 @@ def build_fact(
     sources: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {"key": key, "value": value, "sources": sources}
+
+
+def deduction_summary(
+    filing_status: str,
+    mortgage_interest: float,
+    mortgage_interest_sources: list[dict[str, Any]],
+    charitable_cash: float,
+    charitable_sources: list[dict[str, Any]],
+    deduction_amount: float,
+    deduction_sources: list[dict[str, Any]],
+    deduction_was_provided: bool,
+) -> dict[str, Any]:
+    standard_deduction = STANDARD_DEDUCTION_AMOUNTS.get(filing_status)
+    observed_itemized = mortgage_interest + charitable_cash
+    notes: list[str] = []
+
+    if deduction_was_provided:
+        notes.append("Deduction amount came from an explicit user answer and was not auto-recommended.")
+        return {
+            "strategy": "provided",
+            "amount": deduction_amount,
+            "standard_deduction": standard_deduction,
+            "observed_itemized": observed_itemized,
+            "needs_confirmation": False,
+            "rule_keys": ["itemized_deductions"] if observed_itemized else [],
+            "notes": notes,
+        }
+
+    if standard_deduction is None:
+        notes.append("No automatic deduction recommendation is available for this filing status.")
+        return {
+            "strategy": "unknown",
+            "amount": deduction_amount,
+            "standard_deduction": None,
+            "observed_itemized": observed_itemized,
+            "needs_confirmation": True,
+            "rule_keys": [],
+            "notes": notes,
+        }
+
+    if observed_itemized > standard_deduction:
+        notes.append(
+            "Observed mortgage-interest and charitable-giving documents already exceed the base standard deduction, so itemizing is currently favored."
+        )
+        notes.append("This itemized total is only a floor based on documents already gathered; other itemized categories may still be missing.")
+        if not deduction_sources:
+            deduction_sources.extend(mortgage_interest_sources + charitable_sources)
+        return {
+            "strategy": "itemized_observed",
+            "amount": observed_itemized,
+            "standard_deduction": standard_deduction,
+            "observed_itemized": observed_itemized,
+            "needs_confirmation": True,
+            "rule_keys": ["itemized_deductions"],
+            "notes": notes,
+        }
+
+    notes.append("The base standard deduction is currently larger than the itemized deductions observed in the gathered documents.")
+    notes.append(
+        "Confirm there is no dependent limitation and no age-65-or-blind additional standard-deduction amount before filing."
+    )
+    if not deduction_sources:
+        deduction_sources.append(
+            deduction_source(
+                "rule",
+                f"irs://standard-deduction/{filing_status}",
+                standard_deduction,
+            )
+        )
+    return {
+        "strategy": "standard",
+        "amount": standard_deduction,
+        "standard_deduction": standard_deduction,
+        "observed_itemized": observed_itemized,
+        "needs_confirmation": True,
+        "rule_keys": ["standard_deduction"],
+        "notes": notes,
+    }
 
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -108,6 +188,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
+    deduction_was_provided = "deduction_amount" in answers
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
@@ -175,7 +256,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
-    if deduction_amount == 0.0 and "deduction_amount" not in answers:
+    deduction_recommendation = deduction_summary(
+        payload.get("filing_status", ""),
+        mortgage_interest,
+        mortgage_interest_sources,
+        charitable_cash,
+        charitable_sources,
+        deduction_amount,
+        deduction_sources,
+        deduction_was_provided,
+    )
+    deduction_amount = float(deduction_recommendation["amount"] or 0.0)
+    if deduction_amount == 0.0 and not deduction_was_provided:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
@@ -291,6 +383,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "deduction_summary": deduction_recommendation,
         "facts": facts,
     }
     return normalized

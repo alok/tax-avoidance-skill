@@ -34,6 +34,14 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 526",
         "url": "https://www.irs.gov/publications/p526",
     },
+    "standard_deduction": {
+        "title": "IRS Publication 501",
+        "url": "https://www.irs.gov/publications/p501",
+    },
+    "itemized_deductions": {
+        "title": "IRS Publication 17",
+        "url": "https://www.irs.gov/publications/p17",
+    },
     "education_credit": {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
@@ -102,6 +110,11 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+
+STANDARD_DEDUCTION_AMOUNTS: dict[str, float] = {
+    "single": 15750.0,
+    "married_filing_jointly": 31500.0,
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -236,6 +249,20 @@ def connector_notes(connectors: dict[str, bool], documents: list[dict[str, Any]]
         notes.append("Upload fallback is active for at least one document.")
 
     return notes
+
+
+def deduction_source(
+    source_type: str,
+    source_ref: str,
+    value: float,
+    field: str = "deduction_amount",
+) -> dict[str, Any]:
+    return {
+        "source_type": source_type,
+        "source_ref": source_ref,
+        "field": field,
+        "value": value,
+    }
 
 
 def make_markdown_table(headers: list[str], rows: list[list[str]]) -> str:

@@ -61,6 +61,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
 
     agi = total_income - adjustments_total
     deduction_amount = fact_value(normalized, "deduction_amount")
+    deduction_summary = normalized.get("deduction_summary", {})
     qbi_deduction = fact_value(normalized, "qbi_deduction")
     taxable_income = max(agi - deduction_amount - qbi_deduction, 0.0) if deduction_amount else None
 
@@ -185,7 +186,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Standard or itemized deduction",
             "value": deduction_amount or None,
             "sources": fact_sources(normalized, "deduction_amount"),
-            "rule_citations": [],
+            "rule_citations": rule_citations(*deduction_summary.get("rule_keys", [])),
         },
         {
             "form": "Form 1040",
@@ -280,6 +281,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_notes = [f"- {note}" for note in deduction_summary.get("notes", [])] or ["- None"]
+    deduction_strategy_labels = {
+        "provided": "User-provided amount",
+        "standard": "Auto-recommended standard deduction",
+        "itemized_observed": "Auto-recommended itemized deduction",
+        "unknown": "No recommendation available",
+    }
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -341,6 +350,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Recommendation",
+        "",
+        f"- Strategy: {deduction_strategy_labels.get(deduction_summary.get('strategy', ''), 'Unknown')}",
+        f"- Draft deduction amount: {money(deduction_summary.get('amount'))}",
+        f"- Base standard deduction: {money(deduction_summary.get('standard_deduction'))}",
+        f"- Observed itemized deductions from gathered docs: {money(deduction_summary.get('observed_itemized'))}",
+        f"- Needs confirmation: {'Yes' if deduction_summary.get('needs_confirmation') else 'No'}",
+        "",
+        *deduction_notes,
         "",
         "## Candidate Business Expenses",
         "",

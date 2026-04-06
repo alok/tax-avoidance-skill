@@ -20,7 +20,6 @@
         }
       ],
       "answers": {
-        "deduction_amount": 15000,
         "tax_before_credits": 14000
       },
       "user_request": "Help me do my taxes with the docs you can find."
@@ -28,6 +27,7 @@
     "expect": {
       "status": "ok",
       "line_1a": 95000,
+      "line_12": 15750,
       "line_25a": 14000
     }
   },
@@ -82,6 +82,56 @@
       "status": "ok",
       "line_1a": 133000,
       "line_25a": 14800
+    }
+  },
+  "itemized_deduction_recommendation": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-itemized",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-itemized",
+          "fields": {
+            "wages": 112000,
+            "federal_withholding": 17000
+          }
+        },
+        {
+          "id": "1098-itemized",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-itemized",
+          "fields": {
+            "mortgage_interest": 14800
+          }
+        },
+        {
+          "id": "donation-itemized",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-itemized",
+          "fields": {
+            "cash_donations": 2200
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 18200
+      },
+      "user_request": "Draft my return and use the deduction path that best fits the docs you found."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 112000,
+      "line_12": 17000,
+      "line_25a": 17000
     }
   },
   "investment_household": {

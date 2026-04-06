@@ -48,6 +48,7 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "w2_single",
             "mfj_common_deductions",
+            "itemized_deduction_recommendation",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -66,12 +67,27 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "line_12" in expected:
+                    self.assertIn(f"${expected['line_12']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_deduction_recommendations(self) -> None:
+        normalized, artifacts = self.run_case("w2_single")
+        self.assertEqual(normalized["deduction_summary"]["strategy"], "standard")
+        self.assertEqual(normalized["facts"]["deduction_amount"]["value"], 15750)
+        self.assertIn("Auto-recommended standard deduction", artifacts["tax-dossier.md"])
+        self.assertIn("Confirm there is no dependent limitation", artifacts["tax-dossier.md"])
+
+        normalized, artifacts = self.run_case("itemized_deduction_recommendation")
+        self.assertEqual(normalized["deduction_summary"]["strategy"], "itemized_observed")
+        self.assertEqual(normalized["facts"]["deduction_amount"]["value"], 17000)
+        self.assertIn("Auto-recommended itemized deduction", artifacts["tax-dossier.md"])
+        self.assertIn("Observed mortgage-interest and charitable-giving documents already exceed the base standard deduction", artifacts["tax-dossier.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
