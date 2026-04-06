@@ -295,6 +295,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_rows = [
+        ["Mortgage interest documents", money(deduction_summary.get("mortgage_interest"))],
+        ["Charitable cash receipts", money(deduction_summary.get("charitable_cash"))],
+        ["Observed itemized support total", money(deduction_summary.get("observed_itemized_support"))],
+        ["Student loan interest deduction support", money(deduction_summary.get("student_loan_interest"))],
+        ["Chosen deduction amount", money(fact_value(normalized, "deduction_amount"))],
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -350,6 +358,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Support",
+        "",
+        make_markdown_table(
+            ["Category", "Amount"],
+            deduction_rows,
+        ),
+        "",
+        "- Observed itemized support is an intake aid only. It highlights mortgage-interest and charitable-receipt documents already found, but it is not a full Schedule A computation.",
+        "- Student loan interest is shown separately because it is an above-the-line adjustment, not an itemized deduction.",
         "",
         "## State Follow-Up",
         "",
