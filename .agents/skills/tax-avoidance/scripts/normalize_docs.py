@@ -32,6 +32,181 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_interview_questions(
+    *,
+    payload: dict[str, Any],
+    documents: list[dict[str, Any]],
+    answers: dict[str, Any],
+    tax_year: int,
+    nonemployee_compensation: float,
+    candidate_business_expenses: float,
+    resident_state: str | None,
+    state_follow_up: list[str],
+) -> list[dict[str, Any]]:
+    questions: list[dict[str, Any]] = []
+
+    def add_question(
+        question_id: str,
+        prompt: str,
+        reason: str,
+        *,
+        priority: str = "normal",
+        source_refs: list[str] | None = None,
+    ) -> None:
+        questions.append(
+            {
+                "id": question_id,
+                "prompt": prompt,
+                "reason": reason,
+                "priority": priority,
+                "source_refs": source_refs or [],
+            }
+        )
+
+    document_types = {document.get("doc_type") for document in documents}
+
+    def document_source_ref(document: dict[str, Any]) -> str:
+        return str(document.get("source_ref", "unknown"))
+
+    if not payload.get("filing_status"):
+        add_question(
+            "filing-status",
+            f"What filing status should the {tax_year} federal return use?",
+            "Filing status drives the supported return path and downstream line mapping.",
+            priority="high",
+        )
+
+    if "deduction_amount" not in answers:
+        deduction_reason = "The draft package needs a deduction amount before taxable income can be mapped."
+        if "1098" in document_types:
+            deduction_reason = "A 1098 is present, so the draft needs a standard-versus-itemized deduction decision."
+        add_question(
+            "deduction-path",
+            "Should this draft use the standard deduction or an itemized deduction total, and what amount should be used?",
+            deduction_reason,
+            priority="high",
+        )
+
+    if "tax_before_credits" not in answers:
+        add_question(
+            "tax-before-credits",
+            "What tax-before-credits figure should be used for the draft package, or should the tax lines stay marked for manual review?",
+            "The current flow does not compute tax tables on its own, so the draft needs an explicit review choice here.",
+            priority="high",
+        )
+
+    if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
+        add_question(
+            "schedule-c-expenses",
+            "What deductible business expenses should be applied to the 1099-NEC work, or should they be treated as zero?",
+            "Schedule C net profit cannot be finalized until business expenses are confirmed.",
+            priority="high",
+            source_refs=[
+                document_source_ref(document)
+                for document in documents
+                if document.get("doc_type") == "1099-NEC"
+            ],
+        )
+
+    if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
+        add_question(
+            "candidate-expenses-review",
+            "Which candidate business-expense receipts belong on Schedule C, and which should be excluded?",
+            "Candidate receipts were found, but they should not be applied automatically without user confirmation.",
+            priority="high",
+            source_refs=[
+                document_source_ref(document)
+                for document in documents
+                if document.get("doc_type") == "Expense Receipt"
+            ],
+        )
+
+    if "1098-E" in document_types and "student_loan_interest_deduction" not in answers:
+        add_question(
+            "student-loan-interest",
+            "How much student loan interest from the 1098-E should be treated as deductible for this draft?",
+            "A 1098-E is present, but the current draft has no confirmed student loan interest deduction.",
+            source_refs=[
+                document_source_ref(document)
+                for document in documents
+                if document.get("doc_type") == "1098-E"
+            ],
+        )
+
+    if "5498" in document_types and "ira_contribution_deduction" not in answers:
+        add_question(
+            "ira-deduction",
+            "What IRA contribution deduction should be used after considering workplace retirement coverage and deduction limits?",
+            "A 5498 suggests IRA contribution activity, but the deductible amount still needs confirmation.",
+            source_refs=[
+                document_source_ref(document)
+                for document in documents
+                if document.get("doc_type") == "5498"
+            ],
+        )
+
+    if any(
+        document.get("doc_type") == "1099-B" and "capital_gains" not in document.get("fields", {})
+        for document in documents
+    ):
+        add_question(
+            "capital-gains-summary",
+            "What net capital gain or loss summary should be used from the 1099-B support documents?",
+            "The workflow can use summarized 1099-B results, but it still needs a net gain or loss figure.",
+            source_refs=[
+                document_source_ref(document)
+                for document in documents
+                if document.get("doc_type") == "1099-B"
+            ],
+        )
+
+    if state_follow_up and not resident_state:
+        add_question(
+            "resident-state",
+            "Which state was your resident state for the return year?",
+            "State allocations or multistate indicators were found, and resident-state context is missing.",
+            source_refs=[],
+        )
+
+    for document in documents:
+        content_status = document.get("content_status")
+        if content_status == "portal_notice_only":
+            add_question(
+                f"actual-{document.get('id', 'document')}",
+                f"Can you provide the actual {document.get('doc_type', 'tax form')} PDF for {document.get('source_ref', 'this source')}?",
+                "A portal notice is not enough to support extraction or line mapping.",
+                priority="high",
+                source_refs=[document.get("source_ref", "unknown")],
+            )
+        elif content_status == "unreadable_encrypted_attachment":
+            add_question(
+                f"decrypt-{document.get('id', 'document')}",
+                f"Can you upload or unlock the actual {document.get('doc_type', 'tax form')} from {document.get('source_ref', 'this source')}?",
+                "The attachment exists, but its contents are not readable in the current workflow.",
+                priority="high",
+                source_refs=[document.get("source_ref", "unknown")],
+            )
+        elif content_status == "metadata_only":
+            fields = document.get("fields", {})
+            if fields:
+                add_question(
+                    f"confirm-{document.get('id', 'document')}",
+                    f"Can you confirm the extracted {document.get('doc_type', 'tax form')} details from {document.get('source_ref', 'this source')} against the actual form?",
+                    "Only metadata is available, so the extracted numbers still need confirmation before they are used.",
+                    source_refs=[document.get("source_ref", "unknown")],
+                )
+            else:
+                add_question(
+                    f"contents-{document.get('id', 'document')}",
+                    f"Can you provide the actual contents for {document.get('doc_type', 'this document')} from {document.get('source_ref', 'this source')}?",
+                    "The workflow only has metadata right now and cannot extract supported line items from it.",
+                    priority="high",
+                    source_refs=[document.get("source_ref", "unknown")],
+                )
+
+    return questions
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -165,6 +340,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    interview_questions = build_interview_questions(
+        payload=payload,
+        documents=documents,
+        answers=answers,
+        tax_year=tax_year,
+        nonemployee_compensation=nonemployee_compensation,
+        candidate_business_expenses=candidate_business_expenses,
+        resident_state=resident_state,
+        state_follow_up=state_follow_up,
+    )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -291,6 +477,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "interview_questions": interview_questions,
         "facts": facts,
     }
     return normalized

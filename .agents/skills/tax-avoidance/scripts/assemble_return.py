@@ -316,6 +316,23 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    interview_lines = normalized.get("interview_questions", [])
+    interview_sections: list[str] = ["## Next Interview Questions", ""]
+    if interview_lines:
+        for question in interview_lines:
+            prompt = question.get("prompt", "Question missing")
+            reason = question.get("reason", "No reason recorded.")
+            priority = question.get("priority", "normal")
+            sources = ", ".join(question.get("source_refs", [])) or "none"
+            interview_sections.extend(
+                [
+                    f"- [{priority}] {prompt}",
+                    f"  Reason: {reason}",
+                    f"  Sources: {sources}",
+                ]
+            )
+    else:
+        interview_sections.append("- None")
 
     sections = [
         "# Tax Dossier",
@@ -367,6 +384,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ),
         "",
         *state_follow_up_lines,
+        "",
+        *interview_sections,
         "",
         "## Missing Items",
         "",

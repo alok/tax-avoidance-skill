@@ -80,6 +80,13 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Upload fallback is active", notes)
         self.assertIn("upload://upload-w2", artifacts["tax-dossier.md"])
 
+    def test_metadata_only_question_queue(self) -> None:
+        normalized, artifacts = self.run_case("metadata_only_tax_docs")
+        self.assertEqual(normalized["status"], "ok")
+        prompts = [question["prompt"] for question in normalized["interview_questions"]]
+        self.assertTrue(any("actual Consolidated 1099 PDF" in prompt for prompt in prompts))
+        self.assertIn("A portal notice is not enough", artifacts["tax-dossier.md"])
+
     def test_unsupported_cases(self) -> None:
         for name in ("unsupported_complex_equity",):
             with self.subTest(name=name):
@@ -101,6 +108,11 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+        prompts = [question["prompt"] for question in normalized["interview_questions"]]
+        self.assertTrue(
+            any("candidate business-expense receipts belong on Schedule C" in prompt for prompt in prompts)
+        )
+        self.assertIn("## Next Interview Questions", artifacts["tax-dossier.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
