@@ -14,6 +14,7 @@ from tax_flow_common import (  # noqa: E402
     aggregate_numeric,
     categorize_expense_vendor,
     connector_notes,
+    describe_w2_box12,
     detect_illegal_request,
     detect_unsupported,
     dump_json,
@@ -104,6 +105,26 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    w2_box12_entries: list[dict[str, Any]] = []
+    hsa_payroll_contributions = 0.0
+    for document in documents:
+        if document.get("doc_type") != "W-2":
+            continue
+        for raw_item in document.get("fields", {}).get("box12_codes", []):
+            detail = describe_w2_box12(raw_item.get("code"))
+            amount = safe_float(raw_item.get("amount"))
+            entry = {
+                "doc_id": document.get("id"),
+                "source_ref": document.get("source_ref"),
+                "code": detail["code"],
+                "label": detail["label"],
+                "category": detail["category"],
+                "guidance": detail["guidance"],
+                "amount": amount,
+            }
+            w2_box12_entries.append(entry)
+            if detail["code"] == "W":
+                hsa_payroll_contributions += amount
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -182,6 +203,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
+        )
+    if hsa_payroll_contributions > 0.0 and "hsa_deduction" not in answers:
+        missing_items.append(
+            "Review whether you made any personal HSA contributions outside payroll. Employer and payroll HSA contributions already shown on the W-2 should not be deducted again."
+        )
+    if hsa_payroll_contributions > 0.0 and "hsa_deduction" in answers:
+        missing_items.append(
+            "Verify that the HSA deduction answer excludes employer or payroll HSA contributions already reported on the W-2."
         )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
@@ -291,6 +320,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "w2_box12_summary": {
+            "entries": w2_box12_entries,
+            "totals_by_code": [
+                {
+                    "code": code,
+                    "label": entries[0]["label"],
+                    "category": entries[0]["category"],
+                    "amount": sum(item["amount"] for item in entries),
+                    "guidance": entries[0]["guidance"],
+                }
+                for code, entries in sorted(
+                    {
+                        code: [item for item in w2_box12_entries if item["code"] == code]
+                        for code in {item["code"] for item in w2_box12_entries}
+                    }.items()
+                )
+            ],
+        },
         "facts": facts,
     }
     return normalized

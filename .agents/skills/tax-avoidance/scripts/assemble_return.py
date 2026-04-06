@@ -316,6 +316,27 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    w2_box12_summary = normalized.get("w2_box12_summary", {})
+    payroll_total_rows = [
+        [
+            item.get("code", ""),
+            item.get("label", ""),
+            item.get("category", ""),
+            money(item.get("amount")),
+            item.get("guidance", ""),
+        ]
+        for item in w2_box12_summary.get("totals_by_code", [])
+    ]
+    payroll_entry_rows = [
+        [
+            item.get("doc_id", "") or "unknown",
+            item.get("source_ref", "") or "unknown",
+            item.get("code", ""),
+            item.get("label", ""),
+            money(item.get("amount")),
+        ]
+        for item in w2_box12_summary.get("entries", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +362,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## W-2 Payroll Summary",
+        "",
+        make_markdown_table(
+            ["Code", "Label", "Category", "Total", "Guidance"],
+            payroll_total_rows or [["None", "None", "None", "$0.00", "No W-2 Box 12 payroll items captured."]],
+        ),
+        "",
+        make_markdown_table(
+            ["Document", "Source", "Code", "Label", "Amount"],
+            payroll_entry_rows or [["None", "None", "None", "None", "$0.00"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",

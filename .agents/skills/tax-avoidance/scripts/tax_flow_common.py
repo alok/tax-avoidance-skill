@@ -10,6 +10,7 @@ WIKIPEDIA_EVASION = "https://en.wikipedia.org/wiki/Tax_evasion"
 RULE_SOURCES: dict[str, dict[str, str]] = {
     "wages": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "federal_withholding": {"title": "IRS Publication 505", "url": "https://www.irs.gov/publications/p505"},
+    "w2_box12": {"title": "About Form W-2", "url": "https://www.irs.gov/forms-pubs/about-form-w-2"},
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
@@ -61,6 +62,54 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
     "schedule_se": {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
+}
+
+W2_BOX12_CODES: dict[str, dict[str, str]] = {
+    "D": {
+        "label": "401(k) elective deferrals",
+        "category": "Retirement",
+        "guidance": "Employee 401(k) deferrals are usually already reflected in Box 1 wages and should be preserved for planning and review.",
+    },
+    "E": {
+        "label": "403(b) salary reduction contributions",
+        "category": "Retirement",
+        "guidance": "403(b) payroll deferrals are typically already reflected in W-2 wages.",
+    },
+    "F": {
+        "label": "408(k)(6) SEP contributions",
+        "category": "Retirement",
+        "guidance": "SEP salary reduction amounts on the W-2 should be preserved for review.",
+    },
+    "G": {
+        "label": "457(b) deferred compensation",
+        "category": "Retirement",
+        "guidance": "Governmental or tax-exempt 457(b) payroll deferrals are typically already reflected in W-2 wages.",
+    },
+    "S": {
+        "label": "SIMPLE retirement contributions",
+        "category": "Retirement",
+        "guidance": "SIMPLE payroll deferrals are typically already reflected in W-2 wages.",
+    },
+    "AA": {
+        "label": "Roth 401(k) contributions",
+        "category": "Retirement",
+        "guidance": "Roth 401(k) contributions are after-tax payroll deferrals and should be preserved for review.",
+    },
+    "BB": {
+        "label": "Roth 403(b) contributions",
+        "category": "Retirement",
+        "guidance": "Roth 403(b) contributions are after-tax payroll deferrals and should be preserved for review.",
+    },
+    "DD": {
+        "label": "Employer-sponsored health coverage cost",
+        "category": "Health Coverage",
+        "guidance": "Code DD is informational only and does not itself create a deduction on the federal return.",
+    },
+    "W": {
+        "label": "Employer HSA contributions",
+        "category": "HSA",
+        "guidance": "Employer and payroll HSA contributions should be tracked separately from any personal HSA deduction to avoid double counting.",
     },
 }
 
@@ -302,4 +351,17 @@ def resolve_state_support(code: str | None) -> dict[str, str] | None:
         "resident_form": "Unknown",
         "nonresident_form": "Unknown",
         "source_url": "",
+    }
+
+
+def describe_w2_box12(code: str | None) -> dict[str, str]:
+    normalized = (code or "").strip().upper()
+    detail = W2_BOX12_CODES.get(normalized)
+    if detail:
+        return {"code": normalized, **detail}
+    return {
+        "code": normalized or "UNKNOWN",
+        "label": "Unmapped W-2 Box 12 code",
+        "category": "Other",
+        "guidance": "Preserve this Box 12 entry and review the official W-2 instructions before using it in the return workflow.",
     }

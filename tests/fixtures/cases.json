@@ -84,6 +84,43 @@
       "line_25a": 14800
     }
   },
+  "w2_box12_payroll_items": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-payroll",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-payroll",
+          "fields": {
+            "wages": 118000,
+            "federal_withholding": 20500,
+            "box12_codes": [
+              { "code": "D", "amount": 12500 },
+              { "code": "W", "amount": 1800 },
+              { "code": "DD", "amount": 7200 }
+            ]
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 18100
+      },
+      "user_request": "Draft my W-2 return and keep the payroll deductions visible."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 118000,
+      "line_25a": 20500
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,

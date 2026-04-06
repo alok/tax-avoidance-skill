@@ -48,6 +48,7 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "w2_single",
             "mfj_common_deductions",
+            "w2_box12_payroll_items",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -114,6 +115,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Follow-Up", artifacts["tax-dossier.md"])
         self.assertIn("California state return support is planned but not yet automated.", artifacts["tax-dossier.md"])
         self.assertIn("Multiple work states are present.", artifacts["missing-items.md"])
+
+    def test_w2_box12_summary(self) -> None:
+        normalized, artifacts = self.run_case("w2_box12_payroll_items")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("W-2 Payroll Summary", artifacts["tax-dossier.md"])
+        self.assertIn("401(k) elective deferrals", artifacts["tax-dossier.md"])
+        self.assertIn("Employer HSA contributions", artifacts["tax-dossier.md"])
+        self.assertIn("Employer-sponsored health coverage cost", artifacts["tax-dossier.md"])
+        self.assertIn("$1,800.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Employer and payroll HSA contributions already shown on the W-2 should not be deducted again.",
+            artifacts["missing-items.md"],
+        )
 
     def test_state_allocations(self) -> None:
         normalized, artifacts = self.run_case("state_allocations")
