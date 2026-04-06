@@ -55,6 +55,24 @@
         "amount": 48.0,
         "vendor": "GitHub"
       }
+    },
+    {
+      "id": "sample-1098",
+      "doc_type": "1098",
+      "source_type": "upload",
+      "source_ref": "upload://sample-1098",
+      "fields": {
+        "mortgage_interest": 7600.0
+      }
+    },
+    {
+      "id": "sample-donation-summary",
+      "doc_type": "Donation Receipt",
+      "source_type": "upload",
+      "source_ref": "upload://sample-donation-summary",
+      "fields": {
+        "cash_donations": 900.0
+      }
     }
   ],
   "answers": {
@@ -62,5 +80,5 @@
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
-  "user_request": "Build a sample contractor plus investment return package."
+  "user_request": "Build a sample contractor plus investment return package and show the deduction decision scaffold."
 }

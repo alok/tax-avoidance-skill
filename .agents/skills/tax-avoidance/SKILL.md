@@ -68,6 +68,7 @@ Every completed run should yield:
 - `federal-lines.md`: line-by-line draft for supported federal lines
 - `missing-items.md`: unresolved fields, absent documents, and unsupported complexity
 - The dossier should separately surface **candidate business-expense receipts** that still need user confirmation before they are applied to Schedule C.
+- The dossier should also surface any documented itemized-deduction candidates, so line 12 is not finalized before the user chooses a deduction path.
 
 Every nontrivial tax statement must cite an IRS source. Every extracted value must cite the originating document, email, file, or upload.
 

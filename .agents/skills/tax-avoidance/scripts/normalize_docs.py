@@ -104,6 +104,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_candidate_components = [
+        {
+            "label": "Mortgage interest",
+            "key": "mortgage_interest",
+            "value": mortgage_interest,
+            "sources": mortgage_interest_sources,
+        },
+        {
+            "label": "Cash charitable donations",
+            "key": "charitable_cash",
+            "value": charitable_cash,
+            "sources": charitable_sources,
+        },
+    ]
+    itemized_candidate_components = [
+        component for component in itemized_candidate_components if component["value"] > 0.0
+    ]
+    itemized_candidate_total = sum(component["value"] for component in itemized_candidate_components)
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -176,7 +194,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if itemized_candidate_total > 0.0:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. Known itemized-deduction documents were found and are summarized below."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -288,6 +311,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     "withholding": totals["withholding"],
                 }
                 for code, totals in sorted(state_allocation_totals.items())
+            ],
+        },
+        "deduction_summary": {
+            "itemized_candidate_total": itemized_candidate_total,
+            "itemized_candidate_components": itemized_candidate_components,
+            "notes": [
+                "Only documented itemized-deduction categories supported in this public scaffold are shown here.",
+                "Use this section to decide whether the return should use the standard deduction or an itemized amount before finalizing line 12.",
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,

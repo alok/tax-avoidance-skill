@@ -295,6 +295,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_summary = normalized.get("deduction_summary", {})
+    itemized_rows = [
+        [
+            component.get("label", ""),
+            money(component.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in component.get("sources", [])) or "unknown",
+        ]
+        for component in deduction_summary.get("itemized_candidate_components", [])
+    ]
+    deduction_notes = [f"- {note}" for note in deduction_summary.get("notes", [])] or ["- None"]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -350,6 +360,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Itemized Deduction Scaffold",
+        "",
+        f"- Documented itemized-deduction candidates found so far: {money(deduction_summary.get('itemized_candidate_total'))}",
+        "",
+        make_markdown_table(
+            ["Category", "Amount", "Document Sources"],
+            itemized_rows or [["None yet", "$0.00", "None"]],
+        ),
+        "",
+        *deduction_notes,
         "",
         "## State Follow-Up",
         "",
