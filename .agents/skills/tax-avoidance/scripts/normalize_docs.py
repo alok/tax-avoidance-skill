@@ -116,6 +116,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
     child_tax_credit, child_tax_credit_sources = answer_fact(answers, "child_tax_credit")
+    taxable_social_security, taxable_social_security_sources = answer_fact(
+        answers,
+        "social_security_taxable_amount",
+    )
     other_nonrefundable_credits, other_credit_sources = answer_fact(
         answers,
         "other_nonrefundable_credits",
@@ -183,6 +187,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    if social_security > 0.0 and "social_security_taxable_amount" not in answers:
+        missing_items.append(
+            "Determine the taxable portion of Social Security benefits before finalizing Form 1040 line 6b and total income."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -235,6 +243,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "taxable_social_security_benefits": build_fact(
+            "taxable_social_security_benefits",
+            taxable_social_security,
+            taxable_social_security_sources,
+        ),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",

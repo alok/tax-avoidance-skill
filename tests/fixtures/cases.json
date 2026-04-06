@@ -563,6 +563,92 @@
       "unsupported": "Equity compensation"
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 18000
+          }
+        },
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 40000,
+            "federal_withholding": 3500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 4200
+      },
+      "user_request": "Use my wage and Social Security forms to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 40000,
+      "line_6a": 18000,
+      "line_9": 40000
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 18000
+          }
+        },
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 40000,
+            "federal_withholding": 3500
+          }
+        }
+      ],
+      "answers": {
+        "social_security_taxable_amount": 9000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 4200
+      },
+      "user_request": "Use my wage and Social Security forms to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 40000,
+      "line_6a": 18000,
+      "line_6b": 9000,
+      "line_9": 49000
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,
