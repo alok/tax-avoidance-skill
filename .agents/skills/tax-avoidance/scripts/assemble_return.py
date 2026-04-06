@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    itemized_summary = normalized.get("itemized_deduction_summary", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    itemized_rows = [
+        [
+            candidate.get("label", ""),
+            money(candidate.get("value")),
+            ", ".join(source.get("source_ref", "unknown") for source in candidate.get("sources", [])) or "unknown",
+        ]
+        for candidate in itemized_summary.get("candidates", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -349,6 +358,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Itemized Deduction Candidates",
+        "",
+        f"- Observed itemized-deduction candidates total {money(itemized_summary.get('total_candidates')) if itemized_summary else '$0.00'} and are shown for review only until Form 1040 line 12 is finalized.",
+        "",
+        make_markdown_table(
+            ["Category", "Amount", "Document Sources"],
+            itemized_rows or [["None", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",

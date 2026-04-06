@@ -104,6 +104,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_deduction_candidates = [
+        {
+            "key": "mortgage_interest",
+            "label": "Mortgage interest",
+            "value": mortgage_interest,
+            "sources": mortgage_interest_sources,
+        },
+        {
+            "key": "charitable_cash",
+            "label": "Cash charitable donations",
+            "value": charitable_cash,
+            "sources": charitable_sources,
+        },
+    ]
+    itemized_deduction_candidates = [
+        candidate for candidate in itemized_deduction_candidates if candidate["value"] > 0.0
+    ]
+    itemized_deduction_total = sum(candidate["value"] for candidate in itemized_deduction_candidates)
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -177,6 +195,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if itemized_deduction_total > 0.0 and "deduction_amount" not in answers:
+        missing_items.append(
+            f"Compare the standard deduction against the current itemized-deduction candidates totaling ${itemized_deduction_total:,.2f} before finalizing Form 1040 line 12."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -289,6 +311,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "itemized_deduction_summary": {
+            "total_candidates": itemized_deduction_total,
+            "candidates": itemized_deduction_candidates,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

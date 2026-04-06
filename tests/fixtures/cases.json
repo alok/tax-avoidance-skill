@@ -228,6 +228,54 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "itemized_deduction_candidates": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 84000,
+            "federal_withholding": 9800
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 8200
+          }
+        },
+        {
+          "id": "donation-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-1",
+          "fields": {
+            "cash_donations": 600
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 10400
+      },
+      "user_request": "Help me gather my deduction documents before I pick standard or itemized."
+    },
+    "expect": {
+      "status": "ok",
+      "itemized_total": 8800
+    }
+  },
   "schedule_c_candidate_expenses": {
     "input": {
       "tax_year": 2025,
