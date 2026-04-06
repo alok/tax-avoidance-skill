@@ -32,6 +32,24 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def make_interview_question(
+    question_id: str,
+    prompt: str,
+    rationale: str,
+    source_refs: list[str] | None = None,
+) -> dict[str, Any]:
+    refs = []
+    for source_ref in source_refs or []:
+        if source_ref and source_ref not in refs:
+            refs.append(source_ref)
+    return {
+        "id": question_id,
+        "prompt": prompt,
+        "rationale": rationale,
+        "source_refs": refs,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -166,6 +184,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    next_questions: list[dict[str, Any]] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -173,25 +192,109 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     }
     if not payload.get("filing_status"):
         missing_items.append("Confirm the filing status for the return.")
+        next_questions.append(
+            make_interview_question(
+                "filing-status",
+                "What filing status should this draft use: single or married filing jointly?",
+                "The filing status drives the deduction, tax brackets, and which downstream interview steps apply.",
+            )
+        )
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
+        next_questions.append(
+            make_interview_question(
+                "document-intake",
+                "Can you connect Gmail and Google Drive or upload at least one tax form PDF to start the draft?",
+                "The workflow cannot assemble a return package without at least one primary tax document.",
+            )
+        )
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        deduction_prompt = "Choose the deduction path and provide the deduction amount to use in the draft package."
+        deduction_refs: list[str] = []
+        itemized_clues: list[str] = []
+        if mortgage_interest > 0.0:
+            itemized_clues.append(f"mortgage interest of ${mortgage_interest:,.2f}")
+            deduction_refs.extend(source.get("source_ref", "") for source in mortgage_interest_sources)
+        if charitable_cash > 0.0:
+            itemized_clues.append(f"cash donations of ${charitable_cash:,.2f}")
+            deduction_refs.extend(source.get("source_ref", "") for source in charitable_sources)
+        if student_loan_interest > 0.0:
+            deduction_refs.extend(source.get("source_ref", "") for source in student_loan_interest_sources)
+        if itemized_clues:
+            deduction_prompt = (
+                "Choose whether this draft should use the standard deduction or an itemized deduction, "
+                f"then provide the amount to carry on Form 1040 line 12. Current document clues show {' and '.join(itemized_clues)}."
+            )
+        missing_items.append(deduction_prompt)
+        next_questions.append(
+            make_interview_question(
+                "deduction-amount",
+                deduction_prompt,
+                "The draft package cannot finish taxable income without a deduction amount. Mortgage-interest or donation documents may justify an itemized path.",
+                deduction_refs,
+            )
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+        next_questions.append(
+            make_interview_question(
+                "tax-before-credits",
+                "Do you want to supply a tax-before-credits figure now, or should this draft leave Form 1040 tax lines marked for manual review?",
+                "This repo assembles a prefilled package, but it does not yet compute the full tax from first principles.",
+            )
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
-        missing_items.append(
+        schedule_c_prompt = (
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+        missing_items.append(schedule_c_prompt)
+        next_questions.append(
+            make_interview_question(
+                "schedule-c-expenses",
+                schedule_c_prompt,
+                "Schedule C net profit cannot be drafted safely until the workflow knows whether deductible expenses exist.",
+                [source.get("source_ref", "") for source in nonemployee_compensation_sources],
+            )
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
-        missing_items.append(
+        review_prompt = (
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
+        )
+        missing_items.append(review_prompt)
+        next_questions.append(
+            make_interview_question(
+                "candidate-business-expenses",
+                review_prompt,
+                "The workflow found likely business receipts, but it should not silently turn them into deductions without user confirmation.",
+                [source.get("source_ref", "") for source in candidate_expense_sources],
+            )
         )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
+    if len(work_states) > 1:
+        next_questions.append(
+            make_interview_question(
+                "state-follow-up",
+                "Which state is your resident return, and should the draft preserve separate wage sourcing for each listed work state?",
+                "Multistate context is stored now so a later state-return flow can reuse the withholding and sourcing details.",
+                work_states,
+            )
+        )
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+        next_questions.append(
+            make_interview_question(
+                "capital-gains-summary",
+                "What net capital gain or loss should this draft use from the 1099-B support documents?",
+                "Brokerage packages often need a summarized capital-gains figure before Form 1040 line 7 can be drafted.",
+                [
+                    document.get("source_ref", "")
+                    for document in documents
+                    if document.get("doc_type") == "1099-B"
+                ],
+            )
+        )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -200,21 +303,55 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         if dedupe_key and dedupe_key in available_dedupe_keys and content_status != "available":
             continue
         if content_status == "portal_notice_only":
-            missing_items.append(
+            prompt = (
                 f"Download the actual {doc_type} from {source_ref}; the current source is only a portal or availability notice."
             )
+            missing_items.append(prompt)
+            next_questions.append(
+                make_interview_question(
+                    f"document-{document.get('id', 'unknown')}",
+                    prompt,
+                    "A portal notice proves the form exists, but the draft needs the actual numbers from the underlying PDF or statement.",
+                    [source_ref],
+                )
+            )
         elif content_status == "unreadable_encrypted_attachment":
-            missing_items.append(
+            prompt = (
                 f"Open or upload the actual {doc_type} from {source_ref}; the attachment exists but its contents were not readable in this workflow."
+            )
+            missing_items.append(prompt)
+            next_questions.append(
+                make_interview_question(
+                    f"document-{document.get('id', 'unknown')}",
+                    prompt,
+                    "The workflow found the attachment but could not read the figures, so the actual document still needs a human-visible copy.",
+                    [source_ref],
+                )
             )
         elif content_status == "metadata_only":
             if document.get("fields"):
-                missing_items.append(
+                prompt = (
                     f"Confirm the extracted {doc_type} details from {source_ref} against the actual filed form or PDF before using them in a return draft."
                 )
+                missing_items.append(prompt)
+                next_questions.append(
+                    make_interview_question(
+                        f"document-{document.get('id', 'unknown')}",
+                        prompt,
+                        "Metadata can be directionally useful, but the final draft should still be checked against the actual form.",
+                        [source_ref],
+                    )
+                )
             else:
-                missing_items.append(
-                    f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
+                prompt = f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
+                missing_items.append(prompt)
+                next_questions.append(
+                    make_interview_question(
+                        f"document-{document.get('id', 'unknown')}",
+                        prompt,
+                        "The workflow knows the document exists, but it still needs the actual figures before they can be used in the draft.",
+                        [source_ref],
+                    )
                 )
 
     status = "ok"
@@ -276,6 +413,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "next_questions": next_questions,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

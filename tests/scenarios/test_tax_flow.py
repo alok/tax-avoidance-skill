@@ -88,11 +88,26 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "deduction_interview_scaffold",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_next_question_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("deduction_interview_scaffold")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertTrue(normalized["next_questions"])
+        prompts = "\n".join(question["prompt"] for question in normalized["next_questions"])
+        self.assertIn("standard deduction or an itemized deduction", prompts)
+        self.assertIn("drive://1098-home", json.dumps(normalized["next_questions"]))
+        self.assertIn("## Next Questions", artifacts["missing-items.md"])
+        self.assertIn("Mortgage-interest or donation documents may justify an itemized path.", artifacts["tax-dossier.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

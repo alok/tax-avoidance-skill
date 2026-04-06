@@ -84,6 +84,54 @@
       "line_25a": 14800
     }
   },
+  "deduction_interview_scaffold": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-a",
+          "fields": {
+            "wages": 92000,
+            "federal_withholding": 10500
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 12600
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-receipt",
+          "fields": {
+            "cash_donations": 1800
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9800
+      },
+      "user_request": "Use my docs and tell me the next questions for finishing the draft."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Choose whether this draft should use the standard deduction or an itemized deduction"
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,
