@@ -122,6 +122,20 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_ira_5498_review_scaffold(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_review_scaffold")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["traditional_ira_contributions"]["value"], 6500)
+        self.assertIn(
+            self.cases["ira_5498_review_scaffold"]["expect"]["missing"],
+            artifacts["missing-items.md"],
+        )
+        self.assertIn(
+            self.cases["ira_5498_review_scaffold"]["expect"]["dossier"],
+            artifacts["tax-dossier.md"],
+        )
+        self.assertIn("drive://ira-5498", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

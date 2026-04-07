@@ -280,6 +280,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    traditional_ira_contributions = fact_value(normalized, "traditional_ira_contributions")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -317,6 +319,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
 
+    retirement_review_section: list[str] = []
+    if traditional_ira_contributions or ira_deduction or fact_sources(normalized, "traditional_ira_contributions"):
+        retirement_review_section = [
+            "## Retirement Contribution Review",
+            "",
+            f"- Form 5498 traditional IRA contributions found: {money(traditional_ira_contributions) if traditional_ira_contributions else '$0.00'}",
+            f"- IRA deduction currently applied on the draft return: {money(ira_deduction) if ira_deduction else '$0.00'}",
+            f"- Contribution evidence sources: {', '.join(src.get('source_ref', 'unknown') for src in fact_sources(normalized, 'traditional_ira_contributions')) or 'None'}",
+            "",
+        ]
+
     sections = [
         "# Tax Dossier",
         "",
@@ -351,6 +364,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
         "",
+        *retirement_review_section,
         "## State Follow-Up",
         "",
         f"- Resident state: {state_summary.get('resident_state') or 'None provided'}",
