@@ -426,6 +426,85 @@
       "connector_note": "Upload fallback is active"
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099",
+          "fields": {
+            "benefits": 18600
+          }
+        },
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-part-time",
+          "fields": {
+            "wages": 12500,
+            "federal_withholding": 800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Draft my return package and keep Social Security support in view."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099",
+          "fields": {
+            "benefits": 18600
+          }
+        },
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-part-time",
+          "fields": {
+            "wages": 25000,
+            "federal_withholding": 1800
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 7200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 2400
+      },
+      "user_request": "Draft my return package with the Social Security taxable amount I already reviewed."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "metadata_only_tax_docs": {
     "input": {
       "tax_year": 2025,
