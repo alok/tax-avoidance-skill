@@ -74,6 +74,12 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 
 That should create the same four standard artifacts in `output/example-run/`.
 
+To run the public regression suite:
+
+```bash
+uv run pytest -q
+```
+
 ## Install In Claude Cowork
 
 This repo also ships a Cowork plugin wrapper:

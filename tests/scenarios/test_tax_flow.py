@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_zero_expenses",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
