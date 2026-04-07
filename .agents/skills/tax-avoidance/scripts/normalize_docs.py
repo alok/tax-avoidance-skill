@@ -67,6 +67,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
+    documented_ira_contributions, documented_ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     student_loan_interest, student_loan_interest_sources = aggregate_numeric(
         documents,
         {"1098-E"},
@@ -98,6 +103,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         }
         for document in expense_documents_for_year
         if safe_float(document.get("fields", {}).get("amount")) != 0.0
+    ]
+    documented_ira_contribution_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "account_type": document.get("fields", {}).get("account_type", "IRA"),
+            "amount": safe_float(document.get("fields", {}).get("ira_contributions")),
+        }
+        for document in documents
+        if document.get("doc_type") == "5498"
+        and safe_float(document.get("fields", {}).get("ira_contributions")) != 0.0
     ]
     charitable_cash, charitable_sources = aggregate_numeric(
         documents,
@@ -177,6 +194,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if documented_ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the documented IRA contributions totaling ${documented_ira_contributions:,.2f} and confirm how much is deductible for {tax_year}; do not auto-claim the full Form 5498 amount."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -236,6 +257,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "documented_ira_contributions": build_fact(
+            "documented_ira_contributions",
+            documented_ira_contributions,
+            documented_ira_contribution_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
             student_loan_interest,
@@ -291,6 +317,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "documented_ira_contribution_documents": documented_ira_contribution_documents,
         "facts": facts,
     }
     return normalized

@@ -22,6 +22,8 @@
 - SSA-1099
 - donation receipts
 
+Form 5498 support is intake-oriented in v1: the workflow records documented IRA contributions, cites the source document, and asks the user to confirm the deductible amount instead of auto-claiming the full contribution.
+
 ## Unsupported In V1
 
 - automated state tax calculations
