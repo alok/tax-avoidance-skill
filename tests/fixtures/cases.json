@@ -167,6 +167,46 @@
       "line_20": 1800
     }
   },
+  "ira_contribution_candidate": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 94000,
+            "federal_withholding": 11200
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 12500
+      },
+      "user_request": "Gather my wage docs and IRA contribution records."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_candidate": 7000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "ira_contribution_candidate",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -93,6 +94,13 @@ class TaxFlowTest(unittest.TestCase):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_ira_contribution_candidate_from_5498(self) -> None:
+        normalized, artifacts = self.run_case("ira_contribution_candidate")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 7000)
+        self.assertIn("Form 5498 reports $7,000.00 of IRA contributions", artifacts["tax-dossier.md"])
+        self.assertIn("Confirm how much is deductible", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

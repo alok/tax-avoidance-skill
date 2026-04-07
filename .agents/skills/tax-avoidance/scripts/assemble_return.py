@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -316,6 +317,11 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    adjustment_candidate_lines = [
+        f"- Form 5498 reports {money(ira_contributions_reported)} of IRA contributions that are not yet applied as a deduction."
+    ]
+    if not ira_contributions_reported:
+        adjustment_candidate_lines = ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +356,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Adjustment Candidates",
+        "",
+        *adjustment_candidate_lines,
         "",
         "## State Follow-Up",
         "",
