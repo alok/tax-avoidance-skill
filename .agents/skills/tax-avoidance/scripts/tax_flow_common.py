@@ -18,6 +18,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",
     },
+    "ira_contributions_reported": {
+        "title": "IRS Publication 590-A",
+        "url": "https://www.irs.gov/publications/p590a",
+    },
     "hsa_deduction": {
         "title": "IRS Publication 969",
         "url": "https://www.irs.gov/forms-pubs/about-publication-969",
@@ -174,6 +178,70 @@ def aggregate_numeric(
                 "dedupe_key": dedupe_key,
                 "field": field_name,
                 "value": value,
+            }
+        )
+    return total, sources
+
+
+def aggregate_numeric_first(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: list[str],
+) -> tuple[float, list[dict[str, Any]]]:
+    def source_rank(document: dict[str, Any]) -> tuple[int, int]:
+        content_status = document.get("content_status", "")
+        status_score = {
+            "available": 4,
+            "metadata_only": 3,
+            "unreadable_encrypted_attachment": 2,
+            "portal_notice_only": 1,
+        }.get(content_status, 0)
+        value_score = 0
+        fields = document.get("fields", {})
+        for field_name in field_names:
+            if safe_float(fields.get(field_name)) != 0.0:
+                value_score = 1
+                break
+        return (value_score, status_score)
+
+    grouped_documents: list[dict[str, Any]] = []
+    dedupe_groups: dict[str, list[dict[str, Any]]] = {}
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        dedupe_key = document.get("dedupe_key")
+        if dedupe_key:
+            dedupe_groups.setdefault(dedupe_key, []).append(document)
+        else:
+            grouped_documents.append(document)
+
+    for group in dedupe_groups.values():
+        grouped_documents.append(max(group, key=source_rank))
+
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for document in grouped_documents:
+        fields = document.get("fields", {})
+        selected_field = None
+        selected_value = 0.0
+        for field_name in field_names:
+            value = safe_float(fields.get(field_name))
+            if value != 0.0:
+                selected_field = field_name
+                selected_value = value
+                break
+        if selected_field is None:
+            continue
+        total += selected_value
+        sources.append(
+            {
+                "doc_id": document.get("id"),
+                "doc_type": document.get("doc_type"),
+                "source_type": document.get("source_type"),
+                "source_ref": document.get("source_ref"),
+                "dedupe_key": document.get("dedupe_key"),
+                "field": selected_field,
+                "value": selected_value,
             }
         )
     return total, sources

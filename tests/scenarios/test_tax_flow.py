@@ -122,6 +122,22 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_ira_5498_follow_up(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_follow_up")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 6500.0)
+        self.assertIn("Form 5498 shows IRA contributions totaling $6,500.00", artifacts["missing-items.md"])
+        self.assertIn("IRA Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498 reported IRA contributions: $6,500.00", artifacts["tax-dossier.md"])
+
+    def test_ira_5498_confirmed_deduction(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_confirmed_deduction")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 7000.0)
+        self.assertIn("$7,000.00", artifacts["federal-lines.md"])
+        self.assertIn("Confirmed IRA deduction currently applied on Form 1040 line 10: $7,000.00", artifacts["tax-dossier.md"])
+        self.assertNotIn("Confirm how much is deductible", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

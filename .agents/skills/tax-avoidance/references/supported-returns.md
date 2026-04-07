@@ -22,6 +22,11 @@
 - SSA-1099
 - donation receipts
 
+## Safe Scaffolding Notes
+
+- Form 5498 contribution amounts are treated as intake evidence, not automatic deductions.
+- When a 5498 is present, the workflow should surface the reported amount and ask the user to confirm the deductible portion before applying any IRA adjustment on Form 1040.
+
 ## Unsupported In V1
 
 - automated state tax calculations

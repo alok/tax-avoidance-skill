@@ -395,6 +395,85 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "ira_5498_follow_up": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 13500
+          }
+        },
+        {
+          "id": "trad-ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://trad-ira-5498",
+          "fields": {
+            "traditional_ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 13100
+      },
+      "user_request": "Gather my IRA tax docs and draft the package."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
+  "ira_5498_confirmed_deduction": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "trad-ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://trad-ira-5498",
+          "fields": {
+            "traditional_ira_contributions": 7000
+          }
+        }
+      ],
+      "answers": {
+        "ira_contribution_deduction": 7000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 10400
+      },
+      "user_request": "Use my W-2 and IRA contribution records to assemble the return draft."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

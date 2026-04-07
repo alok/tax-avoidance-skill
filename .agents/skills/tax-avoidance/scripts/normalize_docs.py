@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_first,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -71,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"1098-E"},
         "student_loan_interest",
+    )
+    ira_contributions_reported, ira_contributions_reported_sources = aggregate_numeric_first(
+        documents,
+        {"5498"},
+        ["traditional_ira_contributions", "ira_contributions"],
     )
     expense_documents_for_year = [
         document
@@ -179,6 +185,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if ira_contributions_reported > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Form 5498 shows IRA contributions totaling ${ira_contributions_reported:,.2f}. Confirm how much is deductible for the return instead of assuming the full amount."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -240,6 +250,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contributions_reported_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
