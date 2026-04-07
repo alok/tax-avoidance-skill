@@ -122,6 +122,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_deduction_review(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_itemized_gap")
+        self.assertEqual(normalized["status"], "ok")
+        deduction_summary = normalized["deduction_summary"]
+        self.assertEqual(deduction_summary["documented_itemized_total"], 17200.0)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("mortgage_interest", artifacts["tax-dossier.md"])
+        self.assertIn("charitable_cash", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Documented itemized inputs currently total $17,200.00.",
+            artifacts["missing-items.md"],
+        )
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

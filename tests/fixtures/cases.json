@@ -563,6 +563,44 @@
       "unsupported": "Equity compensation"
     }
   },
+  "deduction_review_itemized_gap": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 11000
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-receipt",
+          "fields": {
+            "cash_donations": 6200
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 4300
+      },
+      "user_request": "Draft my return package and show me what is still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "documented_itemized_total": 17200
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

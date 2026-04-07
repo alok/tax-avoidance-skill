@@ -131,6 +131,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if resident_state and resident_state not in work_states:
         work_states.insert(0, resident_state)
 
+    documented_itemized_deductions = [
+        build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        build_fact("charitable_cash", charitable_cash, charitable_sources),
+    ]
+    documented_itemized_deductions = [
+        item for item in documented_itemized_deductions if item["value"] > 0.0
+    ]
+    documented_itemized_total = sum(item["value"] for item in documented_itemized_deductions)
+
+    deduction_notes: list[str] = []
+    if documented_itemized_total > 0.0 and "deduction_amount" not in answers:
+        deduction_notes.append(
+            f"Choose whether to use the standard deduction or itemize. Documented itemized inputs currently total ${documented_itemized_total:,.2f}."
+        )
+    if deduction_amount > 0.0 and documented_itemized_total > deduction_amount:
+        deduction_notes.append(
+            f"Review the deduction choice: documented itemized inputs total ${documented_itemized_total:,.2f}, which is above the selected deduction amount of ${deduction_amount:,.2f}."
+        )
+
     state_allocation_totals: dict[str, dict[str, float]] = {}
     for document in documents:
         for allocation in document.get("fields", {}).get("state_allocations", []):
@@ -177,6 +196,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    for note in deduction_notes:
+        if note not in missing_items:
+            missing_items.append(note)
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -289,6 +311,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "selected_deduction_amount": deduction_amount if "deduction_amount" in answers else None,
+            "documented_itemized_total": documented_itemized_total,
+            "documented_itemized_inputs": documented_itemized_deductions,
+            "notes": deduction_notes,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
