@@ -39,6 +39,11 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def source_refs(normalized: dict[str, Any], key: str) -> str:
+    refs = [source.get("source_ref", "unknown") for source in fact_sources(normalized, key)]
+    return ", ".join(refs) if refs else "TBD"
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -316,6 +321,32 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    adjustment_rows = [
+        ["IRA contribution deduction", money(fact_value(normalized, "ira_contribution_deduction")), source_refs(normalized, "ira_contribution_deduction")],
+        ["HSA deduction", money(fact_value(normalized, "hsa_deduction")), source_refs(normalized, "hsa_deduction")],
+        [
+            "Student loan interest deduction",
+            money(fact_value(normalized, "student_loan_interest_deduction")),
+            source_refs(normalized, "student_loan_interest_deduction"),
+        ],
+        ["QBI deduction", money(fact_value(normalized, "qbi_deduction")), source_refs(normalized, "qbi_deduction")],
+        ["Chosen deduction amount", money(fact_value(normalized, "deduction_amount")), source_refs(normalized, "deduction_amount")],
+    ]
+    itemized_signal_rows = [
+        ["Mortgage interest documents", money(fact_value(normalized, "mortgage_interest")), source_refs(normalized, "mortgage_interest")],
+        ["Charitable cash receipts", money(fact_value(normalized, "charitable_cash")), source_refs(normalized, "charitable_cash")],
+    ]
+    credit_rows = [
+        ["Education credit", money(fact_value(normalized, "education_credit")), source_refs(normalized, "education_credit")],
+        ["Clean vehicle credit", money(fact_value(normalized, "clean_vehicle_credit")), source_refs(normalized, "clean_vehicle_credit")],
+        ["Clean energy credit", money(fact_value(normalized, "clean_energy_credit")), source_refs(normalized, "clean_energy_credit")],
+        ["Child tax credit", money(fact_value(normalized, "child_tax_credit")), source_refs(normalized, "child_tax_credit")],
+        [
+            "Other nonrefundable credits",
+            money(fact_value(normalized, "other_nonrefundable_credits")),
+            source_refs(normalized, "other_nonrefundable_credits"),
+        ],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +372,31 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Adjustment And Deduction Review",
+        "",
+        "These amounts help explain the current draft deduction path and what still needs confirmation.",
+        "",
+        make_markdown_table(
+            ["Adjustment Or Deduction", "Amount", "Source"],
+            adjustment_rows,
+        ),
+        "",
+        "### Itemized-Deduction Signals",
+        "",
+        "These source documents may matter if the user should itemize instead of taking the standard deduction.",
+        "",
+        make_markdown_table(
+            ["Itemized Signal", "Amount", "Source"],
+            itemized_signal_rows,
+        ),
+        "",
+        "## Credit Review",
+        "",
+        make_markdown_table(
+            ["Credit", "Amount", "Source"],
+            credit_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",

@@ -167,6 +167,63 @@
       "line_20": 1800
     }
   },
+  "deduction_review_signals": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 110000,
+            "federal_withholding": 13500
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 7800
+          }
+        },
+        {
+          "id": "donation-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "upload",
+          "source_ref": "upload://donation-1",
+          "fields": {
+            "cash_donations": 1200
+          }
+        },
+        {
+          "id": "1098e-loan",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-loan",
+          "fields": {
+            "student_loan_interest": 650
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 12800
+      },
+      "user_request": "Use the documents to draft the return package and show what is still needed."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Itemized-deduction signals already found"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

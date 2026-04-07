@@ -88,7 +88,12 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "deduction_review_signals",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
@@ -121,6 +126,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_deduction_review_sections(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_signals")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Adjustment And Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Itemized-Deduction Signals", artifacts["tax-dossier.md"])
+        self.assertIn("Mortgage interest documents", artifacts["tax-dossier.md"])
+        self.assertIn("$7,800.00", artifacts["tax-dossier.md"])
+        self.assertIn("Charitable cash receipts", artifacts["tax-dossier.md"])
+        self.assertIn("$1,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest deduction", artifacts["tax-dossier.md"])
+        self.assertIn("$650.00", artifacts["tax-dossier.md"])
+        self.assertIn("Itemized-deduction signals already found", artifacts["missing-items.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
