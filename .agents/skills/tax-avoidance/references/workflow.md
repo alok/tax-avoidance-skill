@@ -37,6 +37,12 @@ For a plain Codex app user:
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
 
+## Retirement Contribution Review
+
+- Treat Form 5498 as evidence that an IRA contribution happened, not automatic proof of the deductible amount.
+- Surface observed Form 5498 contribution totals in the dossier and `return-data.json`.
+- Ask the user to confirm the deductible IRA amount before putting anything on Form 1040 line 10.
+
 ## Interview Principles
 
 - Ask for filing status only after document collection begins.

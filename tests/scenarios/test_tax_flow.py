@@ -80,6 +80,15 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Upload fallback is active", notes)
         self.assertIn("upload://upload-w2", artifacts["tax-dossier.md"])
 
+    def test_ira_5498_review(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["candidate_ira_contributions"]["value"], 6500.0)
+        self.assertIn("Retirement Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("$6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("drive://ira-5498", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498 IRA contributions totaling $6,500.00", artifacts["missing-items.md"])
+
     def test_unsupported_cases(self) -> None:
         for name in ("unsupported_complex_equity",):
             with self.subTest(name=name):
