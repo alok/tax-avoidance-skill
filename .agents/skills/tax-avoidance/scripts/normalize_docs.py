@@ -32,6 +32,55 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def collect_ira_contribution_candidates(
+    documents: list[dict[str, Any]],
+) -> tuple[float, list[dict[str, Any]], list[dict[str, Any]]]:
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
+    allowed_fields = (
+        "traditional_ira_contributions",
+        "ira_contributions",
+    )
+
+    for document in documents:
+        if document.get("doc_type") != "5498":
+            continue
+        fields = document.get("fields", {})
+        amount = 0.0
+        field_name = ""
+        for key in allowed_fields:
+            value = safe_float(fields.get(key))
+            if value != 0.0:
+                amount = value
+                field_name = key
+                break
+        if amount == 0.0:
+            continue
+
+        total += amount
+        candidate = {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "field": field_name,
+            "amount": amount,
+        }
+        candidates.append(candidate)
+        sources.append(
+            {
+                "doc_id": document.get("id"),
+                "doc_type": document.get("doc_type"),
+                "source_type": document.get("source_type"),
+                "source_ref": document.get("source_ref"),
+                "field": field_name,
+                "value": amount,
+            }
+        )
+
+    return total, sources, candidates
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -103,6 +152,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"Donation Receipt"},
         "cash_donations",
+    )
+    candidate_ira_contribution_amount, candidate_ira_sources, candidate_ira_documents = (
+        collect_ira_contribution_candidates(documents)
     )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
@@ -179,6 +231,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if candidate_ira_contribution_amount > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review the Form 5498 IRA contributions totaling ${candidate_ira_contribution_amount:,.2f} and confirm how much is deductible before applying any IRA adjustment."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -247,6 +303,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "candidate_ira_contributions": build_fact(
+            "candidate_ira_contributions",
+            candidate_ira_contribution_amount,
+            candidate_ira_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
@@ -291,6 +352,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "candidate_ira_documents": candidate_ira_documents,
         "facts": facts,
     }
     return normalized
