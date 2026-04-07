@@ -280,6 +280,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    hsa_deduction = fact_value(normalized, "hsa_deduction")
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    itemized_signal_total = mortgage_interest + charitable_cash
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -316,6 +323,38 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_signal_rows = [
+        [
+            "Itemized deduction signals",
+            "Mortgage interest",
+            money(mortgage_interest),
+            RULE_SOURCES["mortgage_interest"]["title"],
+        ],
+        [
+            "Itemized deduction signals",
+            "Charitable cash contributions",
+            money(charitable_cash),
+            RULE_SOURCES["charitable_cash"]["title"],
+        ],
+        [
+            "Above-the-line adjustments",
+            "Student loan interest deduction input",
+            money(student_loan_interest),
+            RULE_SOURCES["student_loan_interest_deduction"]["title"],
+        ],
+        [
+            "Above-the-line adjustments",
+            "IRA contribution deduction input",
+            money(ira_deduction),
+            RULE_SOURCES["ira_contribution_deduction"]["title"],
+        ],
+        [
+            "Above-the-line adjustments",
+            "HSA deduction input",
+            money(hsa_deduction),
+            RULE_SOURCES["hsa_deduction"]["title"],
+        ],
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +380,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        f"- Draft deduction amount currently used on Form 1040 line 12: {money(deduction_amount) if deduction_amount else 'TBD'}",
+        f"- Itemized-deduction signals currently observed from documents: {money(itemized_signal_total)}",
+        f"- Mortgage interest + charitable cash contributions only; do not itemize automatically without an explicit deduction choice.",
+        "",
+        make_markdown_table(
+            ["Bucket", "Input", "Observed Amount", "Rule Source"],
+            deduction_signal_rows,
+        ),
         "",
         "## Candidate Business Expenses",
         "",
