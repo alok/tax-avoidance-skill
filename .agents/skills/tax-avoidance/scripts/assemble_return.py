@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    candidate_itemized_deduction_total = fact_value(normalized, "candidate_itemized_deduction_total")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -294,6 +295,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             expense.get("source_ref") or "unknown",
         ]
         for expense in normalized.get("candidate_expense_documents", [])
+    ]
+    itemized_deduction_rows = [
+        [
+            item.get("category") or "Unknown",
+            money(item.get("amount")),
+            ", ".join(source.get("source_ref", "unknown") for source in item.get("sources", [])) or "unknown",
+        ]
+        for item in normalized.get("candidate_itemized_deductions", [])
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -349,6 +358,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Planning",
+        "",
+        f"- Current itemized evidence totals {money(candidate_itemized_deduction_total) if candidate_itemized_deduction_total else '$0.00'} before SALT, medical, and other unsupported itemized categories.",
+        "",
+        make_markdown_table(
+            ["Category", "Amount", "Document Sources"],
+            itemized_deduction_rows or [["None", "$0.00", "None"]],
         ),
         "",
         "## State Follow-Up",

@@ -104,6 +104,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    candidate_itemized_deduction_total = mortgage_interest + charitable_cash
+    candidate_itemized_deduction_rows = []
+    if mortgage_interest > 0.0:
+        candidate_itemized_deduction_rows.append(
+            {
+                "category": "Mortgage interest",
+                "amount": mortgage_interest,
+                "sources": mortgage_interest_sources,
+            }
+        )
+    if charitable_cash > 0.0:
+        candidate_itemized_deduction_rows.append(
+            {
+                "category": "Cash charitable donations",
+                "amount": charitable_cash,
+                "sources": charitable_sources,
+            }
+        )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -176,7 +194,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if candidate_itemized_deduction_total > 0.0:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"Current itemized evidence totals ${candidate_itemized_deduction_total:,.2f} from mortgage interest "
+                "and charitable receipts; compare it against the standard deduction before finalizing line 12."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -247,6 +272,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "candidate_itemized_deduction_total": build_fact(
+            "candidate_itemized_deduction_total",
+            candidate_itemized_deduction_total,
+            mortgage_interest_sources + charitable_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
@@ -291,6 +321,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "candidate_itemized_deductions": candidate_itemized_deduction_rows,
         "facts": facts,
     }
     return normalized
