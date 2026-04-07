@@ -104,8 +104,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    traditional_ira_contributions, traditional_ira_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
+    if not ira_sources and traditional_ira_contributions > 0.0:
+        ira_deduction = traditional_ira_contributions
+        ira_sources = traditional_ira_sources
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
@@ -179,6 +187,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if traditional_ira_contributions > 0.0 and not ira_sources:
+        missing_items.append(
+            "Confirm the deductible traditional IRA amount before filing; Form 5498 activity is present but no IRA deduction amount was applied."
+        )
+    elif traditional_ira_contributions > 0.0 and not answers.get("ira_contribution_deduction"):
+        missing_items.append(
+            f"Confirm that the ${traditional_ira_contributions:,.2f} of traditional IRA contributions reported on Form 5498 is fully deductible for this return."
+        )
+    elif traditional_ira_contributions > 0.0 and abs(ira_deduction - traditional_ira_contributions) > 0.009:
+        missing_items.append(
+            f"Reconcile the IRA deduction amount: Form 5498 shows ${traditional_ira_contributions:,.2f} of traditional IRA contributions, but the current draft uses ${ira_deduction:,.2f}."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."

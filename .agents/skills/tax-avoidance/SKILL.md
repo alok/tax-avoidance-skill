@@ -68,6 +68,7 @@ Every completed run should yield:
 - `federal-lines.md`: line-by-line draft for supported federal lines
 - `missing-items.md`: unresolved fields, absent documents, and unsupported complexity
 - The dossier should separately surface **candidate business-expense receipts** that still need user confirmation before they are applied to Schedule C.
+- Traditional IRA contributions from Form 5498 may be used as a draft deduction scaffold only when the document explicitly provides a traditional contribution amount; the workflow should still ask the user to confirm the deductible amount before filing.
 
 Every nontrivial tax statement must cite an IRS source. Every extracted value must cite the originating document, email, file, or upload.
 

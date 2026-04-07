@@ -42,5 +42,6 @@ For a plain Codex app user:
 - Ask for filing status only after document collection begins.
 - Ask one question at a time when the answer changes supported-line output.
 - Prefer targeted clarifications over generic tax questionnaires.
+- When a Form 5498 explicitly reports traditional IRA contributions, use it to prefill the draft adjustment and ask the user to confirm the deductible amount rather than starting from a blank IRA question.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.

@@ -48,6 +48,7 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "w2_single",
             "mfj_common_deductions",
+            "ira_5498_traditional",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -64,6 +65,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_10" in expected:
+                    self.assertIn(f"${expected['line_10']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -79,6 +82,12 @@ class TaxFlowTest(unittest.TestCase):
         notes = "\n".join(normalized["connector_notes"])
         self.assertIn("Upload fallback is active", notes)
         self.assertIn("upload://upload-w2", artifacts["tax-dossier.md"])
+
+    def test_ira_5498_reconciliation_prompt(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_answer_conflict")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Reconcile the IRA deduction amount", artifacts["missing-items.md"])
+        self.assertIn("$4,000.00", artifacts["federal-lines.md"])
 
     def test_unsupported_cases(self) -> None:
         for name in ("unsupported_complex_equity",):

@@ -84,6 +84,78 @@
       "line_25a": 14800
     }
   },
+  "ira_5498_traditional": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 14500
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "traditional_ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 12500
+      },
+      "user_request": "Use my wage forms and IRA contribution statement to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 98000,
+      "line_10": 6500,
+      "line_25a": 14500
+    }
+  },
+  "ira_5498_answer_conflict": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "traditional_ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "ira_contribution_deduction": 4000,
+        "deduction_amount": 15000,
+        "tax_before_credits": 2200
+      },
+      "user_request": "Draft the return but keep anything that needs review visible."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,

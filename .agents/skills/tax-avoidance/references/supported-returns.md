@@ -35,3 +35,9 @@
 ## Behavior On Unsupported Cases
 
 Preserve the gathered facts, create `missing-items.md`, and state clearly that the flow is outside the supported simple-return envelope.
+
+## Safe 5498 Handling
+
+- Treat Form 5498 as support for traditional IRA contribution tracking only when the extracted fields explicitly say the contribution was traditional IRA money.
+- Do not silently turn Roth IRA, rollover, or conversion activity into a deduction.
+- If a user-provided IRA deduction amount disagrees with the Form 5498 traditional contribution amount, flag the mismatch for review instead of overwriting the user's answer.
