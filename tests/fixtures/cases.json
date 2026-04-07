@@ -153,6 +153,16 @@
             "wages": 102000,
             "federal_withholding": 12000
           }
+        },
+        {
+          "id": "1098t-student",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-student",
+          "fields": {
+            "qualified_tuition_expenses": 6400,
+            "scholarships_and_grants": 1200
+          }
         }
       ],
       "answers": {
@@ -165,6 +175,37 @@
     "expect": {
       "status": "ok",
       "line_20": 1800
+    }
+  },
+  "tuition_statement_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1098t-review",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-review",
+          "fields": {
+            "qualified_tuition_expenses": 7500,
+            "scholarships_and_grants": 2000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 4200
+      },
+      "user_request": "Help me turn this tuition statement into a draft return package."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Review education-credit eligibility"
     }
   },
   "schedule_c_contractor": {

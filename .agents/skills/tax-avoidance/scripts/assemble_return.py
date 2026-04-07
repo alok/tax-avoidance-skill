@@ -296,6 +296,9 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    qualified_tuition = fact_value(normalized, "qualified_tuition_expenses")
+    scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
+    education_credit = fact_value(normalized, "education_credit")
     state_rows = [
         [
             module.get("code", ""),
@@ -350,6 +353,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Education Credit Inputs",
+        "",
+        f"- 1098-T qualified tuition and related expenses observed: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
+        f"- 1098-T scholarships and grants observed: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
+        f"- Education credit currently applied to Form 1040 line 20: {money(education_credit) if education_credit else '$0.00'}",
         "",
         "## State Follow-Up",
         "",
