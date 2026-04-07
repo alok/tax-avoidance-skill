@@ -94,6 +94,16 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
 
+    def test_ira_5498_review(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["reported_ira_contributions"]["value"], 6500)
+        self.assertEqual(normalized["facts"]["ira_contribution_deduction"]["value"], 0)
+        self.assertIn("IRA Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498 documents $6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("No IRA deduction is applied yet", artifacts["tax-dossier.md"])
+        self.assertIn("confirm how much is deductible", artifacts["missing-items.md"].lower())
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

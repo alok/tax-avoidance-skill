@@ -280,6 +280,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    reported_ira_contributions = fact_value(normalized, "reported_ira_contributions")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -316,6 +318,19 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    ira_review_lines = ["- None"]
+    if reported_ira_contributions:
+        ira_review_lines = [
+            f"- Form 5498 documents {money(reported_ira_contributions)} of IRA contributions for the tax year.",
+        ]
+        if ira_deduction:
+            ira_review_lines.append(
+                f"- The current draft applies {money(ira_deduction)} as the IRA deduction. Confirm deductibility limits and workplace-plan effects before filing."
+            )
+        else:
+            ira_review_lines.append(
+                "- No IRA deduction is applied yet. Confirm the deductible amount before posting any Form 1040 adjustment."
+            )
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +365,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## IRA Contribution Review",
+        "",
+        *ira_review_lines,
         "",
         "## State Follow-Up",
         "",
