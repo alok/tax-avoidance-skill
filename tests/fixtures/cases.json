@@ -463,6 +463,74 @@
       "missing": "Download the actual Consolidated 1099"
     }
   },
+  "doc_driven_interview_questions": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "state": {},
+      "documents": [
+        {
+          "id": "w2-stateful",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-stateful",
+          "fields": {
+            "wages": 98000,
+            "federal_withholding": 15000,
+            "state_allocations": [
+              { "state": "CA", "wages": 60000, "withholding": 2500 },
+              { "state": "NY", "wages": 38000, "withholding": 900 }
+            ]
+          }
+        },
+        {
+          "id": "student-loan-form",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-e",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        },
+        {
+          "id": "tuition-form",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-t",
+          "fields": {
+            "qualified_tuition": 9200
+          }
+        },
+        {
+          "id": "ira-form",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation",
+          "fields": {
+            "cash_donations": 900
+          }
+        }
+      ],
+      "answers": {},
+      "user_request": "Gather everything and tell me the next questions."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "duplicate_doc_sources": {
     "input": {
       "tax_year": 2025,

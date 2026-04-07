@@ -32,6 +32,43 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_interview_question(
+    question_id: str,
+    prompt: str,
+    why_it_matters: str,
+    evidence: list[dict[str, Any]],
+    priority: int,
+) -> dict[str, Any]:
+    return {
+        "id": question_id,
+        "prompt": prompt,
+        "why_it_matters": why_it_matters,
+        "evidence": evidence,
+        "priority": priority,
+    }
+
+
+def doc_evidence(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_name: str | None = None,
+) -> list[dict[str, Any]]:
+    evidence: list[dict[str, Any]] = []
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        if field_name is not None and field_name not in document.get("fields", {}):
+            continue
+        evidence.append(
+            {
+                "doc_id": document.get("id"),
+                "doc_type": document.get("doc_type"),
+                "source_ref": document.get("source_ref"),
+            }
+        )
+    return evidence
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -67,7 +104,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
-    student_loan_interest, student_loan_interest_sources = aggregate_numeric(
+    observed_student_loan_interest, observed_student_loan_interest_sources = aggregate_numeric(
         documents,
         {"1098-E"},
         "student_loan_interest",
@@ -107,6 +144,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
+    student_loan_interest_deduction, student_loan_interest_deduction_sources = answer_fact(
+        answers,
+        "student_loan_interest_deduction",
+    )
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
@@ -166,6 +207,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     missing_items: list[str] = []
+    interview_questions: list[dict[str, Any]] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
         for document in documents
@@ -173,19 +215,125 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     }
     if not payload.get("filing_status"):
         missing_items.append("Confirm the filing status for the return.")
+        interview_questions.append(
+            build_interview_question(
+                "filing-status",
+                "What filing status should this draft use: single or married filing jointly?",
+                "Filing status changes the supported return path and deduction assumptions.",
+                [],
+                10,
+            )
+        )
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        deduction_evidence = doc_evidence(documents, {"1098", "Donation Receipt"})
+        interview_questions.append(
+            build_interview_question(
+                "deduction-path",
+                (
+                    "Should this draft use the standard deduction, or do you want to itemize using "
+                    "the mortgage-interest and donation documents already found?"
+                    if deduction_evidence
+                    else "Should this draft use the standard deduction, or do you want to itemize?"
+                ),
+                (
+                    "This controls Form 1040 line 12 and whether itemized-support documents should "
+                    "change the draft return."
+                    if deduction_evidence
+                    else "This controls Form 1040 line 12 and the taxable-income draft."
+                ),
+                deduction_evidence,
+                9,
+            )
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+        interview_questions.append(
+            build_interview_question(
+                "tax-before-credits",
+                "Do you already have a provisional tax-before-credits figure from a worksheet or other software, or should the tax lines stay marked for review?",
+                "The draft can assemble income and payment lines without this number, but refund or balance-due output stays provisional until it is supplied.",
+                [],
+                4,
+            )
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+        nec_evidence = doc_evidence(documents, {"1099-NEC"})
+        question_prompt = (
+            f"Which of the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} are actually deductible for the 1099-NEC work, and are there any others to add?"
+            if candidate_business_expenses > 0.0
+            else "What deductible business expenses should be used for the 1099-NEC work, or should this draft explicitly treat them as zero?"
+        )
+        question_evidence = nec_evidence
+        if candidate_business_expenses > 0.0:
+            question_evidence += doc_evidence(documents, {"Expense Receipt"}, "amount")
+        interview_questions.append(
+            build_interview_question(
+                "business-expenses-confirmation",
+                question_prompt,
+                "Schedule C net profit cannot be finalized until business expenses are confirmed or explicitly set to zero.",
+                question_evidence,
+                10,
+            )
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
+        )
+    if state_allocation_totals and not resident_state:
+        interview_questions.append(
+            build_interview_question(
+                "resident-state",
+                "Which listed state was your resident state for the tax year?",
+                "Resident state determines which state return should anchor the later handoff, especially when multiple state wage allocations were found.",
+                doc_evidence(documents, {"W-2"}, "state_allocations"),
+                8,
+            )
+        )
+    if observed_student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        interview_questions.append(
+            build_interview_question(
+                "student-loan-interest",
+                f"The 1098-E documents show ${observed_student_loan_interest:,.2f} of student loan interest. Should this amount be carried into the draft return?",
+                "Student loan interest can affect the income adjustments section when the form amount is confirmed as deductible.",
+                doc_evidence(documents, {"1098-E"}, "student_loan_interest"),
+                7,
+            )
+        )
+    if charitable_cash > 0.0 and "deduction_amount" not in answers:
+        interview_questions.append(
+            build_interview_question(
+                "charitable-giving",
+                f"The donation receipts show ${charitable_cash:,.2f} of cash gifts. Do you want those considered as part of an itemized-deduction path?",
+                "Donation receipts matter only if the return is being prepared on an itemized basis.",
+                doc_evidence(documents, {"Donation Receipt"}, "cash_donations"),
+                6,
+            )
+        )
+    if any(document.get("doc_type") == "5498" for document in documents) and "ira_contribution_deduction" not in answers:
+        interview_questions.append(
+            build_interview_question(
+                "ira-deduction",
+                "A Form 5498 was found. How much of the IRA contribution should be treated as deductible for this draft return?",
+                "IRA contribution documents establish that a contribution happened, but the deductible amount still needs user confirmation for the draft package.",
+                doc_evidence(documents, {"5498"}),
+                7,
+            )
+        )
+    if any(document.get("doc_type") == "1098-T" for document in documents) and "education_credit" not in answers:
+        interview_questions.append(
+            build_interview_question(
+                "education-credit",
+                "A Form 1098-T was found. Do you want this workflow to draft an education-credit review, and if so what provisional credit amount or qualified-expense summary should it use?",
+                "Education-credit workflows need an explicit review decision before the credit is carried onto the federal draft.",
+                doc_evidence(documents, {"1098-T"}),
+                7,
+            )
         )
     for note in state_follow_up:
         if note not in missing_items:
@@ -236,10 +384,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "observed_student_loan_interest": build_fact(
+            "observed_student_loan_interest",
+            observed_student_loan_interest,
+            observed_student_loan_interest_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
-            student_loan_interest,
-            student_loan_interest_sources,
+            student_loan_interest_deduction,
+            student_loan_interest_deduction_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
@@ -276,6 +429,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "interview_questions": sorted(interview_questions, key=lambda item: (-item["priority"], item["id"])),
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

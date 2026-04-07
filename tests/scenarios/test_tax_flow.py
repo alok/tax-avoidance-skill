@@ -101,6 +101,9 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+        prompts = [question["prompt"] for question in normalized["interview_questions"]]
+        self.assertTrue(any("actually deductible" in prompt for prompt in prompts))
+        self.assertIn("## Next Interview Questions", artifacts["missing-items.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
@@ -121,6 +124,25 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_doc_driven_interview_questions(self) -> None:
+        normalized, artifacts = self.run_case("doc_driven_interview_questions")
+        self.assertEqual(normalized["status"], "ok")
+        question_ids = {question["id"] for question in normalized["interview_questions"]}
+        self.assertTrue(
+            {
+                "deduction-path",
+                "tax-before-credits",
+                "student-loan-interest",
+                "resident-state",
+                "ira-deduction",
+                "education-credit",
+                "charitable-giving",
+            }.issubset(question_ids)
+        )
+        self.assertIn("Should this draft use the standard deduction", artifacts["tax-dossier.md"])
+        self.assertIn("The 1098-E documents show $1,800.00 of student loan interest", artifacts["missing-items.md"])
+        self.assertIn("Which listed state was your resident state", artifacts["missing-items.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

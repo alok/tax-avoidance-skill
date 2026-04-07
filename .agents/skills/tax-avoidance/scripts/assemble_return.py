@@ -316,6 +316,24 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    interview_questions = normalized.get("interview_questions", [])
+    interview_lines = []
+    for question in interview_questions:
+        evidence = ", ".join(
+            item.get("source_ref", item.get("doc_id", "unknown")) for item in question.get("evidence", [])
+        ) or "No document evidence captured"
+        interview_lines.extend(
+            [
+                f"### {question.get('prompt', 'Question')}",
+                "",
+                f"- Why it matters: {question.get('why_it_matters', 'TBD')}",
+                f"- Evidence: {evidence}",
+                f"- Priority: {question.get('priority', 0)}",
+                "",
+            ]
+        )
+    if not interview_lines:
+        interview_lines = ["- None", ""]
 
     sections = [
         "# Tax Dossier",
@@ -372,6 +390,9 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *missing_lines,
         "",
+        "## Next Interview Questions",
+        "",
+        *interview_lines,
         "## Unsupported Or Risky Items",
         "",
         *unsupported_lines,
@@ -408,6 +429,18 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     lines = ["# Missing Items", ""]
     if normalized.get("missing_items"):
         lines.extend(f"- {item}" for item in normalized["missing_items"])
+    else:
+        lines.append("- None")
+
+    lines.extend(["", "## Next Interview Questions", ""])
+    if normalized.get("interview_questions"):
+        for question in normalized["interview_questions"]:
+            evidence = ", ".join(
+                item.get("source_ref", item.get("doc_id", "unknown")) for item in question.get("evidence", [])
+            ) or "No document evidence captured"
+            lines.append(f"- {question['prompt']}")
+            lines.append(f"  Why it matters: {question['why_it_matters']}")
+            lines.append(f"  Evidence: {evidence}")
     else:
         lines.append("- None")
 
