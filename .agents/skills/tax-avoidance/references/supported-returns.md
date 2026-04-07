@@ -22,6 +22,8 @@
 - SSA-1099
 - donation receipts
 
+Form 5498 is handled as contribution evidence only. The workflow should preserve the amount and source, then ask the user to confirm what portion is actually deductible as a traditional IRA contribution before it affects the draft return.
+
 ## Unsupported In V1
 
 - automated state tax calculations
