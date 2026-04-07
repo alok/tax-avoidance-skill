@@ -13,6 +13,7 @@ from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
+    compute_self_employment_tax,
     connector_notes,
     detect_illegal_request,
     detect_unsupported,
@@ -104,10 +105,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    has_business_expenses = "business_expenses" in answers
+    schedule_c_net_profit = 0.0
+    self_employment_calc: dict[str, Any] | None = None
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
+    if nonemployee_compensation > 0.0 and has_business_expenses:
+        schedule_c_net_profit = nonemployee_compensation - business_expenses
+        self_employment_calc = compute_self_employment_tax(tax_year, schedule_c_net_profit, wages)
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
@@ -120,6 +127,47 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    if self_employment_calc:
+        se_tax_deduction = float(self_employment_calc["deductible_half"])
+        se_tax_deduction_sources = [
+            *nonemployee_compensation_sources,
+            *business_expense_sources,
+            {
+                "source_type": "derived",
+                "source_ref": "derived:self_employment_tax_deduction",
+                "field": "self_employment_tax_deduction",
+                "value": se_tax_deduction,
+            },
+        ]
+        self_employment_tax = float(self_employment_calc["total_tax"])
+        self_employment_tax_sources = [
+            *nonemployee_compensation_sources,
+            *business_expense_sources,
+            {
+                "source_type": "derived",
+                "source_ref": "derived:self_employment_tax",
+                "field": "self_employment_tax",
+                "value": self_employment_tax,
+            },
+        ]
+        self_employment_net_earnings = float(self_employment_calc["net_earnings"])
+        self_employment_net_earnings_sources = [
+            *nonemployee_compensation_sources,
+            *business_expense_sources,
+            {
+                "source_type": "derived",
+                "source_ref": "derived:self_employment_net_earnings",
+                "field": "self_employment_net_earnings",
+                "value": self_employment_net_earnings,
+            },
+        ]
+    else:
+        se_tax_deduction = 0.0
+        se_tax_deduction_sources = []
+        self_employment_tax = 0.0
+        self_employment_tax_sources = []
+        self_employment_net_earnings = 0.0
+        self_employment_net_earnings_sources = []
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -182,6 +230,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
+        )
+    if self_employment_calc and self_employment_calc["used_w2_wages_for_cap_proxy"]:
+        missing_items.append(
+            "Review the Schedule SE scaffold against Form W-2 box 3 social security wages before filing; this draft uses W-2 wage income as a proxy for the Social Security wage-base interaction."
         )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
@@ -250,6 +302,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
+        "self_employment_net_earnings": build_fact(
+            "self_employment_net_earnings",
+            self_employment_net_earnings,
+            self_employment_net_earnings_sources,
+        ),
+        "self_employment_tax": build_fact(
+            "self_employment_tax",
+            self_employment_tax,
+            self_employment_tax_sources,
+        ),
+        "self_employment_tax_deduction": build_fact(
+            "self_employment_tax_deduction",
+            se_tax_deduction,
+            se_tax_deduction_sources,
+        ),
         "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
         "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
         "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
@@ -289,6 +356,22 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "self_employment_summary": {
+            "applies": bool(self_employment_calc),
+            "net_profit": schedule_c_net_profit,
+            "net_earnings": self_employment_net_earnings,
+            "social_security_wage_base": None if not self_employment_calc else self_employment_calc["social_security_wage_base"],
+            "social_security_taxable_earnings": None
+            if not self_employment_calc
+            else self_employment_calc["social_security_taxable_earnings"],
+            "social_security_tax": None if not self_employment_calc else self_employment_calc["social_security_tax"],
+            "medicare_tax": None if not self_employment_calc else self_employment_calc["medicare_tax"],
+            "total_tax": None if not self_employment_calc else self_employment_calc["total_tax"],
+            "deductible_half": None if not self_employment_calc else self_employment_calc["deductible_half"],
+            "used_w2_wages_for_cap_proxy": bool(
+                self_employment_calc and self_employment_calc["used_w2_wages_for_cap_proxy"]
+            ),
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

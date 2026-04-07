@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_w2_cap_interaction",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -72,6 +73,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "self_employment_tax" in expected:
+                    self.assertIn(f"${expected['self_employment_tax']:,.2f}", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -138,8 +141,20 @@ class TaxFlowTest(unittest.TestCase):
                 cwd=REPO_ROOT,
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
+            federal_lines = (out_dir / "federal-lines.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Self-Employment Tax Scaffold", dossier)
             self.assertIn("$48,000.00", dossier)
+            self.assertIn("$5,510.52", federal_lines)
+
+    def test_schedule_se_review_note_for_w2_interaction(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_w2_cap_interaction")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertTrue(normalized["self_employment_summary"]["used_w2_wages_for_cap_proxy"])
+        self.assertIn("| Schedule C | 28 | Total expenses | $0.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Schedule C | 31 | Net profit or loss | $40,000.00 |", artifacts["federal-lines.md"])
+        self.assertIn("box 3 social security wages", artifacts["missing-items.md"])
+        self.assertIn("$6,100.00", artifacts["tax-dossier.md"])
 
 
 if __name__ == "__main__":

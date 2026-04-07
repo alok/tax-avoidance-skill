@@ -62,6 +62,17 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "self_employment_tax_deduction": {
+        "title": "Instructions for Schedule SE (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
+}
+
+SELF_EMPLOYMENT_NET_EARNINGS_RATE = 0.9235
+SELF_EMPLOYMENT_SOCIAL_SECURITY_RATE = 0.124
+SELF_EMPLOYMENT_MEDICARE_RATE = 0.029
+SELF_EMPLOYMENT_SOCIAL_SECURITY_WAGE_BASE = {
+    2025: 176100.0,
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {
@@ -187,8 +198,6 @@ def answer_fact(
     if key not in answers:
         return fallback, []
     value = safe_float(answers.get(key))
-    if value == 0.0:
-        return value, []
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
 
 
@@ -302,4 +311,48 @@ def resolve_state_support(code: str | None) -> dict[str, str] | None:
         "resident_form": "Unknown",
         "nonresident_form": "Unknown",
         "source_url": "",
+    }
+
+
+def compute_self_employment_tax(
+    tax_year: int,
+    net_profit: float,
+    wage_income: float,
+) -> dict[str, float | str | bool | None]:
+    if net_profit <= 0.0:
+        return {
+            "net_profit": net_profit,
+            "net_earnings": 0.0,
+            "social_security_wage_base": SELF_EMPLOYMENT_SOCIAL_SECURITY_WAGE_BASE.get(tax_year),
+            "social_security_taxable_earnings": 0.0,
+            "social_security_tax": 0.0,
+            "medicare_tax": 0.0,
+            "total_tax": 0.0,
+            "deductible_half": 0.0,
+            "used_w2_wages_for_cap_proxy": wage_income > 0.0,
+        }
+
+    net_earnings = net_profit * SELF_EMPLOYMENT_NET_EARNINGS_RATE
+    social_security_wage_base = SELF_EMPLOYMENT_SOCIAL_SECURITY_WAGE_BASE.get(tax_year)
+    if social_security_wage_base is None:
+        social_security_taxable_earnings = 0.0
+    else:
+        remaining_social_security_base = max(social_security_wage_base - wage_income, 0.0)
+        social_security_taxable_earnings = min(net_earnings, remaining_social_security_base)
+
+    social_security_tax = social_security_taxable_earnings * SELF_EMPLOYMENT_SOCIAL_SECURITY_RATE
+    medicare_tax = net_earnings * SELF_EMPLOYMENT_MEDICARE_RATE
+    total_tax = social_security_tax + medicare_tax
+    deductible_half = total_tax / 2.0
+
+    return {
+        "net_profit": net_profit,
+        "net_earnings": net_earnings,
+        "social_security_wage_base": social_security_wage_base,
+        "social_security_taxable_earnings": social_security_taxable_earnings,
+        "social_security_tax": social_security_tax,
+        "medicare_tax": medicare_tax,
+        "total_tax": total_tax,
+        "deductible_half": deductible_half,
+        "used_w2_wages_for_cap_proxy": wage_income > 0.0,
     }

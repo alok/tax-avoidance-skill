@@ -196,7 +196,52 @@
     "expect": {
       "status": "ok",
       "schedule_c_line_1": 108000.0,
-      "schedule_c_line_31": 89658.47
+      "schedule_c_line_31": 89658.47,
+      "self_employment_tax": 12668.338347885001
+    }
+  },
+  "schedule_c_w2_cap_interaction": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 170000,
+            "federal_withholding": 26000
+          }
+        },
+        {
+          "id": "1099-nec-side",
+          "doc_type": "1099-NEC",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-nec-side",
+          "fields": {
+            "nonemployee_compensation": 40000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 0,
+        "deduction_amount": 15000,
+        "tax_before_credits": 30000
+      },
+      "user_request": "Draft the return package for my W-2 and side-gig income."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 170000,
+      "schedule_c_line_1": 40000,
+      "schedule_c_line_31": 40000,
+      "self_employment_tax": 1827.6599999999999
     }
   },
   "schedule_c_missing_expenses": {
@@ -504,7 +549,8 @@
     },
     "expect": {
       "status": "ok",
-      "schedule_c_line_1": 108000.0
+      "schedule_c_line_1": 108000.0,
+      "self_employment_tax": 14081.293347885001
     }
   },
   "unsupported_schedule_c": {
