@@ -5,6 +5,18 @@
     "gmail": true,
     "google_drive": true
   },
+  "household": {
+    "dependents": [
+      {
+        "label": "Sample Child",
+        "relationship": "daughter",
+        "birth_year": 2019,
+        "months_in_home": 12,
+        "has_ssn_or_itin": true,
+        "claimed_by_taxpayer": true
+      }
+    ]
+  },
   "documents": [
     {
       "id": "sample-1099-nec",

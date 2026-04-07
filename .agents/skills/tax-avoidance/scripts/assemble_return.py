@@ -296,6 +296,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for expense in normalized.get("candidate_expense_documents", [])
     ]
     state_summary = normalized.get("state_summary", {})
+    household = normalized.get("household", {})
     state_rows = [
         [
             module.get("code", ""),
@@ -316,6 +317,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_rows = [
+        [
+            dependent.get("label", "Unknown"),
+            dependent.get("relationship", "unspecified"),
+            str(dependent.get("birth_year") or "Unknown"),
+            str(dependent.get("months_in_home") if dependent.get("months_in_home") not in (None, "") else "Unknown"),
+            "Yes" if dependent.get("is_full_time_student") else "No",
+            "Yes" if dependent.get("is_permanently_disabled") else "No",
+            "Yes" if dependent.get("has_ssn_or_itin") is True else "No" if dependent.get("has_ssn_or_itin") is False else "Unknown",
+            "Yes" if dependent.get("claimed_by_taxpayer") is True else "No" if dependent.get("claimed_by_taxpayer") is False else "Unknown",
+            money(dependent.get("care_expenses")),
+        ]
+        for dependent in household.get("dependents", [])
+    ]
+    dependent_follow_up_lines = [f"- {item}" for item in household.get("follow_up", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -350,6 +366,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Household Dependents",
+        "",
+        f"- Listed dependents: {household.get('dependent_count', 0)}",
+        "- This workflow stores only dependency-review scaffolding, not SSNs or ITINs.",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Birth Year", "Months In Home", "Student", "Disabled", "SSN/ITIN Ready", "Claimed By You", "Care Expenses"],
+            dependent_rows or [["None", "None", "None", "None", "None", "None", "None", "None", "$0.00"]],
+        ),
+        "",
+        *dependent_follow_up_lines,
         "",
         "## State Follow-Up",
         "",

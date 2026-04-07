@@ -167,6 +167,68 @@
       "line_20": 1800
     }
   },
+  "dependent_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "household": {
+        "dependents": [
+          {
+            "label": "Ava",
+            "relationship": "daughter",
+            "birth_year": 2018,
+            "months_in_home": 12,
+            "has_ssn_or_itin": true,
+            "claimed_by_taxpayer": true,
+            "care_expenses": 3200
+          },
+          {
+            "label": "Leo",
+            "relationship": "son",
+            "birth_year": 2023,
+            "months_in_home": 12,
+            "claimed_by_taxpayer": true
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 94000,
+            "federal_withholding": 9700
+          }
+        },
+        {
+          "id": "w2-parent-b",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent-b",
+          "fields": {
+            "wages": 41000,
+            "federal_withholding": 4300
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 10400
+      },
+      "user_request": "Keep our dependent context visible while you draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_label": "Ava",
+      "dependent_prompt": "Review child tax credit or credit for other dependents eligibility"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

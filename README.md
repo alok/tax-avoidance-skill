@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Preserves household dependent context in a safe, review-oriented form so child-credit follow-up can happen without storing SSNs or ITINs in repo artifacts.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -32,6 +33,8 @@ No separate backend or custom API setup is required for the main workflow in thi
 ## Scope
 
 This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
+
+It now also supports safe **dependent intake scaffolding**: labels, relationship, birth year, months in home, student or disability flags, and care-expense follow-up. The flow deliberately avoids storing full SSNs, ITINs, or pretending to decide eligibility silently.
 
 All substantive tax facts should trace back to primary IRS sources such as [Publication 17](https://www.irs.gov/publications/p17), [Publication 505](https://www.irs.gov/publications/p505), [Publication 590-A](https://www.irs.gov/publications/p590a), and [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969). Wikipedia is only used for the avoidance-vs-evasion terminology framing.
 
@@ -97,8 +100,9 @@ Primary command:
 4. Build a document inventory and ask the minimum remaining interview questions.
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
-7. Surface likely business-expense receipts separately from confirmed deductible expenses.
-8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
+7. Preserve safe dependent-review context and surface any missing child-credit or care-credit follow-up.
+8. Surface likely business-expense receipts separately from confirmed deductible expenses.
+9. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
 
 ## Repository Layout
 

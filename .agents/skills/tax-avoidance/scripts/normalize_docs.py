@@ -39,6 +39,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -121,6 +122,57 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    dependent_entries = household.get("dependents", [])
+    normalized_dependents: list[dict[str, Any]] = []
+    dependent_follow_up: list[str] = []
+    for index, dependent in enumerate(dependent_entries, start=1):
+        label = str(dependent.get("label") or dependent.get("nickname") or f"Dependent {index}").strip() or f"Dependent {index}"
+        relationship = str(dependent.get("relationship") or "unspecified").strip() or "unspecified"
+        birth_year = dependent.get("birth_year")
+        months_in_home = dependent.get("months_in_home")
+        is_student = bool(dependent.get("is_full_time_student"))
+        is_disabled = bool(dependent.get("is_permanently_disabled"))
+        has_ssn = dependent.get("has_ssn_or_itin")
+        claimed_by_taxpayer = dependent.get("claimed_by_taxpayer")
+        care_expenses = safe_float(dependent.get("care_expenses"))
+
+        normalized_dependents.append(
+            {
+                "label": label,
+                "relationship": relationship,
+                "birth_year": birth_year,
+                "months_in_home": months_in_home,
+                "is_full_time_student": is_student,
+                "is_permanently_disabled": is_disabled,
+                "has_ssn_or_itin": has_ssn,
+                "claimed_by_taxpayer": claimed_by_taxpayer,
+                "care_expenses": care_expenses,
+            }
+        )
+
+        if has_ssn is None:
+            dependent_follow_up.append(
+                f"Confirm whether {label} has a valid SSN or ITIN for the return. Do not store the number in this workflow."
+            )
+        if months_in_home in (None, ""):
+            dependent_follow_up.append(
+                f"Confirm how many months {label} lived with you in {tax_year}, or note the exception that applies."
+            )
+        if claimed_by_taxpayer is None:
+            dependent_follow_up.append(
+                f"Confirm whether another taxpayer can claim {label} for {tax_year}."
+            )
+        if care_expenses > 0.0 and "dependent_care_credit_reviewed" not in answers:
+            dependent_follow_up.append(
+                f"Review whether {label}'s care expenses belong in a child and dependent care credit workflow."
+            )
+
+    if normalized_dependents and "child_tax_credit" not in answers:
+        dependent_follow_up.append(
+            "Review child tax credit or credit for other dependents eligibility for the listed household members before finalizing Form 1040 line 20."
+        )
+    dependent_follow_up = list(dict.fromkeys(dependent_follow_up))
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -187,6 +239,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    for item in dependent_follow_up:
+        if item not in missing_items:
+            missing_items.append(item)
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -291,6 +346,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "household": {
+            "dependents": normalized_dependents,
+            "dependent_count": len(normalized_dependents),
+            "follow_up": dependent_follow_up,
+        },
         "facts": facts,
     }
     return normalized
