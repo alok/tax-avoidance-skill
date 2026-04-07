@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_zero_expenses_confirmed",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -72,6 +73,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "tax_line_16" in expected:
+                    self.assertIn(f"| Form 1040 | 16 | Tax | ${expected['tax_line_16']:,.2f} |", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")

@@ -187,8 +187,6 @@ def answer_fact(
     if key not in answers:
         return fallback, []
     value = safe_float(answers.get(key))
-    if value == 0.0:
-        return value, []
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
 
 
