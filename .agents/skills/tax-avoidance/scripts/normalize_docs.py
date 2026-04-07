@@ -21,6 +21,7 @@ from tax_flow_common import (  # noqa: E402
     normalize_state_code,
     resolve_state_support,
     safe_float,
+    standard_deduction_amount,
 )
 
 
@@ -121,6 +122,33 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    standard_deduction = standard_deduction_amount(payload.get("filing_status"))
+    known_itemized_deductions = mortgage_interest + charitable_cash
+    deduction_notes: list[str] = []
+    auto_applied_standard_deduction = False
+    if "deduction_amount" not in answers and standard_deduction is not None:
+        if known_itemized_deductions > standard_deduction:
+            deduction_notes.append(
+                f"Known itemized deductions from gathered records already total ${known_itemized_deductions:,.2f}, which exceeds the 2025 standard deduction of ${standard_deduction:,.2f} for this filing status."
+            )
+        else:
+            deduction_amount = standard_deduction
+            deduction_sources = [
+                {
+                    "source_type": "derived_rule",
+                    "source_ref": f"irs:standard_deduction:{payload.get('filing_status')}",
+                    "field": "deduction_amount",
+                    "value": standard_deduction,
+                }
+            ]
+            auto_applied_standard_deduction = True
+            deduction_notes.append(
+                f"No deduction amount was provided, so the draft currently uses the 2025 standard deduction of ${standard_deduction:,.2f}. Known itemized deductions from gathered records total ${known_itemized_deductions:,.2f}."
+            )
+            deduction_notes.append(
+                "Review this assumption if anyone on the return is age 65 or older, blind, claimable as a dependent, or has material SALT, medical, or other itemized deductions not yet captured here."
+            )
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -176,7 +204,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if standard_deduction is not None and known_itemized_deductions > standard_deduction:
+            missing_items.append(
+                f"Confirm the itemized deduction total before finalizing line 12. Known mortgage-interest and charitable records already total ${known_itemized_deductions:,.2f}, above the 2025 standard deduction of ${standard_deduction:,.2f}."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -289,6 +322,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "standard_deduction": standard_deduction,
+            "known_itemized_deductions": known_itemized_deductions,
+            "auto_applied_standard_deduction": auto_applied_standard_deduction,
+            "notes": deduction_notes,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

@@ -39,6 +39,10 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def fact_has_source_type(normalized: dict[str, Any], key: str, source_type: str) -> bool:
+    return any(source.get("source_type") == source_type for source in fact_sources(normalized, key))
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -85,6 +89,10 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             refund = total_payments - total_tax
         else:
             amount_owed = total_tax - total_payments
+
+    deduction_rule_keys: list[str] = []
+    if fact_has_source_type(normalized, "deduction_amount", "derived_rule"):
+        deduction_rule_keys.append("standard_deduction")
 
     return [
         {
@@ -185,7 +193,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Standard or itemized deduction",
             "value": deduction_amount or None,
             "sources": fact_sources(normalized, "deduction_amount"),
-            "rule_citations": [],
+            "rule_citations": rule_citations(*deduction_rule_keys),
         },
         {
             "form": "Form 1040",
@@ -316,6 +324,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_summary = normalized.get("deduction_summary", {})
+    deduction_lines = [f"- {item}" for item in deduction_summary.get("notes", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +351,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        f"- 2025 standard deduction for filing status: {money(deduction_summary.get('standard_deduction'))}",
+        f"- Known itemized deductions from gathered records: {money(deduction_summary.get('known_itemized_deductions'))}",
+        f"- Auto-applied standard deduction: {'Yes' if deduction_summary.get('auto_applied_standard_deduction') else 'No'}",
+        "",
+        *deduction_lines,
         "",
         "## Candidate Business Expenses",
         "",

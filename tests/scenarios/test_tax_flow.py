@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "standard_deduction_autofill",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -121,6 +122,24 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_standard_deduction_autofill(self) -> None:
+        normalized, artifacts = self.run_case("standard_deduction_autofill")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["deduction_amount"]["value"], 15750.0)
+        self.assertTrue(normalized["deduction_summary"]["auto_applied_standard_deduction"])
+        self.assertIn("$15,750.00", artifacts["federal-lines.md"])
+        self.assertIn("Auto-applied standard deduction: Yes", artifacts["tax-dossier.md"])
+        self.assertNotIn("Choose the deduction path", artifacts["missing-items.md"])
+
+    def test_itemized_deduction_review(self) -> None:
+        normalized, artifacts = self.run_case("itemized_deduction_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["deduction_amount"]["value"], 0.0)
+        self.assertFalse(normalized["deduction_summary"]["auto_applied_standard_deduction"])
+        self.assertIn("Known itemized deductions from gathered records already total $16,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("Confirm the itemized deduction total before finalizing line 12", artifacts["missing-items.md"])
+        self.assertIn("| Form 1040 | 12 | Standard or itemized deduction | TBD |", artifacts["federal-lines.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
