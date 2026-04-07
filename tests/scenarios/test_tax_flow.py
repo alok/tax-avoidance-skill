@@ -73,6 +73,15 @@ class TaxFlowTest(unittest.TestCase):
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
 
+    def test_dossier_fact_provenance(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
+        self.assertEqual(normalized["status"], "ok")
+        dossier = artifacts["tax-dossier.md"]
+        self.assertIn("## Normalized Facts", dossier)
+        self.assertIn("| nonemployee_compensation | $50,000.00 | gmail://1099-nec-main | IRS Publication 334, About Schedule C (Form 1040) |", dossier)
+        self.assertIn("| candidate_business_expenses | $371.89 | gmail://anthropic-receipt, gmail://zoom-receipt | IRS Publication 334 |", dossier)
+        self.assertIn("| deduction_amount | $15,000.00 | answer:deduction_amount | TBD |", dossier)
+
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
         self.assertEqual(normalized["status"], "ok")

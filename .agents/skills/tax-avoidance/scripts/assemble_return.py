@@ -39,6 +39,39 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def fact_rule_citations(key: str) -> list[dict[str, str]]:
+    citation_map = {
+        "wages": ("wages",),
+        "nonemployee_compensation": ("nonemployee_compensation", "schedule_c"),
+        "federal_withholding": ("federal_withholding",),
+        "taxable_interest": ("taxable_interest",),
+        "ordinary_dividends": ("ordinary_dividends",),
+        "capital_gains": ("capital_gains",),
+        "social_security_benefits": ("social_security_benefits",),
+        "mortgage_interest": ("mortgage_interest",),
+        "student_loan_interest_deduction": ("student_loan_interest_deduction",),
+        "candidate_business_expenses": ("business_expenses",),
+        "charitable_cash": ("charitable_cash",),
+        "ira_contribution_deduction": ("ira_contribution_deduction",),
+        "hsa_deduction": ("hsa_deduction",),
+        "business_expenses": ("business_expenses", "schedule_c"),
+        "education_credit": ("education_credit",),
+        "clean_vehicle_credit": ("clean_vehicle_credit",),
+        "clean_energy_credit": ("clean_energy_credit",),
+    }
+    return rule_citations(*citation_map.get(key, ()))
+
+
+def fact_source_refs(fact: dict[str, Any]) -> str:
+    refs = [source.get("source_ref", "unknown") for source in fact.get("sources", [])]
+    return ", ".join(dict.fromkeys(refs)) or "TBD"
+
+
+def fact_rule_source_titles(key: str) -> str:
+    titles = [citation["title"] for citation in fact_rule_citations(key)]
+    return ", ".join(dict.fromkeys(titles)) or "TBD"
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -316,6 +349,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    fact_rows = [
+        [
+            fact.get("key", key),
+            money(fact.get("value")),
+            fact_source_refs(fact),
+            fact_rule_source_titles(key),
+        ]
+        for key, fact in normalized.get("facts", {}).items()
+        if fact.get("value") not in (None, 0, 0.0)
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -341,6 +384,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Normalized Facts",
+        "",
+        make_markdown_table(
+            ["Fact", "Value", "Sources", "IRS Rule Sources"],
+            fact_rows or [["None", "$0.00", "None", "None"]],
+        ),
         "",
         "## Candidate Business Expenses",
         "",
