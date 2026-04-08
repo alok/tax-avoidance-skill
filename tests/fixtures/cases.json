@@ -549,6 +549,66 @@
       "schedule_c_line_1": 108000.0
     }
   },
+  "deduction_review_evidence": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 9200
+          }
+        },
+        {
+          "id": "loan-1098e",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://loan-1098e",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-receipt",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 12800
+      },
+      "user_request": "Review my deduction documents and tell me what is still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Current deduction evidence",
+      "mortgage_interest": 9200,
+      "charitable_cash": 1200,
+      "student_loan_interest": 1800
+    }
+  },
   "unsupported_schedule_c": {
     "input": {
       "tax_year": 2025,

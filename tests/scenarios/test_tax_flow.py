@@ -139,6 +139,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_deduction_review_evidence(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_evidence")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_review"]["mortgage_interest"], 9200)
+        self.assertEqual(normalized["deduction_review"]["charitable_cash"], 1200)
+        self.assertEqual(normalized["deduction_review"]["student_loan_interest"], 1800)
+        self.assertIn("## Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Form 1040 line 12 is still unset", artifacts["tax-dossier.md"])
+        self.assertIn("mortgage interest $9,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("charitable cash donations $1,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest spotted for adjustment review: $1,800.00", artifacts["tax-dossier.md"])
+        self.assertIn("Current deduction evidence", artifacts["missing-items.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

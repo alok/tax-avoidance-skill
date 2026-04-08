@@ -307,6 +307,26 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
         ),
     ]
+    deduction_review = normalized.get("deduction_review", {})
+    deduction_amount = deduction_review.get("deduction_amount")
+    itemized_evidence_total = deduction_review.get("itemized_evidence_total")
+    mortgage_interest = deduction_review.get("mortgage_interest")
+    charitable_cash = deduction_review.get("charitable_cash")
+    student_loan_interest = deduction_review.get("student_loan_interest")
+    if deduction_amount:
+        deduction_status = (
+            f"- Draft Form 1040 line 12 amount currently uses {money(deduction_amount)}. "
+            "Confirm whether that amount should remain standard or itemized before filing."
+        )
+    else:
+        deduction_status = (
+            "- Form 1040 line 12 is still unset. Compare the standard deduction against the documented deduction evidence before finalizing the draft package."
+        )
+    deduction_review_lines = [
+        deduction_status,
+        f"- Documented itemized-deduction evidence so far: mortgage interest {money(mortgage_interest) if mortgage_interest else '$0.00'}; charitable cash donations {money(charitable_cash) if charitable_cash else '$0.00'}; subtotal {money(itemized_evidence_total) if itemized_evidence_total else '$0.00'}.",
+        f"- Student loan interest spotted for adjustment review: {money(student_loan_interest) if student_loan_interest else '$0.00'}.",
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -362,6 +382,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## Education Review",
         "",
