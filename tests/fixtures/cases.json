@@ -209,6 +209,79 @@
       "scholarships_and_grants": 2500
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Gather my Social Security tax paperwork and show me what still needs review."
+    },
+    "expect": {
+      "status": "ok",
+      "gross_benefits": 18600
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18600
+          }
+        },
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 12000,
+            "federal_withholding": 1500
+          }
+        }
+      ],
+      "answers": {
+        "social_security_taxable_benefits": 4200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 500
+      },
+      "user_request": "Use my Social Security forms and the taxable amount I already reviewed."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600,
+      "line_6b": 4200,
+      "line_9": 16200
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

@@ -64,6 +64,12 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
+                if "line_9" in expected:
+                    self.assertIn(f"${expected['line_9']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -93,6 +99,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "social_security_review_required",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -145,6 +152,25 @@ class TaxFlowTest(unittest.TestCase):
         self.assertTrue(normalized["illegal_reasons"])
         self.assertIn("Refusal", artifacts["missing-items.md"])
         self.assertIn("tax evasion", artifacts["tax-dossier.md"])
+
+    def test_social_security_review_required(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_required")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18600)
+        self.assertEqual(normalized["facts"]["social_security_taxable_benefits"]["value"], 0.0)
+        self.assertIn("Benefits Review", artifacts["tax-dossier.md"])
+        self.assertIn("$18,600.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "confirm the taxable Social Security amount",
+            artifacts["missing-items.md"],
+        )
+
+    def test_social_security_taxable_amount(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_amount")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18600)
+        self.assertEqual(normalized["facts"]["social_security_taxable_benefits"]["value"], 4200)
+        self.assertIn("$18,600.00", artifacts["federal-lines.md"])
+        self.assertIn("$4,200.00", artifacts["federal-lines.md"])
+        self.assertIn("$16,200.00", artifacts["federal-lines.md"])
 
     def test_example_input_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
