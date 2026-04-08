@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_w2_proxy_review",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -72,6 +73,13 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "schedule_se_tax" in expected:
+                    self.assertIn(f"${expected['schedule_se_tax']:,.2f}", federal_lines)
+                if "deductible_half_se_tax" in expected:
+                    self.assertEqual(
+                        normalized["facts"]["deductible_half_self_employment_tax"]["value"],
+                        expected["deductible_half_se_tax"],
+                    )
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -156,7 +164,21 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Self-Employment Tax Review", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_self_employment_tax_proxy_review_notes(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_w2_proxy_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertTrue(normalized["self_employment_tax_summary"]["used_w2_wages_proxy"])
+        self.assertIn(
+            "Confirm each W-2 box 3 Social Security wages amount",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn(
+            "W-2 box 1 wages were used as a proxy for box 3 Social Security wages",
+            artifacts["tax-dossier.md"],
+        )
 
 
 if __name__ == "__main__":

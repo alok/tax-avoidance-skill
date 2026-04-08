@@ -8,6 +8,7 @@
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
 - Common credits and review workflows: education-credit review with 1098-T intake, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
+- Schedule SE-style self-employment tax scaffolding for straightforward contractor cases, with explicit review notes when W-2 Social Security wage data or spouse-level attribution is incomplete
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
 
 ## Supported Documents

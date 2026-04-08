@@ -70,6 +70,26 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "Instructions for Schedule SE (2025)",
         "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
     },
+    "social_security_wages": {
+        "title": "2025 General Instructions for Forms W-2 and W-3",
+        "url": "https://www.irs.gov/instructions/iw2w3",
+    },
+    "self_employment_tax": {
+        "title": "Instructions for Schedule SE (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
+    "deductible_half_self_employment_tax": {
+        "title": "Instructions for Schedule SE (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
+}
+
+SELF_EMPLOYMENT_NET_EARNINGS_RATE = 0.9235
+SELF_EMPLOYMENT_SOCIAL_SECURITY_RATE = 0.124
+SELF_EMPLOYMENT_MEDICARE_RATE = 0.029
+SELF_EMPLOYMENT_MIN_NET_EARNINGS = 400.0
+SOCIAL_SECURITY_WAGE_BASE_BY_YEAR = {
+    2025: 176_100.0,
 }
 
 STATE_SUPPORT: dict[str, dict[str, str]] = {

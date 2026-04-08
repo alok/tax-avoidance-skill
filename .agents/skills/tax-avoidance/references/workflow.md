@@ -44,3 +44,4 @@ For a plain Codex app user:
 - Prefer targeted clarifications over generic tax questionnaires.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.
+- Once contractor net profit is available, surface a reviewable self-employment tax scaffold and call out any missing W-2 box 3 Social Security wages before the user treats the total tax as final.

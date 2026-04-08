@@ -238,7 +238,51 @@
     "expect": {
       "status": "ok",
       "schedule_c_line_1": 108000.0,
-      "schedule_c_line_31": 89658.47
+      "schedule_c_line_31": 89658.47,
+      "schedule_se_tax": 12668.34,
+      "deductible_half_se_tax": 6334.17
+    }
+  },
+  "schedule_c_w2_proxy_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 120000,
+            "federal_withholding": 18000
+          }
+        },
+        {
+          "id": "1099-nec-side",
+          "doc_type": "1099-NEC",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099-nec-side",
+          "fields": {
+            "nonemployee_compensation": 40000
+          }
+        }
+      ],
+      "answers": {
+        "business_expenses": 5000,
+        "deduction_amount": 29200,
+        "tax_before_credits": 14000
+      },
+      "user_request": "Draft our return and include the contractor side income."
+    },
+    "expect": {
+      "status": "ok",
+      "schedule_c_line_31": 35000,
+      "schedule_se_tax": 4945.34
     }
   },
   "schedule_c_missing_expenses": {

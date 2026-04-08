@@ -43,21 +43,26 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
     business_expenses = fact_value(normalized, "business_expenses")
+    schedule_c_net_profit = fact_value(normalized, "schedule_c_net_profit")
+    self_employment_net_earnings = fact_value(normalized, "self_employment_net_earnings")
+    self_employment_tax = fact_value(normalized, "self_employment_tax")
+    deductible_half_self_employment_tax = fact_value(normalized, "deductible_half_self_employment_tax")
     interest = fact_value(normalized, "taxable_interest")
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
-    has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
+    self_employment_summary = normalized.get("self_employment_tax_summary", {})
+    has_business_expenses = self_employment_summary.get("schedule_c_net_profit") is not None
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
-        net_profit = nonemployee_compensation - business_expenses
+        net_profit = schedule_c_net_profit
 
     total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
     student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
-    adjustments_total = ira + hsa + student_loan_interest
+    adjustments_total = ira + hsa + student_loan_interest + deductible_half_self_employment_tax
 
     agi = total_income - adjustments_total
     deduction_amount = fact_value(normalized, "deduction_amount")
@@ -72,7 +77,10 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         + fact_value(normalized, "child_tax_credit")
         + fact_value(normalized, "other_nonrefundable_credits")
     )
-    total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
+    income_tax_after_credits = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
+    total_tax = None
+    if income_tax_after_credits is not None:
+        total_tax = income_tax_after_credits + self_employment_tax
 
     withholding = fact_value(normalized, "federal_withholding")
     other_payments = fact_value(normalized, "other_payments")
@@ -110,6 +118,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "value": net_profit,
             "sources": fact_sources(normalized, "nonemployee_compensation") + fact_sources(normalized, "business_expenses"),
             "rule_citations": rule_citations("schedule_c", "schedule_se"),
+        },
+        {
+            "form": "Schedule SE",
+            "line": "4c",
+            "label": "Net earnings from self-employment",
+            "value": self_employment_net_earnings or None,
+            "sources": fact_sources(normalized, "self_employment_net_earnings"),
+            "rule_citations": rule_citations("schedule_se"),
+        },
+        {
+            "form": "Schedule 2",
+            "line": "4",
+            "label": "Self-employment tax",
+            "value": self_employment_tax or None,
+            "sources": fact_sources(normalized, "self_employment_tax"),
+            "rule_citations": rule_citations("self_employment_tax", "schedule_se"),
         },
         {
             "form": "Form 1040",
@@ -164,11 +188,13 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "value": adjustments_total or None,
             "sources": fact_sources(normalized, "ira_contribution_deduction")
             + fact_sources(normalized, "hsa_deduction")
-            + fact_sources(normalized, "student_loan_interest_deduction"),
+            + fact_sources(normalized, "student_loan_interest_deduction")
+            + fact_sources(normalized, "deductible_half_self_employment_tax"),
             "rule_citations": rule_citations(
                 "ira_contribution_deduction",
                 "hsa_deduction",
                 "student_loan_interest_deduction",
+                "deductible_half_self_employment_tax",
             ),
         },
         {
@@ -225,7 +251,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Total tax",
             "value": total_tax,
             "sources": [],
-            "rule_citations": [],
+            "rule_citations": rule_citations("self_employment_tax"),
         },
         {
             "form": "Form 1040",
@@ -298,6 +324,26 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    self_employment_summary = normalized.get("self_employment_tax_summary", {})
+    self_employment_review_lines: list[str] = []
+    if self_employment_summary.get("schedule_c_net_profit") is not None:
+        self_employment_review_lines = [
+            f"- Schedule C net profit: {money(self_employment_summary.get('schedule_c_net_profit'))}",
+            f"- Net earnings from self-employment (92.35%): {money(self_employment_summary.get('net_earnings'))}",
+            f"- Social Security wage base used: {money(self_employment_summary.get('social_security_wage_base'))}",
+            f"- W-2 Social Security wages used in the scaffold: {money(self_employment_summary.get('social_security_wages_used'))}",
+            f"- Social Security portion in the scaffold: {money(self_employment_summary.get('social_security_component'))}",
+            f"- Medicare portion in the scaffold: {money(self_employment_summary.get('medicare_component'))}",
+            f"- Draft self-employment tax carried to Schedule 2 line 4: {money(self_employment_summary.get('self_employment_tax'))}",
+            f"- Draft deductible half of self-employment tax carried into adjustments: {money(self_employment_summary.get('deductible_half'))}",
+        ]
+        if self_employment_summary.get("used_w2_wages_proxy"):
+            self_employment_review_lines.append(
+                "- W-2 box 1 wages were used as a proxy for box 3 Social Security wages because explicit box 3 data was not present."
+            )
+        review_notes = self_employment_summary.get("review_notes", [])
+        if review_notes:
+            self_employment_review_lines.extend(f"- {note}" for note in review_notes)
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -396,6 +442,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *refusal_lines,
     ]
+    if self_employment_review_lines:
+        sections[sections.index("## Education Review"):sections.index("## Education Review")] = [
+            "## Self-Employment Tax Review",
+            "",
+            *self_employment_review_lines,
+            "",
+        ]
     return "\n".join(sections).strip() + "\n"
 
 

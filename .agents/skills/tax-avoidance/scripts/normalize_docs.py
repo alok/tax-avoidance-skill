@@ -10,6 +10,11 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from tax_flow_common import (  # noqa: E402
+    SELF_EMPLOYMENT_MEDICARE_RATE,
+    SELF_EMPLOYMENT_MIN_NET_EARNINGS,
+    SELF_EMPLOYMENT_NET_EARNINGS_RATE,
+    SELF_EMPLOYMENT_SOCIAL_SECURITY_RATE,
+    SOCIAL_SECURITY_WAGE_BASE_BY_YEAR,
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
@@ -44,6 +49,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     unsupported_reasons = detect_unsupported(payload)
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
+    social_security_wages, social_security_wages_sources = aggregate_numeric(
+        documents,
+        {"W-2"},
+        "social_security_wages",
+    )
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
@@ -175,6 +185,70 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
 
+    schedule_c_net_profit = None
+    if nonemployee_compensation > 0.0 and "business_expenses" in answers:
+        schedule_c_net_profit = nonemployee_compensation - business_expenses
+
+    w2_documents = [document for document in documents if document.get("doc_type") == "W-2"]
+    needs_social_security_wage_review = any(
+        safe_float(document.get("fields", {}).get("wages")) > 0.0
+        and "social_security_wages" not in document.get("fields", {})
+        for document in w2_documents
+    )
+    social_security_wages_used = social_security_wages
+    social_security_wages_used_sources = social_security_wages_sources
+    if social_security_wages_used == 0.0 and needs_social_security_wage_review:
+        social_security_wages_used = wages
+        social_security_wages_used_sources = wages_sources
+
+    social_security_wage_base = SOCIAL_SECURITY_WAGE_BASE_BY_YEAR.get(tax_year)
+    self_employment_net_earnings = 0.0
+    social_security_taxable_earnings = 0.0
+    social_security_component = 0.0
+    medicare_component = 0.0
+    self_employment_tax = 0.0
+    deductible_half_self_employment_tax = 0.0
+    self_employment_tax_review_notes: list[str] = []
+    if schedule_c_net_profit is not None:
+        if schedule_c_net_profit <= 0.0:
+            self_employment_tax_review_notes.append(
+                "Schedule C net profit is zero or negative, so no self-employment tax is computed in this scaffold."
+            )
+        else:
+            self_employment_net_earnings = round(schedule_c_net_profit * SELF_EMPLOYMENT_NET_EARNINGS_RATE, 2)
+            if self_employment_net_earnings < SELF_EMPLOYMENT_MIN_NET_EARNINGS:
+                self_employment_tax_review_notes.append(
+                    "Net earnings from self-employment are below the Schedule SE filing threshold, so no self-employment tax is computed."
+                )
+            elif social_security_wage_base is None:
+                self_employment_tax_review_notes.append(
+                    f"No Social Security wage-base configuration is stored for tax year {tax_year}, so self-employment tax is left for manual review."
+                )
+            else:
+                remaining_social_security_base = max(social_security_wage_base - social_security_wages_used, 0.0)
+                social_security_taxable_earnings = min(self_employment_net_earnings, remaining_social_security_base)
+                social_security_component = round(
+                    social_security_taxable_earnings * SELF_EMPLOYMENT_SOCIAL_SECURITY_RATE,
+                    2,
+                )
+                medicare_component = round(
+                    self_employment_net_earnings * SELF_EMPLOYMENT_MEDICARE_RATE,
+                    2,
+                )
+                self_employment_tax = round(social_security_component + medicare_component, 2)
+                deductible_half_self_employment_tax = round(self_employment_tax / 2.0, 2)
+                if needs_social_security_wage_review:
+                    self_employment_tax_review_notes.append(
+                        "W-2 Social Security wages were missing, so this scaffold used Form W-2 box 1 wages as a proxy when estimating the remaining Social Security wage base. Confirm box 3 wages before filing."
+                    )
+                if payload.get("filing_status") == "married_filing_jointly":
+                    self_employment_tax_review_notes.append(
+                        "For married filing jointly returns, confirm whether one spouse or both spouses had self-employment income because separate Schedule SE computations may be required."
+                    )
+                self_employment_tax_review_notes.append(
+                    "This scaffold does not compute Additional Medicare Tax; review Form 8959 if wages and self-employment earnings are high enough to trigger it."
+                )
+
     missing_items: list[str] = []
     available_dedupe_keys = {
         document.get("dedupe_key")
@@ -192,6 +266,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
+        )
+    if self_employment_tax > 0.0 and needs_social_security_wage_review:
+        missing_items.append(
+            "Confirm each W-2 box 3 Social Security wages amount before relying on the self-employment tax scaffold."
+        )
+    if self_employment_tax > 0.0 and payload.get("filing_status") == "married_filing_jointly":
+        missing_items.append(
+            "Confirm which spouse had the Schedule C activity before filing, because married joint returns may require separate Schedule SE worksheets."
         )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
@@ -243,6 +325,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     elif unsupported_reasons:
         status = "unsupported"
 
+    schedule_c_sources = nonemployee_compensation_sources + business_expense_sources
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
         "nonemployee_compensation": build_fact(
@@ -251,6 +334,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             nonemployee_compensation_sources,
         ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "social_security_wages": build_fact(
+            "social_security_wages",
+            social_security_wages_used,
+            social_security_wages_used_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
@@ -280,6 +368,26 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
+        "schedule_c_net_profit": build_fact(
+            "schedule_c_net_profit",
+            schedule_c_net_profit or 0.0,
+            schedule_c_sources,
+        ),
+        "self_employment_net_earnings": build_fact(
+            "self_employment_net_earnings",
+            self_employment_net_earnings,
+            schedule_c_sources,
+        ),
+        "self_employment_tax": build_fact(
+            "self_employment_tax",
+            self_employment_tax,
+            schedule_c_sources + social_security_wages_used_sources,
+        ),
+        "deductible_half_self_employment_tax": build_fact(
+            "deductible_half_self_employment_tax",
+            deductible_half_self_employment_tax,
+            schedule_c_sources + social_security_wages_used_sources,
+        ),
         "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
         "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
         "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
@@ -319,6 +427,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "self_employment_tax_summary": {
+            "schedule_c_net_profit": schedule_c_net_profit,
+            "net_earnings": self_employment_net_earnings,
+            "social_security_wage_base": social_security_wage_base,
+            "social_security_wages_used": social_security_wages_used,
+            "used_w2_wages_proxy": needs_social_security_wage_review and social_security_wages == 0.0,
+            "social_security_taxable_earnings": social_security_taxable_earnings,
+            "social_security_component": social_security_component,
+            "medicare_component": medicare_component,
+            "self_employment_tax": self_employment_tax,
+            "deductible_half": deductible_half_self_employment_tax,
+            "review_notes": self_employment_tax_review_notes,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
