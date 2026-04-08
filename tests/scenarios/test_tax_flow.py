@@ -88,11 +88,28 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertIn("Unsupported", artifacts["missing-items.md"])
 
     def test_supported_but_incomplete_cases(self) -> None:
-        for name in ("metadata_only_tax_docs", "schedule_c_missing_expenses", "unsupported_schedule_c"):
+        for name in (
+            "metadata_only_tax_docs",
+            "schedule_c_missing_expenses",
+            "unsupported_schedule_c",
+            "education_credit_review_1098t",
+        ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_education_review_1098t(self) -> None:
+        normalized, artifacts = self.run_case("education_credit_review_1098t")
+        self.assertEqual(normalized["facts"]["qualified_tuition"]["value"], 9600)
+        self.assertEqual(normalized["facts"]["scholarships_and_grants"]["value"], 2500)
+        self.assertIn("Education Review", artifacts["tax-dossier.md"])
+        self.assertIn("$9,600.00", artifacts["tax-dossier.md"])
+        self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the 1098-T tuition and scholarship amounts",
+            artifacts["missing-items.md"],
+        )
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

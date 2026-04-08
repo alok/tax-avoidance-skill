@@ -295,6 +295,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    qualified_tuition = fact_value(normalized, "qualified_tuition")
+    scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
+    education_credit = fact_value(normalized, "education_credit")
+    education_review_lines = [
+        f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
+        f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
+        (
+            f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit)}"
+            if education_credit
+            else "- No education credit is applied yet. Review the 1098-T details before adding one."
+        ),
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -350,6 +362,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Education Review",
+        "",
+        *education_review_lines,
         "",
         "## State Follow-Up",
         "",

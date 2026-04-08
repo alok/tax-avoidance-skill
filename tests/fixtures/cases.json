@@ -167,6 +167,48 @@
       "line_20": 1800
     }
   },
+  "education_credit_review_1098t": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-student-parent",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-student-parent",
+          "fields": {
+            "wages": 68000,
+            "federal_withholding": 7400
+          }
+        },
+        {
+          "id": "1098t-university",
+          "doc_type": "1098-T",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098t-university",
+          "fields": {
+            "qualified_tuition": 9600,
+            "scholarships_or_grants": 2500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 8700
+      },
+      "user_request": "Review my tuition documents and tell me what is still needed for any education credit."
+    },
+    "expect": {
+      "status": "ok",
+      "qualified_tuition": 9600,
+      "scholarships_and_grants": 2500
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

@@ -72,6 +72,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    qualified_tuition, qualified_tuition_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "qualified_tuition",
+    )
+    scholarships_and_grants, scholarships_and_grants_sources = aggregate_numeric(
+        documents,
+        {"1098-T"},
+        "scholarships_or_grants",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -192,6 +202,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
+    if has_1098t and "education_credit" not in answers:
+        if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
+            missing_items.append(
+                "Review the 1098-T tuition and scholarship amounts and confirm the creditable qualified education expenses before applying an education credit."
+            )
+        else:
+            missing_items.append(
+                "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
+            )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -240,6 +260,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "qualified_tuition": build_fact(
+            "qualified_tuition",
+            qualified_tuition,
+            qualified_tuition_sources,
+        ),
+        "scholarships_and_grants": build_fact(
+            "scholarships_and_grants",
+            scholarships_and_grants,
+            scholarships_and_grants_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
