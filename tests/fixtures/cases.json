@@ -135,6 +135,87 @@
       "line_3b": 1400
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-retiree-parttime",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-retiree-parttime",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-retiree",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-retiree",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use the forms you found and tell me what is still needed for my return."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 18000
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-retiree-consulting",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-retiree-consulting",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-retiree",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-retiree",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 8400,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1900
+      },
+      "user_request": "Draft the federal package using my wage and Social Security documents."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 18000
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,

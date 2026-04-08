@@ -93,6 +93,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "social_security_review",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -157,6 +158,31 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_social_security_review(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 24000)
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 0.0)
+        self.assertIn("Social Security Review", artifacts["tax-dossier.md"])
+        self.assertIn("$24,000.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "determine the taxable Social Security amount",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $24,000.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 9 | Total income | $18,000.00 |", artifacts["federal-lines.md"])
+
+    def test_taxable_social_security_amount(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_amount")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 24000)
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 8400)
+        self.assertNotIn(
+            "determine the taxable Social Security amount",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | $8,400.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 9 | Total income | $26,400.00 |", artifacts["federal-lines.md"])
 
 
 if __name__ == "__main__":
