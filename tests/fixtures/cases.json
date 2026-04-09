@@ -135,6 +135,46 @@
       "line_3b": 1400
     }
   },
+  "ira_contribution_review_5498": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "5498-traditional-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-traditional-ira",
+          "fields": {
+            "ira_contributions": 4200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 12600
+      },
+      "user_request": "Review my IRA contribution documents and tell me what is still needed for the draft return."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_contribution_evidence": 4200
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
