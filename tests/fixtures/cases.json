@@ -135,6 +135,86 @@
       "line_3b": 1400
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-main",
+          "fields": {
+            "wages": 42000,
+            "federal_withholding": 4100
+          }
+        },
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 3200
+      },
+      "user_request": "Draft my simple return package and keep Social Security review visible."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 42000
+    }
+  },
+  "social_security_taxable_portion_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-main",
+          "fields": {
+            "wages": 42000,
+            "federal_withholding": 4100
+          }
+        },
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 3200,
+        "taxable_social_security": 6000
+      },
+      "user_request": "Use my reviewed taxable Social Security amount in the draft."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
