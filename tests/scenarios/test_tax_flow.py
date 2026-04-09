@@ -111,6 +111,26 @@ class TaxFlowTest(unittest.TestCase):
             artifacts["missing-items.md"],
         )
 
+    def test_dependent_credit_review_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_credit_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["household"]["dependent_count"], 2)
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Possible Child Tax Credit review", artifacts["tax-dossier.md"])
+        self.assertIn("Possible Credit for Other Dependents review", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review dependent eligibility and confirm whether any Child Tax Credit or Credit for Other Dependents should be applied",
+            artifacts["missing-items.md"],
+        )
+
+    def test_dependent_missing_facts(self) -> None:
+        normalized, artifacts = self.run_case("dependent_missing_facts")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["household"]["dependent_count"], 1)
+        self.assertIn("Kai", artifacts["tax-dossier.md"])
+        self.assertIn("Needs basic dependent facts", artifacts["tax-dossier.md"])
+        self.assertIn("Complete the dependent review for Kai", artifacts["missing-items.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

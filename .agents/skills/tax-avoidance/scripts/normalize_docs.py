@@ -32,6 +32,117 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def safe_bool(value: Any) -> bool | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    lowered = str(value).strip().lower()
+    if lowered in {"true", "yes", "y", "1"}:
+        return True
+    if lowered in {"false", "no", "n", "0"}:
+        return False
+    return None
+
+
+def safe_int(value: Any) -> int | None:
+    if value is None or value == "":
+        return None
+    return int(float(value))
+
+
+def normalize_dependents(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    household = payload.get("household", {})
+    dependents = household.get("dependents", [])
+    normalized_dependents: list[dict[str, Any]] = []
+    missing_items: list[str] = []
+    review_notes: list[str] = []
+
+    for index, dependent in enumerate(dependents, start=1):
+        label = str(
+            dependent.get("label")
+            or dependent.get("name")
+            or dependent.get("nickname")
+            or f"Dependent {index}"
+        )
+        relationship = str(dependent.get("relationship") or "").strip()
+        age = safe_int(dependent.get("age"))
+        months_in_home = safe_int(dependent.get("months_in_home"))
+        support_percent = safe_float(dependent.get("support_percent_from_taxpayer"))
+        support_percent_value = support_percent if dependent.get("support_percent_from_taxpayer") not in (None, "") else None
+        is_full_time_student = safe_bool(dependent.get("is_full_time_student"))
+        is_permanently_disabled = safe_bool(dependent.get("is_permanently_disabled"))
+        has_tax_id = safe_bool(dependent.get("has_tax_id"))
+        is_us_citizen_or_resident = safe_bool(dependent.get("is_us_citizen_or_resident"))
+        claimed_by_other_taxpayer = safe_bool(dependent.get("claimed_by_other_taxpayer"))
+
+        review_track = "Needs basic dependent facts"
+        if relationship and age is not None and months_in_home is not None and support_percent_value is not None:
+            if age < 17:
+                review_track = "Possible Child Tax Credit review"
+            else:
+                review_track = "Possible Credit for Other Dependents review"
+
+        missing_fields: list[str] = []
+        if not relationship:
+            missing_fields.append("relationship")
+        if age is None:
+            missing_fields.append("age")
+        if months_in_home is None:
+            missing_fields.append("months in home")
+        if support_percent_value is None:
+            missing_fields.append("taxpayer support percentage")
+        if has_tax_id is None:
+            missing_fields.append("tax ID status")
+        if is_us_citizen_or_resident is None:
+            missing_fields.append("citizenship or residency status")
+        if claimed_by_other_taxpayer is None:
+            missing_fields.append("whether another taxpayer will claim them")
+
+        if missing_fields:
+            missing_items.append(
+                f"Complete the dependent review for {label}: confirm {', '.join(missing_fields)} before applying any child or other dependent credit."
+            )
+
+        if claimed_by_other_taxpayer is True:
+            review_notes.append(
+                f"{label} is marked as claimable by another taxpayer, so no dependent credit should be drafted until that tie-break is resolved."
+            )
+        elif age is not None and age < 17:
+            review_notes.append(
+                f"{label} is under age 17, so review Child Tax Credit eligibility after confirming residency, support, and tax ID requirements."
+            )
+        elif age is not None:
+            review_notes.append(
+                f"{label} is age 17 or older, so review Credit for Other Dependents eligibility instead of assuming Child Tax Credit treatment."
+            )
+
+        normalized_dependents.append(
+            {
+                "label": label,
+                "relationship": relationship or None,
+                "age": age,
+                "months_in_home": months_in_home,
+                "support_percent_from_taxpayer": support_percent_value,
+                "is_full_time_student": is_full_time_student,
+                "is_permanently_disabled": is_permanently_disabled,
+                "has_tax_id": has_tax_id,
+                "is_us_citizen_or_resident": is_us_citizen_or_resident,
+                "claimed_by_other_taxpayer": claimed_by_other_taxpayer,
+                "review_track": review_track,
+            }
+        )
+
+    if normalized_dependents:
+        review_notes.append(
+            "Dependent data is scaffold only. Keep names or labels minimal, do not store SSNs here, and do not apply a credit until the remaining tests are confirmed."
+        )
+
+    return normalized_dependents, review_notes, missing_items
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -114,6 +225,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    dependents, dependent_review_notes, dependent_missing_items = normalize_dependents(payload)
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -236,6 +348,13 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+    for item in dependent_missing_items:
+        if item not in missing_items:
+            missing_items.append(item)
+    if dependents and "child_tax_credit" not in answers:
+        missing_items.append(
+            "Review dependent eligibility and confirm whether any Child Tax Credit or Credit for Other Dependents should be applied on Form 1040 line 20."
+        )
 
     status = "ok"
     if illegal_reasons:
@@ -321,6 +440,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "household": {
+            "dependent_count": len(dependents),
+            "dependents": dependents,
+            "dependent_review_notes": dependent_review_notes,
+        },
         "facts": facts,
     }
     return normalized

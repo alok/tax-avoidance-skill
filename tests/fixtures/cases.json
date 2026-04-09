@@ -139,6 +139,20 @@
     "input": {
       "tax_year": 2025,
       "filing_status": "married_filing_jointly",
+      "household": {
+        "dependents": [
+          {
+            "label": "Maya",
+            "relationship": "daughter",
+            "age": 9,
+            "months_in_home": 12,
+            "support_percent_from_taxpayer": 100,
+            "has_tax_id": true,
+            "is_us_citizen_or_resident": true,
+            "claimed_by_other_taxpayer": false
+          }
+        ]
+      },
       "connectors": {
         "gmail": false,
         "google_drive": true
@@ -164,7 +178,103 @@
     },
     "expect": {
       "status": "ok",
-      "line_20": 1800
+      "line_20": 1800,
+      "dependent_count": 1
+    }
+  },
+  "dependent_credit_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "household": {
+        "dependents": [
+          {
+            "label": "Avery",
+            "relationship": "son",
+            "age": 8,
+            "months_in_home": 12,
+            "support_percent_from_taxpayer": 100,
+            "has_tax_id": true,
+            "is_us_citizen_or_resident": true,
+            "claimed_by_other_taxpayer": false
+          },
+          {
+            "label": "Noah",
+            "relationship": "parent",
+            "age": 71,
+            "months_in_home": 12,
+            "support_percent_from_taxpayer": 80,
+            "has_tax_id": true,
+            "is_us_citizen_or_resident": true,
+            "claimed_by_other_taxpayer": false
+          }
+        ]
+      },
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-review-household",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-review-household",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 9500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 8400
+      },
+      "user_request": "Draft the return package and keep track of possible dependent credits."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 2
+    }
+  },
+  "dependent_missing_facts": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "household": {
+        "dependents": [
+          {
+            "label": "Kai",
+            "relationship": "nephew",
+            "age": 14
+          }
+        ]
+      },
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-dependent-missing",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-dependent-missing",
+          "fields": {
+            "wages": 62000,
+            "federal_withholding": 6100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 6100
+      },
+      "user_request": "Track my household but do not guess any dependent credit."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 1
     }
   },
   "education_credit_review_1098t": {

@@ -217,6 +217,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "education_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
+                "child_tax_credit",
             ),
         },
         {
@@ -328,6 +329,31 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    household = normalized.get("household", {})
+    dependent_rows = [
+        [
+            dependent.get("label") or "Unknown",
+            dependent.get("relationship") or "TBD",
+            str(dependent.get("age")) if dependent.get("age") is not None else "TBD",
+            str(dependent.get("months_in_home")) if dependent.get("months_in_home") is not None else "TBD",
+            (
+                f"{float(dependent.get('support_percent_from_taxpayer')):.0f}%"
+                if dependent.get("support_percent_from_taxpayer") is not None
+                else "TBD"
+            ),
+            "Yes" if dependent.get("has_tax_id") is True else "No" if dependent.get("has_tax_id") is False else "TBD",
+            (
+                "Yes"
+                if dependent.get("claimed_by_other_taxpayer") is True
+                else "No"
+                if dependent.get("claimed_by_other_taxpayer") is False
+                else "TBD"
+            ),
+            dependent.get("review_track") or "Needs review",
+        ]
+        for dependent in household.get("dependents", [])
+    ]
+    dependent_review_lines = [f"- {item}" for item in household.get("dependent_review_notes", [])] or ["- None"]
 
     sections = [
         "# Tax Dossier",
@@ -366,6 +392,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Household And Dependents",
+        "",
+        f"- Dependents captured for review: {household.get('dependent_count', 0)}",
+        "",
+        make_markdown_table(
+            ["Label", "Relationship", "Age", "Months Home", "Support", "Tax ID", "Claimed Elsewhere", "Review Track"],
+            dependent_rows or [["None", "None", "TBD", "TBD", "TBD", "TBD", "TBD", "No dependents captured"]],
+        ),
+        "",
+        *dependent_review_lines,
         "",
         "## State Follow-Up",
         "",
