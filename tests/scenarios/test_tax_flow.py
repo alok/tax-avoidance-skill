@@ -70,6 +70,9 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
+                if "schedule_c_line_28" in expected:
+                    self.assertIn("| Schedule C | 28 | Total expenses |", federal_lines)
+                    self.assertIn(f"${expected['schedule_c_line_28']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
 
