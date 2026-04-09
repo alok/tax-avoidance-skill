@@ -209,6 +209,58 @@
       "scholarships_and_grants": 2500
     }
   },
+  "dependent_household_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 118000,
+            "federal_withholding": 14600
+          }
+        }
+      ],
+      "household": {
+        "dependents": [
+          {
+            "label": "Kid One",
+            "relationship": "daughter",
+            "birth_year": 2018,
+            "months_in_home": 12,
+            "citizenship_status": "us_citizen",
+            "support_status": "taxpayer_provided_over_half",
+            "filed_joint_return": false,
+            "care_expenses": 3200
+          },
+          {
+            "label": "Grandma J",
+            "relationship": "mother",
+            "birth_year": 1952,
+            "months_in_home": 12
+          }
+        ]
+      },
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 12800
+      },
+      "user_request": "Keep a clean household and dependent review section in the draft return package."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_label": "Kid One",
+      "dependent_missing": "Complete the dependent profile for Grandma J"
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

@@ -24,6 +24,7 @@ Supported:
 - Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows
+- Safe dependent-credit interview scaffolding using sanitized labels and household facts, without SSNs in the artifact set
 
 Unsupported by default:
 
@@ -68,6 +69,7 @@ Every completed run should yield:
 - `federal-lines.md`: line-by-line draft for supported federal lines
 - `missing-items.md`: unresolved fields, absent documents, and unsupported complexity
 - The dossier should separately surface **candidate business-expense receipts** that still need user confirmation before they are applied to Schedule C.
+- Dependent review should preserve only sanitized labels plus eligibility-related interview facts; never put SSNs into public-facing artifacts.
 
 Every nontrivial tax statement must cite an IRS source. Every extracted value must cite the originating document, email, file, or upload.
 

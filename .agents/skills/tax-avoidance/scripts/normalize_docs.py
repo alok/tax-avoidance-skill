@@ -32,6 +32,65 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+DEPENDENT_REQUIRED_FIELDS: dict[str, str] = {
+    "relationship": "relationship to the taxpayer",
+    "birth_year": "birth year",
+    "months_in_home": "months lived in the home during the tax year",
+    "citizenship_status": "citizenship or residency status",
+    "support_status": "whether the taxpayer provided more than half of the dependent's support",
+    "filed_joint_return": "whether the dependent filed a joint return",
+}
+
+
+def dependent_label(raw_dependent: dict[str, Any], index: int) -> str:
+    label = str(raw_dependent.get("label") or "").strip()
+    return label or f"Dependent {index}"
+
+
+def build_household_summary(
+    household: dict[str, Any],
+    child_tax_credit_claimed: bool,
+) -> tuple[dict[str, Any], list[str]]:
+    dependents_raw = household.get("dependents", [])
+    dependents: list[dict[str, Any]] = []
+    missing_items: list[str] = []
+
+    for index, raw_dependent in enumerate(dependents_raw, start=1):
+        label = dependent_label(raw_dependent, index)
+        missing_fields = [
+            prompt
+            for key, prompt in DEPENDENT_REQUIRED_FIELDS.items()
+            if raw_dependent.get(key) in (None, "")
+        ]
+        care_expenses = safe_float(raw_dependent.get("care_expenses"))
+        dependents.append(
+            {
+                "label": label,
+                "relationship": raw_dependent.get("relationship", ""),
+                "birth_year": raw_dependent.get("birth_year"),
+                "months_in_home": raw_dependent.get("months_in_home"),
+                "citizenship_status": raw_dependent.get("citizenship_status", ""),
+                "support_status": raw_dependent.get("support_status", ""),
+                "filed_joint_return": raw_dependent.get("filed_joint_return"),
+                "care_expenses": care_expenses,
+                "missing_fields": missing_fields,
+            }
+        )
+        if missing_fields:
+            fields_text = ", ".join(missing_fields)
+            missing_items.append(f"Complete the dependent profile for {label}: confirm {fields_text}.")
+
+    if dependents and not child_tax_credit_claimed:
+        missing_items.append(
+            "Review dependent eligibility for any child tax credit or credit for other dependents before applying a dependent-related credit."
+        )
+
+    return {
+        "dependents": dependents,
+        "dependent_count": len(dependents),
+    }, missing_items
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -39,6 +98,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    household = payload.get("household", {})
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -130,6 +190,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    household_summary, household_missing_items = build_household_summary(
+        household,
+        child_tax_credit_claimed=("child_tax_credit" in answers),
+    )
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -200,6 +264,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
+    for item in household_missing_items:
+        if item not in missing_items:
+            missing_items.append(item)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
     has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
@@ -320,6 +387,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "household_summary": household_summary,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

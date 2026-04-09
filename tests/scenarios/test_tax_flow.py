@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER = REPO_ROOT / ".agents/skills/tax-avoidance/scripts/run_tax_flow.py"
 FIXTURES = REPO_ROOT / "tests/fixtures/cases.json"
 EXAMPLE_INPUT = REPO_ROOT / "examples/contractor-and-investment-input.json"
+DEPENDENT_EXAMPLE_INPUT = REPO_ROOT / "examples/mfj-dependent-review-input.json"
 
 
 class TaxFlowTest(unittest.TestCase):
@@ -50,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "dependent_household_review",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -139,6 +141,24 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_dependent_review_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("dependent_household_review")
+        self.assertEqual(normalized["status"], "ok")
+        household = normalized["household_summary"]
+        self.assertEqual(household["dependent_count"], 2)
+        self.assertEqual(household["dependents"][0]["label"], "Kid One")
+        self.assertIn("Dependent Review", artifacts["tax-dossier.md"])
+        self.assertIn("Grandma J", artifacts["tax-dossier.md"])
+        self.assertIn("Do not put SSNs", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review dependent eligibility for any child tax credit or credit for other dependents",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn(
+            "Complete the dependent profile for Grandma J",
+            artifacts["missing-items.md"],
+        )
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -157,6 +177,18 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_dependent_example_input_smoke(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir) / "out"
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(DEPENDENT_EXAMPLE_INPUT), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+            dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
+            self.assertIn("Dependent Review", dossier)
+            self.assertIn("Kid One", dossier)
 
 
 if __name__ == "__main__":
