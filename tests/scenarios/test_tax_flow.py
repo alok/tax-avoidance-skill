@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "itemized_deduction_review",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -110,6 +111,18 @@ class TaxFlowTest(unittest.TestCase):
             "Review the 1098-T tuition and scholarship amounts",
             artifacts["missing-items.md"],
         )
+
+    def test_itemized_deduction_review(self) -> None:
+        normalized, artifacts = self.run_case("itemized_deduction_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["mortgage_interest"]["value"], 9400)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 1200)
+        self.assertEqual(normalized["facts"]["itemized_deduction_total"]["value"], 10600)
+        self.assertIn("Itemized Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("$9,400.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("$10,600.00", artifacts["tax-dossier.md"])
+        self.assertIn("Choose the deduction path and provide the deduction amount", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
