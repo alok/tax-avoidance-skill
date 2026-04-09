@@ -114,6 +114,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_contribution_evidence, ira_contribution_evidence_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -189,6 +194,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if ira_contribution_evidence > 0.0:
+            missing_items.append(
+                f"Review the Form 5498 IRA contributions totaling ${ira_contribution_evidence:,.2f} and confirm the deductible traditional IRA amount for {tax_year} before applying any IRA deduction."
+            )
+        else:
+            missing_items.append(
+                "Extract the key Form 5498 IRA contribution amount or upload a clearer copy before reviewing any IRA deduction."
+            )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -277,6 +292,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "ira_contribution_evidence": build_fact(
+            "ira_contribution_evidence",
+            ira_contribution_evidence,
+            ira_contribution_evidence_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
