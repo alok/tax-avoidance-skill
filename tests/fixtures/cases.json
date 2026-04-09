@@ -209,6 +209,46 @@
       "scholarships_and_grants": 2500
     }
   },
+  "ira_5498_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 10400
+      },
+      "user_request": "Review my IRA contribution tax documents and tell me what is still needed."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_contributions_reported": 6500
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
