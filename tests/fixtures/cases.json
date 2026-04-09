@@ -605,6 +605,85 @@
       "unsupported": "Equity compensation"
     }
   },
+  "social_security_review_only": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-consulting",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-consulting",
+          "fields": {
+            "wages": 61000,
+            "federal_withholding": 5200
+          }
+        },
+        {
+          "id": "ssa1099-review",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa1099-review",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 4800
+      },
+      "user_request": "Use the tax docs you can find and draft the package without making unsupported assumptions."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-part-time",
+          "fields": {
+            "wages": 68450,
+            "federal_withholding": 6100
+          }
+        },
+        {
+          "id": "ssa1099-taxable",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa1099-taxable",
+          "fields": {
+            "benefits": 24000,
+            "taxable_benefits": 12000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 5900
+      },
+      "user_request": "Draft the simple return package from the available forms."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,
