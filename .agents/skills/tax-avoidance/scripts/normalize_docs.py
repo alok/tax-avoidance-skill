@@ -21,6 +21,7 @@ from tax_flow_common import (  # noqa: E402
     normalize_state_code,
     resolve_state_support,
     safe_float,
+    standard_deduction_amount,
 )
 
 
@@ -114,6 +115,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_candidate_total = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -130,6 +132,37 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+    standard_deduction = standard_deduction_amount(payload.get("filing_status", ""))
+    deduction_recommendation = "unknown"
+    deduction_recommendation_reason = "Provide a supported filing status before comparing deduction paths."
+    deduction_scaffold_amount = 0.0
+    deduction_scaffold_sources: list[dict[str, Any]] = []
+    if standard_deduction:
+        if itemized_candidate_total > standard_deduction:
+            deduction_recommendation = "itemized_review"
+            deduction_recommendation_reason = (
+                f"Known itemized deductions currently total ${itemized_candidate_total:,.2f}, above the 2025 standard deduction of ${standard_deduction:,.2f}."
+            )
+        else:
+            deduction_recommendation = "standard"
+            deduction_recommendation_reason = (
+                f"The 2025 standard deduction of ${standard_deduction:,.2f} is at least as large as the currently known itemized deductions of ${itemized_candidate_total:,.2f}."
+            )
+            deduction_scaffold_amount = standard_deduction
+            deduction_scaffold_sources = [
+                {
+                    "source_type": "system_scaffold",
+                    "source_ref": f"standard_deduction:{payload.get('filing_status', '')}:2025",
+                    "field": "deduction_amount",
+                    "value": standard_deduction,
+                }
+            ]
+    deduction_is_user_supplied = "deduction_amount" in answers
+    effective_deduction_amount = deduction_amount
+    effective_deduction_sources = deduction_sources
+    if not deduction_is_user_supplied and deduction_scaffold_amount:
+        effective_deduction_amount = deduction_scaffold_amount
+        effective_deduction_sources = deduction_scaffold_sources
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -185,8 +218,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
-    if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if not deduction_is_user_supplied:
+        if standard_deduction and deduction_recommendation == "itemized_review":
+            missing_items.append(
+                f"Review whether to itemize. Known itemized deductions total ${itemized_candidate_total:,.2f}, which is above the 2025 standard deduction of ${standard_deduction:,.2f}."
+            )
+        elif standard_deduction and deduction_scaffold_amount:
+            filing_status_label = payload.get("filing_status", "").replace("_", " ")
+            missing_items.append(
+                f"Standard deduction scaffolded at ${deduction_scaffold_amount:,.2f} for {filing_status_label or 'the current filing status'}. Confirm whether to keep it or switch to itemized deductions."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -280,7 +323,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
-        "deduction_amount": build_fact("deduction_amount", deduction_amount, deduction_sources),
+        "deduction_amount": build_fact(
+            "deduction_amount",
+            effective_deduction_amount,
+            effective_deduction_sources,
+        ),
         "qbi_deduction": build_fact("qbi_deduction", qbi_deduction, qbi_sources),
         "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
         "other_payments": build_fact("other_payments", other_payments, other_payments_sources),
@@ -306,6 +353,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "deduction_summary": {
+            "standard_deduction": standard_deduction,
+            "itemized_candidate_total": itemized_candidate_total,
+            "recommendation": deduction_recommendation,
+            "recommendation_reason": deduction_recommendation_reason,
+            "is_user_supplied": deduction_is_user_supplied,
+            "effective_deduction_amount": effective_deduction_amount,
+        },
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

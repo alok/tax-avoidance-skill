@@ -280,6 +280,7 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    deduction_summary = normalized.get("deduction_summary", {})
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -328,6 +329,22 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    deduction_lines = [
+        f"- 2025 standard deduction for this filing status: {money(deduction_summary.get('standard_deduction'))}",
+        f"- Known itemized deductions from the gathered documents: {money(deduction_summary.get('itemized_candidate_total'))}",
+        f"- Recommendation: {deduction_summary.get('recommendation', 'unknown')}",
+        f"- Reason: {deduction_summary.get('recommendation_reason', 'None')}",
+        (
+            f"- Draft deduction currently applied on Form 1040 line 12: {money(deduction_summary.get('effective_deduction_amount'))}"
+            if deduction_summary.get("effective_deduction_amount")
+            else "- No draft deduction is applied yet."
+        ),
+        (
+            "- Deduction amount was explicitly supplied by the user."
+            if deduction_summary.get("is_user_supplied")
+            else "- Deduction amount is currently using system scaffolding or remains pending review."
+        ),
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -353,6 +370,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_lines,
         "",
         "## Candidate Business Expenses",
         "",

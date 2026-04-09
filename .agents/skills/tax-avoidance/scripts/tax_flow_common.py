@@ -111,6 +111,11 @@ UNSUPPORTED_DOC_TYPES = {
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
 
+STANDARD_DEDUCTION_2025: dict[str, float] = {
+    "single": 15750.0,
+    "married_filing_jointly": 31500.0,
+}
+
 
 def load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
@@ -222,6 +227,10 @@ def detect_unsupported(payload: dict[str, Any]) -> list[str]:
     if answers.get("has_complex_equity"):
         reasons.append("Complex equity compensation is out of scope for v1.")
     return list(dict.fromkeys(reasons))
+
+
+def standard_deduction_amount(filing_status: str) -> float:
+    return STANDARD_DEDUCTION_2025.get(filing_status, 0.0)
 
 
 def connector_notes(connectors: dict[str, bool], documents: list[dict[str, Any]]) -> list[str]:

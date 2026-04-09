@@ -139,6 +139,26 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_standard_deduction_scaffold(self) -> None:
+        normalized, artifacts = self.run_case("standard_deduction_scaffold")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["deduction_amount"]["value"], 15750)
+        self.assertEqual(normalized["deduction_summary"]["recommendation"], "standard")
+        self.assertFalse(normalized["deduction_summary"]["is_user_supplied"])
+        self.assertIn("$15,750.00", artifacts["federal-lines.md"])
+        self.assertIn("Standard deduction scaffolded at $15,750.00", artifacts["missing-items.md"])
+        self.assertIn("## Deduction Review", artifacts["tax-dossier.md"])
+
+    def test_itemized_deduction_review(self) -> None:
+        normalized, artifacts = self.run_case("itemized_deduction_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["deduction_summary"]["itemized_candidate_total"], 16500)
+        self.assertEqual(normalized["deduction_summary"]["recommendation"], "itemized_review")
+        self.assertEqual(normalized["facts"]["deduction_amount"]["value"], 0.0)
+        self.assertIn("Review whether to itemize.", artifacts["missing-items.md"])
+        self.assertIn("$16,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("| Form 1040 | 12 | Standard or itemized deduction | TBD |", artifacts["tax-dossier.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
