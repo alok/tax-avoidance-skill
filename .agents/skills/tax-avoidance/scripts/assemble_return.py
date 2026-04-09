@@ -280,6 +280,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    reported_ira_contributions = fact_value(normalized, "reported_ira_contributions")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -305,6 +307,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit)}"
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
+        ),
+    ]
+    ira_review_lines = [
+        f"- Reported IRA contributions spotted from Form 5498 evidence: {money(reported_ira_contributions) if reported_ira_contributions else '$0.00'}",
+        (
+            f"- Draft IRA deduction currently applied in the adjustment lines: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet. Confirm the deductible traditional IRA amount before adding one."
         ),
     ]
     state_summary = normalized.get("state_summary", {})
@@ -366,6 +376,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## IRA Review",
+        "",
+        *ira_review_lines,
         "",
         "## State Follow-Up",
         "",
