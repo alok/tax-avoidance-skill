@@ -215,6 +215,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             + fact_sources(normalized, "other_nonrefundable_credits"),
             "rule_citations": rule_citations(
                 "education_credit",
+                "child_tax_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
             ),
@@ -328,6 +329,35 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    household_summary = normalized.get("household_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("label", ""),
+            dependent.get("relationship") or "TBD",
+            str(dependent.get("birth_year") or "TBD"),
+            str(dependent.get("months_in_home") or "TBD"),
+            dependent.get("citizenship_status") or "TBD",
+            dependent.get("support_status") or "TBD",
+            (
+                "Yes"
+                if dependent.get("filed_joint_return") is True
+                else "No" if dependent.get("filed_joint_return") is False else "TBD"
+            ),
+            money(dependent.get("care_expenses")) if dependent.get("care_expenses") else "$0.00",
+            ", ".join(dependent.get("missing_fields", [])) or "Complete",
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
+    child_tax_credit = fact_value(normalized, "child_tax_credit")
+    dependent_review_lines = [
+        f"- Dependents captured for review: {household_summary.get('dependent_count', 0)}",
+        (
+            f"- Draft child tax credit currently applied on Form 1040 line 20: {money(child_tax_credit)}"
+            if child_tax_credit
+            else "- No dependent-related credit is applied yet. Review dependent eligibility before adding one."
+        ),
+        "- Preserve only sanitized dependent labels and interview facts here. Do not put SSNs or full identity details in this artifact set.",
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -366,6 +396,25 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Dependent Review",
+        "",
+        *dependent_review_lines,
+        "",
+        make_markdown_table(
+            [
+                "Label",
+                "Relationship",
+                "Birth Year",
+                "Months In Home",
+                "Citizenship/Residency",
+                "Support Test",
+                "Joint Return",
+                "Care Expenses",
+                "Missing Fields",
+            ],
+            dependent_rows or [["None", "None", "None", "None", "None", "None", "None", "$0.00", "None"]],
+        ),
         "",
         "## State Follow-Up",
         "",

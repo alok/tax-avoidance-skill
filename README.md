@@ -28,10 +28,11 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Preserves sanitized dependent-review scaffolding for child-credit follow-up without storing SSNs or pretending to determine eligibility automatically.
 
 ## Scope
 
-This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It also recognizes `1098-T` tuition statements as education-credit review evidence and carries those amounts into the artifact set without silently computing the final credit. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
+This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It also recognizes `1098-T` tuition statements as education-credit review evidence and carries those amounts into the artifact set without silently computing the final credit. It now preserves dependent-review facts such as relationship, birth year, residency/support questions, and care-expense notes, but keeps SSNs and final dependent-credit eligibility decisions out of scope. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
 
 All substantive tax facts should trace back to primary IRS sources such as [Publication 17](https://www.irs.gov/publications/p17), [Publication 505](https://www.irs.gov/publications/p505), [Publication 590-A](https://www.irs.gov/publications/p590a), and [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969). Wikipedia is only used for the avoidance-vs-evasion terminology framing.
 
@@ -74,6 +75,14 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 
 That should create the same four standard artifacts in `output/example-run/`.
 
+For a household/dependent review example:
+
+```bash
+uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
+  --input examples/mfj-dependent-review-input.json \
+  --out-dir output/dependent-example-run
+```
+
 ## Install In Claude Cowork
 
 This repo also ships a Cowork plugin wrapper:
@@ -95,10 +104,11 @@ Primary command:
 2. Search for likely tax documents using fixed, opinionated queries instead of asking the user to browse manually.
 3. Capture resident-state and work-state context as early as possible.
 4. Build a document inventory and ask the minimum remaining interview questions.
-5. Normalize extracted facts into `return-data.json`.
-6. Assemble a prefilled federal line map and a human-readable dossier.
-7. Surface likely business-expense receipts separately from confirmed deductible expenses.
-8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
+5. Preserve safe dependent-review scaffolding using labels plus interview facts, not SSNs.
+6. Normalize extracted facts into `return-data.json`.
+7. Assemble a prefilled federal line map and a human-readable dossier.
+8. Surface likely business-expense receipts separately from confirmed deductible expenses.
+9. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, dependent follow-up, and anything that needs professional review.
 
 ## Repository Layout
 

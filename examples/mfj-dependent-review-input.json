@@ -1,0 +1,45 @@
+{
+  "tax_year": 2025,
+  "filing_status": "married_filing_jointly",
+  "connectors": {
+    "gmail": true,
+    "google_drive": true
+  },
+  "documents": [
+    {
+      "id": "sample-w2-primary",
+      "doc_type": "W-2",
+      "source_type": "upload",
+      "source_ref": "upload://sample-w2-primary",
+      "fields": {
+        "wages": 132000.0,
+        "federal_withholding": 15800.0
+      }
+    }
+  ],
+  "household": {
+    "dependents": [
+      {
+        "label": "Kid One",
+        "relationship": "daughter",
+        "birth_year": 2019,
+        "months_in_home": 12,
+        "citizenship_status": "us_citizen",
+        "support_status": "taxpayer_provided_over_half",
+        "filed_joint_return": false,
+        "care_expenses": 2800.0
+      },
+      {
+        "label": "Grandpa R",
+        "relationship": "father",
+        "birth_year": 1950,
+        "months_in_home": 12
+      }
+    ]
+  },
+  "answers": {
+    "deduction_amount": 29200.0,
+    "tax_before_credits": 14900.0
+  },
+  "user_request": "Build a sample joint return package with household dependent review scaffolding."
+}
