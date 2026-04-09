@@ -187,6 +187,27 @@ def aggregate_numeric(
     return total, sources
 
 
+def aggregate_numeric_fields(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: list[str],
+) -> tuple[float, list[dict[str, Any]]]:
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    seen_doc_ids: set[str] = set()
+    for field_name in field_names:
+        field_total, field_sources = aggregate_numeric(documents, doc_types, field_name)
+        total += field_total
+        for source in field_sources:
+            doc_id = str(source.get("doc_id", ""))
+            if doc_id and doc_id in seen_doc_ids:
+                continue
+            if doc_id:
+                seen_doc_ids.add(doc_id)
+            sources.append(source)
+    return total, sources
+
+
 def answer_fact(
     answers: dict[str, Any],
     key: str,
