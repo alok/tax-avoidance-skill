@@ -295,6 +295,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    ira_review_lines = [
+        (
+            f"- IRA contributions spotted from Form 5498 documents: {money(ira_contributions_reported)}"
+            if ira_contributions_reported
+            else "- No IRA contribution amount has been extracted from Form 5498 documents."
+        ),
+        (
+            f"- Draft IRA deduction currently applied on Form 1040 line 10: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet. Review the Form 5498 contribution amount before adding one."
+        ),
+    ]
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
@@ -362,6 +376,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## IRA Review",
+        "",
+        *ira_review_lines,
         "",
         "## Education Review",
         "",
