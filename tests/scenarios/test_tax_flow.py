@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_zero_expenses",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -124,6 +125,14 @@ class TaxFlowTest(unittest.TestCase):
         self.assertEqual(normalized["status"], "ok")
         self.assertIn("$48.00", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts totaling $48.00", artifacts["missing-items.md"])
+
+    def test_schedule_c_zero_expenses(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_zero_expenses")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["business_expenses"]["value"], 0.0)
+        self.assertTrue(normalized["facts"]["business_expenses"]["sources"])
+        self.assertIn("$24,000.00", artifacts["federal-lines.md"])
+        self.assertNotIn("Provide deductible business expenses", artifacts["missing-items.md"])
 
     def test_state_follow_up(self) -> None:
         normalized, artifacts = self.run_case("state_follow_up")
