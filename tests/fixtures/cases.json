@@ -605,6 +605,84 @@
       "unsupported": "Equity compensation"
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099-main",
+          "fields": {
+            "benefits": 18240
+          }
+        },
+        {
+          "id": "bank-1099-int",
+          "doc_type": "1099-INT",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://bank-1099-int",
+          "fields": {
+            "interest_income": 320
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Draft my return package and keep the Social Security treatment explicit."
+    },
+    "expect": {
+      "status": "ok",
+      "social_security_benefits": 18240
+    }
+  },
+  "social_security_taxable_amount_applied": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099-main",
+          "fields": {
+            "benefits": 18240
+          }
+        },
+        {
+          "id": "bank-1099-int",
+          "doc_type": "1099-INT",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://bank-1099-int",
+          "fields": {
+            "interest_income": 12000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 15504,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1700
+      },
+      "user_request": "Use my reviewed taxable Social Security amount in the draft package."
+    },
+    "expect": {
+      "status": "ok",
+      "taxable_social_security_benefits": 15504
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

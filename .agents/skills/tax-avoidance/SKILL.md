@@ -21,7 +21,7 @@ Supported:
 
 - Single or married-filing-jointly federal individual returns
 - Wage, contractor, and investment income
-- Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099, and donation receipts
+- Common documents such as W-2, 1099-INT, 1099-DIV, 1099-B summaries, 1098, 1098-E, 5498, SSA-1099 review evidence, and donation receipts
 - 1099-NEC contractor flows with a Schedule C skeleton when gross receipts are known and deductible business expenses can be gathered
 - Common deductions, retirement contributions, HSA questions, education questions, and basic clean-energy or education-credit workflows
 
@@ -48,6 +48,7 @@ When unsupported complexity appears, stop pretending the flow is still simple. M
 3. Search for likely tax documents using opinionated queries rather than asking the user to browse manually.
 4. Build a document inventory that names each candidate document, source, and confidence.
 5. Ask only the missing interview questions needed to assemble the supported return.
+   For SSA-1099, capture gross benefits but require an explicit taxable-benefits review before filling Form 1040 line 6b.
 6. Write an input JSON payload and run the deterministic script:
    `uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py --input <input.json> --out-dir <output-dir>`
 7. Return the artifact set:
