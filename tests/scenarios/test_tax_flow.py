@@ -48,6 +48,7 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "w2_single",
             "mfj_common_deductions",
+            "deduction_review_household",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -72,6 +73,23 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "schedule_1_line_21" in expected:
+                    self.assertIn(f"${expected['schedule_1_line_21']:,.2f}", federal_lines)
+                if "schedule_a_line_8a" in expected:
+                    self.assertIn(f"${expected['schedule_a_line_8a']:,.2f}", federal_lines)
+                if "schedule_a_line_11" in expected:
+                    self.assertIn(f"${expected['schedule_a_line_11']:,.2f}", federal_lines)
+
+    def test_deduction_review_artifacts(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 1800)
+        self.assertEqual(normalized["facts"]["mortgage_interest"]["value"], 9100)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 600)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("$1,800.00", artifacts["tax-dossier.md"])
+        self.assertIn("$9,100.00", artifacts["tax-dossier.md"])
+        self.assertIn("$600.00", artifacts["tax-dossier.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")

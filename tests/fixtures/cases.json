@@ -84,6 +84,68 @@
       "line_25a": 14800
     }
   },
+  "deduction_review_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 118000,
+            "federal_withholding": 15300
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 9100
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        },
+        {
+          "id": "donation-local-food-bank",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-local-food-bank",
+          "fields": {
+            "cash_donations": 600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 12400
+      },
+      "user_request": "Use my connected tax docs and donation receipts to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 118000,
+      "line_25a": 15300,
+      "schedule_1_line_21": 1800,
+      "schedule_a_line_8a": 9100,
+      "schedule_a_line_11": 600
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,

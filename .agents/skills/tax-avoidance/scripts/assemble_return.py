@@ -57,6 +57,8 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
     student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
     adjustments_total = ira + hsa + student_loan_interest
 
     agi = total_income - adjustments_total
@@ -87,6 +89,30 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             amount_owed = total_tax - total_payments
 
     return [
+        {
+            "form": "Schedule 1",
+            "line": "21",
+            "label": "Student loan interest deduction",
+            "value": student_loan_interest or None,
+            "sources": fact_sources(normalized, "student_loan_interest_deduction"),
+            "rule_citations": rule_citations("student_loan_interest_deduction"),
+        },
+        {
+            "form": "Schedule A",
+            "line": "8a",
+            "label": "Home mortgage interest",
+            "value": mortgage_interest or None,
+            "sources": fact_sources(normalized, "mortgage_interest"),
+            "rule_citations": rule_citations("mortgage_interest"),
+        },
+        {
+            "form": "Schedule A",
+            "line": "11",
+            "label": "Gifts to charity in cash or by check",
+            "value": charitable_cash or None,
+            "sources": fact_sources(normalized, "charitable_cash"),
+            "rule_citations": rule_citations("charitable_cash"),
+        },
         {
             "form": "Schedule C",
             "line": "1",
@@ -298,6 +324,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    hsa_deduction = fact_value(normalized, "hsa_deduction")
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -306,6 +338,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
         ),
+    ]
+    deduction_review_lines = [
+        f"- Draft deduction amount currently used on Form 1040 line 12: {money(deduction_amount) if deduction_amount else 'TBD'}",
+        f"- Mortgage interest evidence from 1098 forms: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Cash donation receipts gathered so far: {money(charitable_cash) if charitable_cash else '$0.00'}",
+        f"- Student loan interest deduction evidence from 1098-E forms: {money(student_loan_interest) if student_loan_interest else '$0.00'}",
+        f"- IRA deduction tracked from interview answers: {money(ira_deduction) if ira_deduction else '$0.00'}",
+        f"- HSA deduction tracked from interview answers: {money(hsa_deduction) if hsa_deduction else '$0.00'}",
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -362,6 +402,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## Education Review",
         "",
