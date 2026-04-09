@@ -23,6 +23,11 @@
 - SSA-1099
 - donation receipts
 
+## Supported Review Scaffolding
+
+- Form 5498 contribution amounts are captured as IRA review evidence and preserved in the artifact set.
+- The workflow does not silently turn Form 5498 contributions into a deductible IRA amount; it asks for the deductible portion after MAGI and retirement-plan coverage review.
+
 ## Unsupported In V1
 
 - automated state tax calculations

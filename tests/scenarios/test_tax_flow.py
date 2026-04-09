@@ -111,6 +111,20 @@ class TaxFlowTest(unittest.TestCase):
             artifacts["missing-items.md"],
         )
 
+    def test_ira_review_5498(self) -> None:
+        normalized, artifacts = self.run_case("ira_review_5498")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 6500)
+        self.assertIn("IRA Review", artifacts["tax-dossier.md"])
+        self.assertIn("$6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the reported traditional IRA contributions totaling $6,500.00 from Form 5498",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn(
+            "No IRA deduction is applied yet. Review filing status, workplace retirement coverage, and MAGI limits before adding one.",
+            artifacts["tax-dossier.md"],
+        )
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")
