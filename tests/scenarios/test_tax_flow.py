@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "social_security_and_adjustments",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -64,6 +65,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -72,6 +75,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "schedule_1_line_21" in expected:
+                    self.assertIn(f"${expected['schedule_1_line_21']:,.2f}", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -138,6 +143,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_adjustment_and_social_security_review(self) -> None:
+        normalized, artifacts = self.run_case("social_security_and_adjustments")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 21600)
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 1850)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 600)
+        self.assertIn("Adjustment And Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Social Security benefits spotted from SSA-1099 documents: $21,600.00.", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest spotted from 1098-E documents: $1,850.00.", artifacts["tax-dossier.md"])
+        self.assertIn("Charitable cash support spotted from donation receipts: $600.00.", artifacts["tax-dossier.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
