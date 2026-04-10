@@ -44,3 +44,4 @@ For a plain Codex app user:
 - Prefer targeted clarifications over generic tax questionnaires.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.
+- If SSA-1099 benefits are present, surface gross benefits separately and ask for the taxable Social Security amount before populating Form 1040 line 6b.

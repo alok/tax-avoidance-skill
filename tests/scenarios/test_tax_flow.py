@@ -111,6 +111,27 @@ class TaxFlowTest(unittest.TestCase):
             artifacts["missing-items.md"],
         )
 
+    def test_social_security_review(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18600)
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 0)
+        self.assertIn("Social Security Review", artifacts["tax-dossier.md"])
+        self.assertIn("$18,600.00", artifacts["tax-dossier.md"])
+        self.assertIn("Taxable Social Security is not applied yet.", artifacts["tax-dossier.md"])
+        self.assertIn("Review the SSA-1099 benefits", artifacts["missing-items.md"])
+        self.assertIn("| Form 1040 | 6a | Social Security benefits | $18,600.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
+
+    def test_social_security_taxable_amount_confirmed(self) -> None:
+        normalized, artifacts = self.run_case("social_security_taxable_amount_confirmed")
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 4200)
+        self.assertNotIn("Review the SSA-1099 benefits", artifacts["missing-items.md"])
+        self.assertIn(
+            "| Form 1040 | 6b | Taxable Social Security benefits | $4,200.00 |",
+            artifacts["federal-lines.md"],
+        )
+        self.assertIn("| Form 1040 | 9 | Total income | $4,200.00 |", artifacts["federal-lines.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

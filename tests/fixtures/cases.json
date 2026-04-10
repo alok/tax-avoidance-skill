@@ -209,6 +209,67 @@
       "scholarships_and_grants": 2500
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-benefits",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-benefits",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Draft my return package and keep Social Security review explicit."
+    },
+    "expect": {
+      "status": "ok",
+      "benefits": 18600
+    }
+  },
+  "social_security_taxable_amount_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-benefits",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-benefits",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "taxable_social_security_benefits": 4200,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Draft my return package and include the taxable Social Security amount I already calculated."
+    },
+    "expect": {
+      "status": "ok",
+      "taxable_social_security_benefits": 4200
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
