@@ -18,6 +18,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",
     },
+    "ira_contributions_reported": {
+        "title": "IRS Publication 590-A",
+        "url": "https://www.irs.gov/publications/p590a",
+    },
     "hsa_deduction": {
         "title": "IRS Publication 969",
         "url": "https://www.irs.gov/forms-pubs/about-publication-969",
@@ -184,6 +188,20 @@ def aggregate_numeric(
                 "value": value,
             }
         )
+    return total, sources
+
+
+def aggregate_numeric_aliases(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: list[str],
+) -> tuple[float, list[dict[str, Any]]]:
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for field_name in field_names:
+        value, field_sources = aggregate_numeric(documents, doc_types, field_name)
+        total += value
+        sources.extend(field_sources)
     return total, sources
 
 
