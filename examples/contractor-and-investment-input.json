@@ -35,6 +35,24 @@
       }
     },
     {
+      "id": "sample-1098e",
+      "doc_type": "1098-E",
+      "source_type": "upload",
+      "source_ref": "upload://sample-1098e",
+      "fields": {
+        "student_loan_interest": 1300.0
+      }
+    },
+    {
+      "id": "sample-5498",
+      "doc_type": "5498",
+      "source_type": "upload",
+      "source_ref": "upload://sample-5498",
+      "fields": {
+        "ira_contributions": 3500.0
+      }
+    },
+    {
       "id": "sample-anthropic-receipt",
       "doc_type": "Expense Receipt",
       "source_type": "upload",
@@ -58,9 +76,10 @@
     }
   ],
   "answers": {
+    "ira_contribution_deduction": 3500.0,
     "business_expenses": 9000.0,
     "deduction_amount": 15000.0,
     "tax_before_credits": 6200.0
   },
-  "user_request": "Build a sample contractor plus investment return package."
+  "user_request": "Build a sample contractor plus investment return package with common deduction review."
 }

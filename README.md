@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Adds a dedicated deduction-review pass in the dossier so common evidence like `1098-E`, `5498`, mortgage-interest forms, and donation receipts show up before the user decides what to actually apply.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -72,7 +73,7 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
   --out-dir output/example-run
 ```
 
-That should create the same four standard artifacts in `output/example-run/`.
+That should create the same four standard artifacts in `output/example-run/`, including a deduction-review section that surfaces the sample `1098-E` and `5498` evidence.
 
 ## Install In Claude Cowork
 

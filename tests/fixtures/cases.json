@@ -84,6 +84,68 @@
       "line_25a": 14800
     }
   },
+  "deduction_review_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 12500
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1650
+          }
+        },
+        {
+          "id": "5498-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-ira",
+          "fields": {
+            "ira_contributions": 4200
+          }
+        },
+        {
+          "id": "donation-1",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-1",
+          "fields": {
+            "cash_donations": 600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 10100
+      },
+      "user_request": "Build the draft package and tell me which deductions still need review."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 91000,
+      "line_25a": 12500,
+      "student_loan_interest_deduction": 1650,
+      "ira_contribution_evidence": 4200,
+      "charitable_cash": 600
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,

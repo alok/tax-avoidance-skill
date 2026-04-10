@@ -48,6 +48,7 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "w2_single",
             "mfj_common_deductions",
+            "deduction_review_household",
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
@@ -157,6 +158,21 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_deduction_review_artifacts(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 1650)
+        self.assertEqual(normalized["facts"]["ira_contribution_evidence"]["value"], 4200)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 600)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("$1,650.00", artifacts["tax-dossier.md"])
+        self.assertIn("$4,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("$600.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "confirm how much is deductible before applying an IRA deduction",
+            artifacts["missing-items.md"],
+        )
 
 
 if __name__ == "__main__":

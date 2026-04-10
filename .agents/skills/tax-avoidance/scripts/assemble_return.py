@@ -295,6 +295,38 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_review_lines = [
+        (
+            f"- Student loan interest spotted from 1098-E documents: {money(fact_value(normalized, 'student_loan_interest_deduction'))}"
+            if fact_value(normalized, "student_loan_interest_deduction")
+            else "- No student loan interest was spotted from 1098-E documents."
+        ),
+        (
+            f"- Mortgage interest spotted from 1098 documents: {money(fact_value(normalized, 'mortgage_interest'))}"
+            if fact_value(normalized, "mortgage_interest")
+            else "- No mortgage interest was spotted from 1098 documents."
+        ),
+        (
+            f"- IRA contribution evidence spotted from 5498 documents: {money(fact_value(normalized, 'ira_contribution_evidence'))}"
+            if fact_value(normalized, "ira_contribution_evidence")
+            else "- No IRA contribution evidence was spotted from 5498 documents."
+        ),
+        (
+            f"- Charitable cash receipts spotted: {money(fact_value(normalized, 'charitable_cash'))}"
+            if fact_value(normalized, "charitable_cash")
+            else "- No charitable cash receipts were spotted."
+        ),
+        (
+            f"- Draft IRA deduction currently applied on Form 1040 line 10: {money(fact_value(normalized, 'ira_contribution_deduction'))}"
+            if fact_value(normalized, "ira_contribution_deduction")
+            else "- No IRA deduction is applied yet."
+        ),
+        (
+            f"- Draft HSA deduction currently applied on Form 1040 line 10: {money(fact_value(normalized, 'hsa_deduction'))}"
+            if fact_value(normalized, "hsa_deduction")
+            else "- No HSA deduction is applied yet."
+        ),
+    ]
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
@@ -362,6 +394,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## Education Review",
         "",
