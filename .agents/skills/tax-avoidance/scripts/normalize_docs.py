@@ -114,8 +114,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    traditional_ira_contributions, traditional_ira_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
+    deductible_ira_doc_amount, deductible_ira_doc_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contribution_deduction",
+    )
 
-    ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
+    ira_deduction, ira_sources = answer_fact(
+        answers,
+        "ira_contribution_deduction",
+        fallback=deductible_ira_doc_amount,
+    )
+    if not ira_sources:
+        ira_sources = deductible_ira_doc_sources
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
@@ -212,6 +228,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers and not deductible_ira_doc_sources:
+        if traditional_ira_contributions > 0.0:
+            missing_items.append(
+                "Review the Form 5498 traditional IRA contribution amount and confirm how much is deductible before applying an IRA deduction."
+            )
+        else:
+            missing_items.append(
+                "Extract the key Form 5498 IRA contribution amounts before reviewing any IRA deduction."
+            )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -265,6 +291,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "qualified_tuition",
             qualified_tuition,
             qualified_tuition_sources,
+        ),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_sources,
         ),
         "scholarships_and_grants": build_fact(
             "scholarships_and_grants",

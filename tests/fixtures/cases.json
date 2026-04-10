@@ -209,6 +209,87 @@
       "scholarships_and_grants": 2500
     }
   },
+  "ira_review_5498": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-ira-review",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-ira-review",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "5498-traditional-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-traditional-ira",
+          "fields": {
+            "traditional_ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 12600
+      },
+      "user_request": "Review my IRA contribution documents and tell me what is still needed for the draft return."
+    },
+    "expect": {
+      "status": "ok",
+      "traditional_ira_contributions": 6500
+    }
+  },
+  "ira_deduction_from_5498": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-ira-auto",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-ira-auto",
+          "fields": {
+            "wages": 87000,
+            "federal_withholding": 10400
+          }
+        },
+        {
+          "id": "5498-deductible-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-deductible-ira",
+          "fields": {
+            "traditional_ira_contributions": 7000,
+            "ira_contribution_deduction": 7000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 10100
+      },
+      "user_request": "Use my available IRA contribution documents to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_contribution_deduction": 7000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
