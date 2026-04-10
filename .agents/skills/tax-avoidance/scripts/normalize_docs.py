@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contributions_reported, ira_contributions_reported_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     qualified_tuition, qualified_tuition_sources = aggregate_numeric(
         documents,
         {"1098-T"},
@@ -197,6 +202,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if ira_contributions_reported > 0.0:
+            missing_items.append(
+                f"Review the Form 5498 IRA contributions totaling ${ira_contributions_reported:,.2f} and confirm the deductible traditional IRA amount before applying any IRA deduction."
+            )
+        else:
+            missing_items.append(
+                "Extract the key Form 5498 IRA contribution amounts or upload a clearer copy before reviewing any IRA deduction."
+            )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -260,6 +275,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contributions_reported_sources,
         ),
         "qualified_tuition": build_fact(
             "qualified_tuition",

@@ -90,6 +90,7 @@ class TaxFlowTest(unittest.TestCase):
     def test_supported_but_incomplete_cases(self) -> None:
         for name in (
             "metadata_only_tax_docs",
+            "ira_review_5498",
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
@@ -108,6 +109,18 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
         self.assertIn(
             "Review the 1098-T tuition and scholarship amounts",
+            artifacts["missing-items.md"],
+        )
+
+    def test_ira_review_5498(self) -> None:
+        normalized, artifacts = self.run_case("ira_review_5498")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 6500)
+        self.assertEqual(normalized["facts"]["ira_contribution_deduction"]["value"], 0)
+        self.assertIn("Retirement Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("$6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("No IRA deduction is applied yet", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the Form 5498 IRA contributions totaling $6,500.00",
             artifacts["missing-items.md"],
         )
 

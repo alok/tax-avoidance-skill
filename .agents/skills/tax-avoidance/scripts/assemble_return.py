@@ -298,6 +298,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    retirement_review_lines = [
+        (
+            f"- IRA contributions spotted from Form 5498 documents: {money(ira_contributions_reported)}"
+            if ira_contributions_reported
+            else "- No Form 5498 IRA contribution amounts were extracted."
+        ),
+        (
+            f"- Draft IRA deduction currently applied on Form 1040 line 10: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet. Review traditional IRA eligibility and the deductible amount before adding one."
+        ),
+    ]
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -362,6 +376,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Retirement Contribution Review",
+        "",
+        *retirement_review_lines,
         "",
         "## Education Review",
         "",
