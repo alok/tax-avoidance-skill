@@ -25,13 +25,14 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+  - with an explicit dependent-review section when family-credit facts are present
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
 
 ## Scope
 
-This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It also recognizes `1098-T` tuition statements as education-credit review evidence and carries those amounts into the artifact set without silently computing the final credit. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
+This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It recognizes `1098-T` tuition statements as education-credit review evidence and carries those amounts into the artifact set without silently computing the final credit. It also carries dependent intake and Child Tax Credit review facts into the artifact set so a family return can preserve likely qualifying-child details instead of burying them in free-form notes. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
 
 All substantive tax facts should trace back to primary IRS sources such as [Publication 17](https://www.irs.gov/publications/p17), [Publication 505](https://www.irs.gov/publications/p505), [Publication 590-A](https://www.irs.gov/publications/p590a), and [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969). Wikipedia is only used for the avoidance-vs-evasion terminology framing.
 
@@ -73,6 +74,14 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 ```
 
 That should create the same four standard artifacts in `output/example-run/`.
+
+For a family-credit example with dependent intake:
+
+```bash
+uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
+  --input examples/family-credit-input.json \
+  --out-dir output/family-credit-run
+```
 
 ## Install In Claude Cowork
 

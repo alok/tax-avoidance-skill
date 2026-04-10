@@ -217,6 +217,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "education_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
+                "child_tax_credit",
             ),
         },
         {
@@ -328,6 +329,28 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    dependent_summary = normalized.get("dependent_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("id", ""),
+            str(dependent.get("relationship", "")).replace("_", " "),
+            str(dependent.get("age", "unknown")),
+            str(dependent.get("months_lived_with_taxpayer", "unknown")),
+            "Yes" if dependent.get("has_ssn") else "No",
+            "Yes" if dependent.get("likely_qualifying_child") else "No",
+        ]
+        for dependent in dependent_summary.get("dependents", [])
+    ]
+    child_tax_credit = fact_value(normalized, "child_tax_credit")
+    dependent_review_lines = [
+        f"- Dependents captured: {dependent_summary.get('count', 0)}",
+        f"- Likely qualifying children under age 17: {dependent_summary.get('likely_qualifying_children', 0)}",
+        (
+            f"- Draft Child Tax Credit currently applied on Form 1040 line 20: {money(child_tax_credit)}"
+            if child_tax_credit
+            else "- No Child Tax Credit is applied yet. Review dependent eligibility before adding one."
+        ),
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -366,6 +389,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Dependents Review",
+        "",
+        *dependent_review_lines,
+        "",
+        make_markdown_table(
+            ["ID", "Relationship", "Age", "Months In Home", "SSN", "Likely Qualifying Child"],
+            dependent_rows or [["None", "None", "None", "None", "None", "No"]],
+        ),
         "",
         "## State Follow-Up",
         "",

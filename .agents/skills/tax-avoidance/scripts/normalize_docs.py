@@ -17,7 +17,9 @@ from tax_flow_common import (  # noqa: E402
     detect_illegal_request,
     detect_unsupported,
     dump_json,
+    likely_qualifying_child,
     load_json,
+    normalize_relationship,
     normalize_state_code,
     resolve_state_support,
     safe_float,
@@ -39,6 +41,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     user_request = payload.get("user_request", "")
     tax_year = payload.get("tax_year", 2025)
     state = payload.get("state", {})
+    dependents = payload.get("dependents", [])
 
     illegal_reasons = detect_illegal_request(user_request)
     unsupported_reasons = detect_unsupported(payload)
@@ -131,6 +134,23 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    normalized_dependents: list[dict[str, Any]] = []
+    likely_qualifying_children = 0
+    for index, dependent in enumerate(dependents, start=1):
+        normalized_dependent = {
+            "id": dependent.get("id") or f"dependent-{index}",
+            "relationship": normalize_relationship(dependent.get("relationship")) or "unspecified",
+            "age": dependent.get("age"),
+            "months_lived_with_taxpayer": dependent.get("months_lived_with_taxpayer"),
+            "has_ssn": dependent.get("has_ssn"),
+            "is_full_time_student": dependent.get("is_full_time_student"),
+            "provided_over_half_own_support": dependent.get("provided_over_half_own_support"),
+        }
+        normalized_dependent["likely_qualifying_child"] = likely_qualifying_child(normalized_dependent)
+        if normalized_dependent["likely_qualifying_child"]:
+            likely_qualifying_children += 1
+        normalized_dependents.append(normalized_dependent)
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -212,6 +232,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    if normalized_dependents and likely_qualifying_children == 0 and "child_tax_credit" in answers:
+        missing_items.append(
+            "The draft child tax credit should be reviewed because no listed dependent currently looks like a qualifying child under age 17."
+        )
+    elif likely_qualifying_children > 0 and "child_tax_credit" not in answers:
+        noun = "child" if likely_qualifying_children == 1 else "children"
+        missing_items.append(
+            f"Review Child Tax Credit eligibility and confirm the amount for {likely_qualifying_children} likely qualifying {noun} before finalizing credits."
+        )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -319,6 +348,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "dependent_summary": {
+            "count": len(normalized_dependents),
+            "likely_qualifying_children": likely_qualifying_children,
+            "dependents": normalized_dependents,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

@@ -38,6 +38,10 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
     },
+    "child_tax_credit": {
+        "title": "IRS Publication 17",
+        "url": "https://www.irs.gov/publications/p17",
+    },
     "qualified_tuition": {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
@@ -110,6 +114,18 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+QUALIFYING_CHILD_RELATIONSHIPS = {
+    "child",
+    "stepchild",
+    "foster_child",
+    "brother",
+    "sister",
+    "stepbrother",
+    "stepsister",
+    "grandchild",
+    "niece",
+    "nephew",
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -198,6 +214,32 @@ def answer_fact(
     if value == 0.0:
         return value, []
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
+
+
+def normalize_relationship(value: Any) -> str:
+    if value in (None, ""):
+        return ""
+    return str(value).strip().lower().replace(" ", "_")
+
+
+def likely_qualifying_child(dependent: dict[str, Any]) -> bool:
+    relationship = normalize_relationship(dependent.get("relationship"))
+    age = dependent.get("age")
+    months_lived_with_taxpayer = dependent.get("months_lived_with_taxpayer")
+    has_ssn = dependent.get("has_ssn")
+    provided_over_half_own_support = dependent.get("provided_over_half_own_support")
+
+    if relationship not in QUALIFYING_CHILD_RELATIONSHIPS:
+        return False
+    if age in (None, "") or safe_float(age) >= 17:
+        return False
+    if months_lived_with_taxpayer not in (None, "") and safe_float(months_lived_with_taxpayer) < 6:
+        return False
+    if has_ssn is False:
+        return False
+    if provided_over_half_own_support is True:
+        return False
+    return True
 
 
 def detect_illegal_request(user_request: str) -> list[str]:

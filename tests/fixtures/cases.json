@@ -167,6 +167,97 @@
       "line_20": 1800
     }
   },
+  "family_child_tax_credit_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "dependents": [
+        {
+          "id": "child-1",
+          "relationship": "child",
+          "age": 8,
+          "months_lived_with_taxpayer": 12,
+          "has_ssn": true,
+          "provided_over_half_own_support": false
+        },
+        {
+          "id": "child-2",
+          "relationship": "stepchild",
+          "age": 12,
+          "months_lived_with_taxpayer": 12,
+          "has_ssn": true,
+          "provided_over_half_own_support": false
+        }
+      ],
+      "documents": [
+        {
+          "id": "w2-family",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-family",
+          "fields": {
+            "wages": 128000,
+            "federal_withholding": 13600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 30000,
+        "child_tax_credit": 4000,
+        "tax_before_credits": 9200
+      },
+      "user_request": "Prepare our joint return and carry the family credit into the draft."
+    },
+    "expect": {
+      "status": "ok",
+      "line_20": 4000
+    }
+  },
+  "family_credit_review_needed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "dependents": [
+        {
+          "id": "child-1",
+          "relationship": "child",
+          "age": 6,
+          "months_lived_with_taxpayer": 12,
+          "has_ssn": true,
+          "provided_over_half_own_support": false
+        }
+      ],
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-parent",
+          "fields": {
+            "wages": 74000,
+            "federal_withholding": 8100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7600
+      },
+      "user_request": "Help me draft my return and tell me which family credit questions are still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Review Child Tax Credit eligibility"
+    }
+  },
   "education_credit_review_1098t": {
     "input": {
       "tax_year": 2025,

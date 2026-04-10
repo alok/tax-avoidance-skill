@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "family_child_tax_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -90,6 +91,7 @@ class TaxFlowTest(unittest.TestCase):
     def test_supported_but_incomplete_cases(self) -> None:
         for name in (
             "metadata_only_tax_docs",
+            "family_credit_review_needed",
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
@@ -110,6 +112,20 @@ class TaxFlowTest(unittest.TestCase):
             "Review the 1098-T tuition and scholarship amounts",
             artifacts["missing-items.md"],
         )
+
+    def test_family_child_tax_credit(self) -> None:
+        normalized, artifacts = self.run_case("family_child_tax_credit_household")
+        self.assertEqual(normalized["dependent_summary"]["count"], 2)
+        self.assertEqual(normalized["dependent_summary"]["likely_qualifying_children"], 2)
+        self.assertIn("Dependents Review", artifacts["tax-dossier.md"])
+        self.assertIn("Likely qualifying children under age 17: 2", artifacts["tax-dossier.md"])
+        self.assertIn("$4,000.00", artifacts["federal-lines.md"])
+
+    def test_family_credit_review_needed(self) -> None:
+        normalized, artifacts = self.run_case("family_credit_review_needed")
+        self.assertEqual(normalized["dependent_summary"]["likely_qualifying_children"], 1)
+        self.assertIn("Review Child Tax Credit eligibility", artifacts["missing-items.md"])
+        self.assertIn("No Child Tax Credit is applied yet", artifacts["tax-dossier.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
