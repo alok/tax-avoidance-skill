@@ -187,6 +187,69 @@ def aggregate_numeric(
     return total, sources
 
 
+def aggregate_numeric_aliases(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: tuple[str, ...],
+) -> tuple[float, list[dict[str, Any]]]:
+    def source_rank(document: dict[str, Any]) -> tuple[int, int]:
+        content_status = document.get("content_status", "")
+        status_score = {
+            "available": 4,
+            "metadata_only": 3,
+            "unreadable_encrypted_attachment": 2,
+            "portal_notice_only": 1,
+        }.get(content_status, 0)
+        value_score = 0
+        for field_name in field_names:
+            if safe_float(document.get("fields", {}).get(field_name)) != 0.0:
+                value_score = 1
+                break
+        return (value_score, status_score)
+
+    grouped_documents: list[dict[str, Any]] = []
+    dedupe_groups: dict[str, list[dict[str, Any]]] = {}
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        dedupe_key = document.get("dedupe_key")
+        if dedupe_key:
+            dedupe_groups.setdefault(dedupe_key, []).append(document)
+        else:
+            grouped_documents.append(document)
+
+    for group in dedupe_groups.values():
+        grouped_documents.append(max(group, key=source_rank))
+
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for document in grouped_documents:
+        fields = document.get("fields", {})
+        matched_field = None
+        matched_value = 0.0
+        for field_name in field_names:
+            value = safe_float(fields.get(field_name))
+            if value != 0.0:
+                matched_field = field_name
+                matched_value = value
+                break
+        if matched_field is None:
+            continue
+        total += matched_value
+        sources.append(
+            {
+                "doc_id": document.get("id"),
+                "doc_type": document.get("doc_type"),
+                "source_type": document.get("source_type"),
+                "source_ref": document.get("source_ref"),
+                "dedupe_key": document.get("dedupe_key"),
+                "field": matched_field,
+                "value": matched_value,
+            }
+        )
+    return total, sources
+
+
 def answer_fact(
     answers: dict[str, Any],
     key: str,

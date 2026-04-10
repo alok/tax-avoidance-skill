@@ -549,6 +549,57 @@
       "schedule_c_line_1": 108000.0
     }
   },
+  "ira_review_5498": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 12800
+          }
+        },
+        {
+          "id": "5498-traditional",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-traditional",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        },
+        {
+          "id": "5498-roth",
+          "doc_type": "5498",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://5498-roth",
+          "fields": {
+            "roth_ira_contributions": 1000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 12700
+      },
+      "user_request": "Gather my tax forms and tell me what is still needed for any IRA deduction."
+    },
+    "expect": {
+      "status": "ok",
+      "traditional_ira_contributions_reported": 6500,
+      "roth_ira_contributions_reported": 1000,
+      "missing": "Review the Form 5498 traditional IRA contributions"
+    }
+  },
   "unsupported_schedule_c": {
     "input": {
       "tax_year": 2025,
