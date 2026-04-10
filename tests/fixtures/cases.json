@@ -135,6 +135,68 @@
       "line_3b": 1400
     }
   },
+  "social_security_review_only": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Gather my Social Security tax documents and keep the draft conservative."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security": 9600,
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use my reviewed taxable Social Security amount in the draft return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600,
+      "line_6b": 9600
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,

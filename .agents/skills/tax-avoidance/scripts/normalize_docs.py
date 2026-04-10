@@ -115,6 +115,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "cash_donations",
     )
 
+    taxable_social_security, taxable_social_security_sources = answer_fact(answers, "taxable_social_security")
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
@@ -202,6 +203,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    has_ssa1099 = any(doc.get("doc_type") == "SSA-1099" for doc in documents)
+    if has_ssa1099 and "taxable_social_security" not in answers:
+        if social_security > 0.0:
+            missing_items.append(
+                "Review the SSA-1099 benefits and calculate the taxable Social Security amount before applying Form 1040 line 6b."
+            )
+        else:
+            missing_items.append(
+                "Extract the SSA-1099 benefits total or upload a clearer copy before reviewing any taxable Social Security amount."
+            )
     has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
     if has_1098t and "education_credit" not in answers:
         if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
@@ -255,6 +266,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "taxable_social_security": build_fact(
+            "taxable_social_security",
+            taxable_social_security,
+            taxable_social_security_sources,
+        ),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
