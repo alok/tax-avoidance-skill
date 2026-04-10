@@ -39,6 +39,10 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(normalized["facts"].get(key, {}).get("sources", []))
 
 
+def fact_answered(normalized: dict[str, Any], key: str) -> bool:
+    return bool(fact_sources(normalized, key))
+
+
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
@@ -47,24 +51,29 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
-    has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
+    taxable_social_security = fact_value(normalized, "taxable_social_security_benefits")
+    has_taxable_social_security = fact_answered(normalized, "taxable_social_security_benefits")
+    has_business_expenses = fact_answered(normalized, "business_expenses") or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    base_income = wages + interest + dividends + capital_gains + (net_profit or 0.0)
+    total_income = base_income + taxable_social_security if social_security == 0.0 or has_taxable_social_security else None
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
     student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
     adjustments_total = ira + hsa + student_loan_interest
 
-    agi = total_income - adjustments_total
+    agi = total_income - adjustments_total if total_income is not None else None
     deduction_amount = fact_value(normalized, "deduction_amount")
     qbi_deduction = fact_value(normalized, "qbi_deduction")
-    taxable_income = max(agi - deduction_amount - qbi_deduction, 0.0) if deduction_amount else None
+    has_deduction_amount = fact_answered(normalized, "deduction_amount")
+    taxable_income = max(agi - deduction_amount - qbi_deduction, 0.0) if agi is not None and has_deduction_amount else None
 
     tax_before_credits = fact_value(normalized, "tax_before_credits")
+    has_tax_before_credits = fact_answered(normalized, "tax_before_credits")
     nonrefundable_credits = (
         fact_value(normalized, "education_credit")
         + fact_value(normalized, "clean_vehicle_credit")
@@ -72,7 +81,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         + fact_value(normalized, "child_tax_credit")
         + fact_value(normalized, "other_nonrefundable_credits")
     )
-    total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
+    total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if has_tax_before_credits else None
 
     withholding = fact_value(normalized, "federal_withholding")
     other_payments = fact_value(normalized, "other_payments")
@@ -137,6 +146,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "6a",
+            "label": "Social Security benefits",
+            "value": social_security or None,
+            "sources": fact_sources(normalized, "social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "6b",
+            "label": "Taxable Social Security benefits",
+            "value": taxable_social_security if has_taxable_social_security else None,
+            "sources": fact_sources(normalized, "taxable_social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
             "line": "7",
             "label": "Capital gain or loss",
             "value": capital_gains or None,
@@ -154,6 +179,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
+                "social_security_benefits",
                 "schedule_c",
             ),
         },

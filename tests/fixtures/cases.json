@@ -605,6 +605,84 @@
       "unsupported": "Equity compensation"
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        },
+        {
+          "id": "1099-int-bank",
+          "doc_type": "1099-INT",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-int-bank",
+          "fields": {
+            "interest_income": 750
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Use my SSA-1099 and bank tax docs to draft the return package."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
+  "social_security_taxable_portion_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-part-time",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 24000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 10200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 1900
+      },
+      "user_request": "Draft my return package with my SSA-1099 and wages."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,
