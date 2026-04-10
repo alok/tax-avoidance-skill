@@ -32,4 +32,5 @@ Run the shared Tax Avoidance workflow for a normal person who wants to use Claud
    legal planning moves,
    unsupported complexity,
    illegal requests,
+   dependent-care or education review items,
    and professional-review items.

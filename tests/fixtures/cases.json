@@ -209,6 +209,91 @@
       "scholarships_and_grants": 2500
     }
   },
+  "dependent_care_credit_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 118000,
+            "federal_withholding": 13200,
+            "dependent_care_benefits": 3200
+          }
+        },
+        {
+          "id": "care-summary",
+          "doc_type": "Dependent Care Statement",
+          "source_type": "google_drive",
+          "source_ref": "drive://care-summary",
+          "fields": {
+            "dependent_care_expenses": 7800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 12900,
+        "dependent_care_credit": 1200
+      },
+      "user_request": "Use my child care paperwork and draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 118000,
+      "line_20": 1200
+    }
+  },
+  "dependent_care_review_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parent-a",
+          "fields": {
+            "wages": 94000,
+            "federal_withholding": 10100,
+            "dependent_care_benefits": 5000
+          }
+        },
+        {
+          "id": "dependent-care-provider",
+          "doc_type": "Dependent Care Statement",
+          "source_type": "google_drive",
+          "source_ref": "drive://dependent-care-provider",
+          "fields": {
+            "dependent_care_expenses": 8600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Gather my wages and day care paperwork, then tell me what is still missing."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_care_benefits": 5000,
+      "dependent_care_expenses": 8600
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

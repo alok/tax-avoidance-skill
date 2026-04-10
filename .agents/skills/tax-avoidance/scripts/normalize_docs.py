@@ -45,6 +45,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    dependent_care_benefits, dependent_care_benefits_sources = aggregate_numeric(
+        documents,
+        {"W-2"},
+        "dependent_care_benefits",
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -81,6 +86,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         documents,
         {"1098-T"},
         "scholarships_or_grants",
+    )
+    dependent_care_expenses_docs, dependent_care_expenses_doc_sources = aggregate_numeric(
+        documents,
+        {"Dependent Care Statement"},
+        "dependent_care_expenses",
     )
     expense_documents_for_year = [
         document
@@ -123,6 +133,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
     other_payments, other_payments_sources = answer_fact(answers, "other_payments")
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
+    if "dependent_care_expenses" in answers:
+        dependent_care_expenses, dependent_care_expense_sources = answer_fact(answers, "dependent_care_expenses")
+    else:
+        dependent_care_expenses = dependent_care_expenses_docs
+        dependent_care_expense_sources = dependent_care_expenses_doc_sources
+    dependent_care_credit, dependent_care_credit_sources = answer_fact(answers, "dependent_care_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
     child_tax_credit, child_tax_credit_sources = answer_fact(answers, "child_tax_credit")
@@ -212,6 +228,20 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    has_dependent_care_statement = any(doc.get("doc_type") == "Dependent Care Statement" for doc in documents)
+    if (
+        dependent_care_benefits > 0.0
+        or has_dependent_care_statement
+        or "dependent_care_expenses" in answers
+    ) and "dependent_care_credit" not in answers:
+        if dependent_care_benefits > 0.0 or dependent_care_expenses > 0.0:
+            missing_items.append(
+                "Review the dependent-care benefits and provider-paid expenses before applying any child and dependent care credit."
+            )
+        else:
+            missing_items.append(
+                "Extract the W-2 box 10 or provider-statement dependent-care amounts before reviewing any child and dependent care credit."
+            )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -251,6 +281,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             nonemployee_compensation_sources,
         ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "dependent_care_benefits": build_fact(
+            "dependent_care_benefits",
+            dependent_care_benefits,
+            dependent_care_benefits_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
@@ -271,6 +306,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             scholarships_and_grants,
             scholarships_and_grants_sources,
         ),
+        "dependent_care_expenses": build_fact(
+            "dependent_care_expenses",
+            dependent_care_expenses,
+            dependent_care_expense_sources,
+        ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
             candidate_business_expenses,
@@ -285,6 +325,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "tax_before_credits": build_fact("tax_before_credits", tax_before_credits, tax_before_credits_sources),
         "other_payments": build_fact("other_payments", other_payments, other_payments_sources),
         "education_credit": build_fact("education_credit", education_credit, education_credit_sources),
+        "dependent_care_credit": build_fact(
+            "dependent_care_credit",
+            dependent_care_credit,
+            dependent_care_credit_sources,
+        ),
         "clean_vehicle_credit": build_fact("clean_vehicle_credit", clean_vehicle_credit, clean_vehicle_credit_sources),
         "clean_energy_credit": build_fact("clean_energy_credit", clean_energy_credit, clean_energy_credit_sources),
         "child_tax_credit": build_fact("child_tax_credit", child_tax_credit, child_tax_credit_sources),

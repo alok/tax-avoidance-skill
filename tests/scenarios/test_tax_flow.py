@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "dependent_care_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -93,6 +94,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "dependent_care_review_household",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -118,6 +120,18 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_dependent_care_review(self) -> None:
+        normalized, artifacts = self.run_case("dependent_care_review_household")
+        self.assertEqual(normalized["facts"]["dependent_care_benefits"]["value"], 5000)
+        self.assertEqual(normalized["facts"]["dependent_care_expenses"]["value"], 8600)
+        self.assertIn("Dependent Care Review", artifacts["tax-dossier.md"])
+        self.assertIn("$5,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("$8,600.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the dependent-care benefits and provider-paid expenses",
+            artifacts["missing-items.md"],
+        )
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")

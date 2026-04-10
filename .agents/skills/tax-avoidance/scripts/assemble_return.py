@@ -67,6 +67,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     tax_before_credits = fact_value(normalized, "tax_before_credits")
     nonrefundable_credits = (
         fact_value(normalized, "education_credit")
+        + fact_value(normalized, "dependent_care_credit")
         + fact_value(normalized, "clean_vehicle_credit")
         + fact_value(normalized, "clean_energy_credit")
         + fact_value(normalized, "child_tax_credit")
@@ -209,12 +210,14 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Other credits",
             "value": nonrefundable_credits or None,
             "sources": fact_sources(normalized, "education_credit")
+            + fact_sources(normalized, "dependent_care_credit")
             + fact_sources(normalized, "clean_vehicle_credit")
             + fact_sources(normalized, "clean_energy_credit")
             + fact_sources(normalized, "child_tax_credit")
             + fact_sources(normalized, "other_nonrefundable_credits"),
             "rule_citations": rule_citations(
                 "education_credit",
+                "dependent_care_credit",
                 "clean_vehicle_credit",
                 "clean_energy_credit",
             ),
@@ -298,6 +301,9 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    dependent_care_benefits = fact_value(normalized, "dependent_care_benefits")
+    dependent_care_expenses = fact_value(normalized, "dependent_care_expenses")
+    dependent_care_credit = fact_value(normalized, "dependent_care_credit")
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -305,6 +311,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit)}"
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
+        ),
+    ]
+    dependent_care_review_lines = [
+        f"- Dependent-care benefits spotted from W-2 documents: {money(dependent_care_benefits) if dependent_care_benefits else '$0.00'}",
+        f"- Dependent-care expenses gathered so far: {money(dependent_care_expenses) if dependent_care_expenses else '$0.00'}",
+        (
+            f"- Draft child and dependent care credit currently applied on Form 1040 line 20: {money(dependent_care_credit)}"
+            if dependent_care_credit
+            else "- No child and dependent care credit is applied yet. Review provider statements, qualifying dependents, and earned-income limits before adding one."
         ),
     ]
     state_summary = normalized.get("state_summary", {})
@@ -366,6 +381,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Dependent Care Review",
+        "",
+        *dependent_care_review_lines,
         "",
         "## State Follow-Up",
         "",

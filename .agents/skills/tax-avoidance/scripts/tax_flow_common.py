@@ -38,6 +38,18 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",
     },
+    "dependent_care_benefits": {
+        "title": "IRS Publication 503",
+        "url": "https://www.irs.gov/publications/p503",
+    },
+    "dependent_care_expenses": {
+        "title": "IRS Publication 503",
+        "url": "https://www.irs.gov/publications/p503",
+    },
+    "dependent_care_credit": {
+        "title": "IRS Publication 503",
+        "url": "https://www.irs.gov/publications/p503",
+    },
     "qualified_tuition": {
         "title": "IRS Publication 970",
         "url": "https://www.irs.gov/publications/p970",

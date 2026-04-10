@@ -44,3 +44,4 @@ For a plain Codex app user:
 - Prefer targeted clarifications over generic tax questionnaires.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.
+- If W-2 box 10 dependent-care benefits or provider statements appear, capture the amounts and stop for credit review instead of guessing the allowable child and dependent care credit.
