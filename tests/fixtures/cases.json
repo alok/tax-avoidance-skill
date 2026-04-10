@@ -605,6 +605,68 @@
       "unsupported": "Equity compensation"
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Use my Social Security form and draft the package safely."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18000
+    }
+  },
+  "social_security_reviewed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-main",
+          "fields": {
+            "benefits": 18000
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security": 7200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Use my reviewed Social Security worksheet amount in the draft."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18000,
+      "line_6b": 7200
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,

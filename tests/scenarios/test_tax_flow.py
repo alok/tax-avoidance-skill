@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "social_security_reviewed",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -64,6 +65,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -93,11 +98,27 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "social_security_review_required",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
                 self.assertEqual(normalized["status"], "ok")
                 self.assertIn("Missing Items", artifacts["missing-items.md"])
+
+    def test_social_security_review_required(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_required")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18000)
+        self.assertEqual(normalized["facts"]["taxable_social_security"]["value"], 0.0)
+        self.assertIn("Social Security Review", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Taxable Social Security is not auto-computed here. Review the benefits worksheet and confirm line 6b explicitly.",
+            artifacts["tax-dossier.md"],
+        )
+        self.assertIn(
+            "Review the SSA-1099 benefits and confirm the taxable Social Security amount before using Form 1040 line 6b.",
+            artifacts["missing-items.md"],
+        )
 
     def test_education_review_1098t(self) -> None:
         normalized, artifacts = self.run_case("education_credit_review_1098t")
