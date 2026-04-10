@@ -37,6 +37,12 @@ For a plain Codex app user:
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
 
+## Review-Only Document Types
+
+- Treat Form 5498 as contribution evidence, not as proof that a deductible IRA amount should be auto-applied.
+- Surface reported traditional and Roth IRA contributions in the dossier and ask the user to confirm the deductible traditional IRA amount before drafting that adjustment.
+- Treat Form 1098-T the same way for education credits: preserve the amounts, but require explicit review before applying the credit.
+
 ## Interview Principles
 
 - Ask for filing status only after document collection begins.
