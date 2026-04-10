@@ -93,6 +93,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "ira_review_5498",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -108,6 +109,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
         self.assertIn(
             "Review the 1098-T tuition and scholarship amounts",
+            artifacts["missing-items.md"],
+        )
+
+    def test_ira_review_5498(self) -> None:
+        normalized, artifacts = self.run_case("ira_review_5498")
+        self.assertEqual(normalized["facts"]["traditional_ira_contributions"]["value"], 6500)
+        self.assertEqual(normalized["facts"]["ira_contribution_deduction"]["value"], 0)
+        self.assertIn("Retirement Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("$6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "confirm how much is deductible before applying any IRA deduction",
             artifacts["missing-items.md"],
         )
 
