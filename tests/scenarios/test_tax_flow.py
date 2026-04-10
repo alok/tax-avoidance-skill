@@ -118,6 +118,12 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+        self.assertTrue(normalized["interview_questions"])
+        first_question = normalized["interview_questions"][0]
+        self.assertEqual(first_question["id"], "confirm-schedule-c-expenses")
+        self.assertIn("$371.89", first_question["prompt"])
+        self.assertIn("Recommended Next Questions", artifacts["tax-dossier.md"])
+        self.assertIn("Recommended Next Questions", artifacts["missing-items.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
@@ -145,6 +151,15 @@ class TaxFlowTest(unittest.TestCase):
         self.assertTrue(normalized["illegal_reasons"])
         self.assertIn("Refusal", artifacts["missing-items.md"])
         self.assertIn("tax evasion", artifacts["tax-dossier.md"])
+        self.assertEqual(normalized["interview_questions"], [])
+
+    def test_interview_questions_for_source_quality(self) -> None:
+        normalized, artifacts = self.run_case("metadata_only_tax_docs")
+        self.assertEqual(normalized["status"], "ok")
+        prompts = "\n".join(question["prompt"] for question in normalized["interview_questions"])
+        self.assertIn("upload the actual Consolidated 1099", prompts)
+        self.assertIn("readable copy of the 1099-NEC", prompts)
+        self.assertIn("Recommended Next Questions", artifacts["missing-items.md"])
 
     def test_example_input_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -155,8 +170,10 @@ class TaxFlowTest(unittest.TestCase):
                 cwd=REPO_ROOT,
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
+            normalized = json.loads((out_dir / "return-data.json").read_text(encoding="utf-8"))
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+            self.assertEqual(normalized["interview_questions"], [])
 
 
 if __name__ == "__main__":

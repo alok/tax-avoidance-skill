@@ -32,6 +32,30 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_interview_question(
+    question_id: str,
+    *,
+    kind: str,
+    prompt: str,
+    why: str,
+    priority: int,
+    answer_key: str | None = None,
+    doc_id: str | None = None,
+) -> dict[str, Any]:
+    question: dict[str, Any] = {
+        "id": question_id,
+        "kind": kind,
+        "priority": priority,
+        "prompt": prompt,
+        "why": why,
+    }
+    if answer_key:
+        question["answer_key"] = answer_key
+    if doc_id:
+        question["doc_id"] = doc_id
+    return question
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -243,6 +267,194 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     elif unsupported_reasons:
         status = "unsupported"
 
+    interview_questions: list[dict[str, Any]] = []
+    seen_question_ids: set[str] = set()
+
+    def add_question(question: dict[str, Any]) -> None:
+        if question["id"] in seen_question_ids:
+            return
+        seen_question_ids.add(question["id"])
+        interview_questions.append(question)
+
+    has_uploads = any(doc.get("source_type") == "upload" for doc in documents)
+    if status == "ok":
+        if not connectors.get("gmail") and not connectors.get("google_drive") and not has_uploads:
+            add_question(
+                build_interview_question(
+                    "connect-or-upload-docs",
+                    kind="connector",
+                    prompt="Can you connect Gmail and Google Drive now, or upload your tax PDFs directly?",
+                    why="The workflow needs an actual document source before it can build the return package.",
+                    priority=10,
+                )
+            )
+
+        if not documents:
+            add_question(
+                build_interview_question(
+                    "provide-first-tax-document",
+                    kind="document",
+                    prompt="What is the first tax document you can provide for 2025: a W-2, 1099, tuition form, or uploaded PDF?",
+                    why="At least one real tax document is needed before the draft package can start.",
+                    priority=20,
+                )
+            )
+
+        for document in documents:
+            doc_id = document.get("id", "unknown-document")
+            doc_type = document.get("doc_type", "document")
+            source_ref = document.get("source_ref", "unknown source")
+            content_status = document.get("content_status")
+            if content_status == "portal_notice_only":
+                add_question(
+                    build_interview_question(
+                        f"upload-{doc_id}",
+                        kind="source_quality",
+                        prompt=f"Please download and upload the actual {doc_type} from {source_ref}.",
+                        why="A portal or notice message is not enough to safely use the form values in a return draft.",
+                        priority=25,
+                        doc_id=doc_id,
+                    )
+                )
+            elif content_status == "unreadable_encrypted_attachment":
+                add_question(
+                    build_interview_question(
+                        f"replace-{doc_id}",
+                        kind="source_quality",
+                        prompt=f"Please open or upload a readable copy of the {doc_type} from {source_ref}.",
+                        why="The attachment exists, but this workflow could not read the actual form contents.",
+                        priority=25,
+                        doc_id=doc_id,
+                    )
+                )
+            elif content_status == "metadata_only":
+                if document.get("fields"):
+                    add_question(
+                        build_interview_question(
+                            f"confirm-{doc_id}",
+                            kind="source_quality",
+                            prompt=f"Can you confirm the extracted {doc_type} details from {source_ref} against the actual form or PDF?",
+                            why="Metadata-only values should be verified against the real document before they flow into a return draft.",
+                            priority=35,
+                            doc_id=doc_id,
+                        )
+                    )
+                else:
+                    add_question(
+                        build_interview_question(
+                            f"upload-{doc_id}",
+                            kind="source_quality",
+                            prompt=f"Please provide the actual contents for the {doc_type} from {source_ref}.",
+                            why="Only metadata is available right now, so the workflow cannot safely extract the needed tax figures.",
+                            priority=25,
+                            doc_id=doc_id,
+                        )
+                    )
+
+        if not payload.get("filing_status"):
+            add_question(
+                build_interview_question(
+                    "filing-status",
+                    kind="filing",
+                    prompt="What filing status should this draft use: single or married filing jointly?",
+                    why="The filing status controls the supported return path and the federal line map.",
+                    priority=30,
+                    answer_key="filing_status",
+                )
+            )
+
+        if state_allocation_totals and not resident_state:
+            add_question(
+                build_interview_question(
+                    "resident-state",
+                    kind="state",
+                    prompt="Which state was your resident state for 2025?",
+                    why="State wage allocations were found, but the resident state is still needed for state follow-up.",
+                    priority=32,
+                    answer_key="state.resident_state",
+                )
+            )
+
+        if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
+            if candidate_business_expenses > 0.0:
+                add_question(
+                    build_interview_question(
+                        "confirm-schedule-c-expenses",
+                        kind="schedule_c",
+                        prompt=(
+                            "What deductible business expenses should this draft use for your 1099-NEC work in 2025? "
+                            f"I found candidate receipts totaling ${candidate_business_expenses:,.2f}; confirm that total, give a different amount, or explicitly say to use $0.00."
+                        ),
+                        why="Schedule C net profit should not be computed until deductible expenses are confirmed.",
+                        priority=40,
+                        answer_key="business_expenses",
+                    )
+                )
+            else:
+                add_question(
+                    build_interview_question(
+                        "schedule-c-expenses",
+                        kind="schedule_c",
+                        prompt="What deductible business expenses should this draft use for your 1099-NEC work in 2025? If none, explicitly confirm $0.00.",
+                        why="Schedule C net profit should not be computed until deductible expenses are confirmed.",
+                        priority=40,
+                        answer_key="business_expenses",
+                    )
+                )
+
+        if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
+            add_question(
+                build_interview_question(
+                    "capital-gains-summary",
+                    kind="investment",
+                    prompt="What is the net capital gain or loss summary from your 1099-B support documents for 2025?",
+                    why="The federal draft needs a usable capital-gain summary before Form 1040 line 7 can be finalized.",
+                    priority=42,
+                    answer_key="capital_gains",
+                )
+            )
+
+        if has_1098t and "education_credit" not in answers:
+            add_question(
+                build_interview_question(
+                    "education-credit-review",
+                    kind="education",
+                    prompt=(
+                        "After scholarships and grants, what qualified education expenses should count toward an education credit for 2025? "
+                        "If you only want a review package for now, say to leave the credit unapplied."
+                    ),
+                    why="The workflow can carry 1098-T evidence forward, but it should not silently apply an education credit.",
+                    priority=44,
+                    answer_key="education_credit",
+                )
+            )
+
+        if deduction_amount == 0.0 and "deduction_amount" not in answers:
+            add_question(
+                build_interview_question(
+                    "deduction-amount",
+                    kind="deduction",
+                    prompt="What deduction amount should this draft use on Form 1040 line 12? You can provide the standard or itemized total you want carried into the package.",
+                    why="The deduction amount is required before the draft can compute taxable income.",
+                    priority=50,
+                    answer_key="deduction_amount",
+                )
+            )
+
+        if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
+            add_question(
+                build_interview_question(
+                    "tax-before-credits",
+                    kind="review",
+                    prompt="Do you already have a tax-before-credits figure for Form 1040 line 16, or should this package leave the tax lines marked for manual review?",
+                    why="The current deterministic flow does not derive every line-16 scenario automatically.",
+                    priority=60,
+                    answer_key="tax_before_credits",
+                )
+            )
+
+    interview_questions.sort(key=lambda item: (item["priority"], item["prompt"]))
+
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
         "nonemployee_compensation": build_fact(
@@ -306,6 +518,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "interview_questions": interview_questions,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

@@ -285,6 +285,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
+    interview_question_lines = [
+        f"{index}. {question.get('prompt')} ({question.get('why')})"
+        for index, question in enumerate(normalized.get("interview_questions", []), start=1)
+    ] or ["1. None."]
     candidate_expense_rows = [
         [
             expense.get("document_date") or "unknown",
@@ -342,6 +346,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Connector Notes",
         "",
         *connector_lines,
+        "",
+        "## Recommended Next Questions",
+        "",
+        *interview_question_lines,
         "",
         "## Document Inventory",
         "",
@@ -426,6 +434,16 @@ def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:
         lines.append("- None")
+
+    interview_questions = normalized.get("interview_questions", [])
+    lines.extend(["", "## Recommended Next Questions", ""])
+    if interview_questions:
+        lines.extend(
+            f"{index}. {question.get('prompt')} ({question.get('why')})"
+            for index, question in enumerate(interview_questions, start=1)
+        )
+    else:
+        lines.append("1. None.")
 
     if normalized.get("unsupported_reasons"):
         lines.extend(["", "## Unsupported Complexity", ""])
