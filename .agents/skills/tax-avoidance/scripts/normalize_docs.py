@@ -13,6 +13,7 @@ from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
+    compute_self_employment_components,
     connector_notes,
     detect_illegal_request,
     detect_unsupported,
@@ -45,6 +46,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    social_security_wages, social_security_wages_sources = aggregate_numeric(
+        documents,
+        {"W-2"},
+        "social_security_wages",
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -118,6 +124,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
+    w2_social_security_wages_answer, w2_social_security_wages_answer_sources = answer_fact(
+        answers,
+        "w2_social_security_wages",
+    )
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
@@ -130,6 +140,41 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         answers,
         "other_nonrefundable_credits",
     )
+
+    w2_social_security_wages_value = social_security_wages
+    w2_social_security_wages_combined_sources = list(social_security_wages_sources)
+    if not w2_social_security_wages_combined_sources and w2_social_security_wages_answer_sources:
+        w2_social_security_wages_value = w2_social_security_wages_answer
+        w2_social_security_wages_combined_sources = w2_social_security_wages_answer_sources
+
+    has_business_expenses = bool(business_expense_sources) or business_expenses > 0.0
+    contractor_net_profit = 0.0
+    if nonemployee_compensation > 0.0 and has_business_expenses:
+        contractor_net_profit = nonemployee_compensation - business_expenses
+
+    self_employment_summary: dict[str, Any] = {
+        "active": bool(nonemployee_compensation > 0.0 and has_business_expenses),
+        "needs_w2_social_security_wages": False,
+        "net_profit": contractor_net_profit,
+        "net_earnings": 0.0,
+        "social_security_taxable_earnings": 0.0,
+        "social_security_tax": 0.0,
+        "medicare_tax": 0.0,
+        "self_employment_tax": 0.0,
+        "deductible_half": 0.0,
+        "sources": nonemployee_compensation_sources + business_expense_sources,
+    }
+    has_w2_documents = any(document.get("doc_type") == "W-2" for document in documents)
+    if self_employment_summary["active"] and contractor_net_profit > 0.0:
+        if has_w2_documents and not w2_social_security_wages_combined_sources:
+            self_employment_summary["needs_w2_social_security_wages"] = True
+        else:
+            self_employment_summary.update(
+                compute_self_employment_components(
+                    contractor_net_profit,
+                    w2_social_security_wages=w2_social_security_wages_value,
+                )
+            )
 
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
@@ -193,6 +238,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    if self_employment_summary["needs_w2_social_security_wages"]:
+        missing_items.append(
+            "Provide total W-2 Social Security wages before finalizing Schedule SE, so the self-employment tax can apply the Social Security wage base correctly."
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -251,6 +300,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             nonemployee_compensation_sources,
         ),
         "federal_withholding": build_fact("federal_withholding", withholding, withholding_sources),
+        "w2_social_security_wages": build_fact(
+            "w2_social_security_wages",
+            w2_social_security_wages_value,
+            w2_social_security_wages_combined_sources,
+        ),
         "taxable_interest": build_fact("taxable_interest", interest, interest_sources),
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
@@ -321,6 +375,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "self_employment_summary": self_employment_summary,
         "facts": facts,
     }
     return normalized

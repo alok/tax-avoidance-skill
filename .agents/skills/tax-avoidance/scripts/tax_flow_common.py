@@ -62,6 +62,14 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
         "title": "IRS Publication 334",
         "url": "https://www.irs.gov/publications/p334",
     },
+    "self_employment_tax": {
+        "title": "Instructions for Schedule SE (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
+    "deductible_half_self_employment_tax": {
+        "title": "Instructions for Schedule SE (2025)",
+        "url": "https://www.irs.gov/pub/irs-prior/i1040sse--2025.pdf",
+    },
     "schedule_c": {
         "title": "About Schedule C (Form 1040)",
         "url": "https://www.irs.gov/forms-pubs/about-schedule-c-form-1040",
@@ -110,6 +118,11 @@ UNSUPPORTED_DOC_TYPES = {
 }
 
 SUPPORTED_STATUSES = {"single", "married_filing_jointly"}
+SELF_EMPLOYMENT_NET_EARNINGS_RATE = 0.9235
+SELF_EMPLOYMENT_TAX_FLOOR = 400.0
+SOCIAL_SECURITY_WAGE_BASE_2025 = 176100.0
+SOCIAL_SECURITY_SELF_EMPLOYMENT_RATE = 0.124
+MEDICARE_SELF_EMPLOYMENT_RATE = 0.029
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -198,6 +211,52 @@ def answer_fact(
     if value == 0.0:
         return value, []
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
+
+
+def compute_self_employment_components(
+    net_profit: float,
+    w2_social_security_wages: float = 0.0,
+) -> dict[str, float]:
+    if net_profit <= 0.0:
+        return {
+            "net_earnings": 0.0,
+            "social_security_taxable_earnings": 0.0,
+            "social_security_tax": 0.0,
+            "medicare_tax": 0.0,
+            "self_employment_tax": 0.0,
+            "deductible_half": 0.0,
+            "social_security_wage_base": SOCIAL_SECURITY_WAGE_BASE_2025,
+            "remaining_social_security_wage_base": max(SOCIAL_SECURITY_WAGE_BASE_2025 - w2_social_security_wages, 0.0),
+        }
+
+    net_earnings = net_profit * SELF_EMPLOYMENT_NET_EARNINGS_RATE
+    if net_earnings < SELF_EMPLOYMENT_TAX_FLOOR:
+        return {
+            "net_earnings": net_earnings,
+            "social_security_taxable_earnings": 0.0,
+            "social_security_tax": 0.0,
+            "medicare_tax": 0.0,
+            "self_employment_tax": 0.0,
+            "deductible_half": 0.0,
+            "social_security_wage_base": SOCIAL_SECURITY_WAGE_BASE_2025,
+            "remaining_social_security_wage_base": max(SOCIAL_SECURITY_WAGE_BASE_2025 - w2_social_security_wages, 0.0),
+        }
+
+    remaining_social_security_wage_base = max(SOCIAL_SECURITY_WAGE_BASE_2025 - w2_social_security_wages, 0.0)
+    social_security_taxable_earnings = min(net_earnings, remaining_social_security_wage_base)
+    social_security_tax = social_security_taxable_earnings * SOCIAL_SECURITY_SELF_EMPLOYMENT_RATE
+    medicare_tax = net_earnings * MEDICARE_SELF_EMPLOYMENT_RATE
+    self_employment_tax = social_security_tax + medicare_tax
+    return {
+        "net_earnings": net_earnings,
+        "social_security_taxable_earnings": social_security_taxable_earnings,
+        "social_security_tax": social_security_tax,
+        "medicare_tax": medicare_tax,
+        "self_employment_tax": self_employment_tax,
+        "deductible_half": self_employment_tax / 2.0,
+        "social_security_wage_base": SOCIAL_SECURITY_WAGE_BASE_2025,
+        "remaining_social_security_wage_base": remaining_social_security_wage_base,
+    }
 
 
 def detect_illegal_request(user_request: str) -> list[str]:

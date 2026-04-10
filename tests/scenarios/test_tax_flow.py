@@ -51,6 +51,7 @@ class TaxFlowTest(unittest.TestCase):
             "investment_household",
             "education_credit_household",
             "schedule_c_contractor",
+            "schedule_c_with_w2_social_security_wages",
             "duplicate_doc_sources",
         ):
             with self.subTest(name=name):
@@ -72,6 +73,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "schedule_se_line_12" in expected:
+                    self.assertIn(f"${expected['schedule_se_line_12']:,.2f}", federal_lines)
+                if "schedule_1_line_15" in expected:
+                    self.assertIn(f"${expected['schedule_1_line_15']:,.2f}", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -91,6 +96,7 @@ class TaxFlowTest(unittest.TestCase):
         for name in (
             "metadata_only_tax_docs",
             "schedule_c_missing_expenses",
+            "schedule_c_w2_missing_social_security_wages",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
         ):
@@ -118,6 +124,22 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_self_employment_tax_scaffolding(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_contractor")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertAlmostEqual(normalized["self_employment_summary"]["self_employment_tax"], 12668.338347885001)
+        self.assertAlmostEqual(normalized["self_employment_summary"]["deductible_half"], 6334.1691739425005)
+        self.assertIn("Self-Employment Tax Review", artifacts["tax-dossier.md"])
+        self.assertIn("$12,668.34", artifacts["tax-dossier.md"])
+        self.assertIn("Schedule SE", artifacts["federal-lines.md"])
+
+    def test_self_employment_tax_wage_base_guard(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_w2_missing_social_security_wages")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertTrue(normalized["self_employment_summary"]["needs_w2_social_security_wages"])
+        self.assertIn("Provide total W-2 Social Security wages", artifacts["missing-items.md"])
+        self.assertIn("remains blocked", artifacts["tax-dossier.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
