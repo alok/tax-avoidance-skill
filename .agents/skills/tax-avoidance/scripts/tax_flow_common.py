@@ -187,6 +187,61 @@ def aggregate_numeric(
     return total, sources
 
 
+def aggregate_numeric_fields(
+    documents: list[dict[str, Any]],
+    doc_types: set[str],
+    field_names: list[str],
+) -> tuple[float, list[dict[str, Any]]]:
+    def source_rank(document: dict[str, Any]) -> tuple[int, int]:
+        content_status = document.get("content_status", "")
+        status_score = {
+            "available": 4,
+            "metadata_only": 3,
+            "unreadable_encrypted_attachment": 2,
+            "portal_notice_only": 1,
+        }.get(content_status, 0)
+        fields = document.get("fields", {})
+        value_score = 1 if any(safe_float(fields.get(name)) != 0.0 for name in field_names) else 0
+        return (value_score, status_score)
+
+    grouped_documents: list[dict[str, Any]] = []
+    dedupe_groups: dict[str, list[dict[str, Any]]] = {}
+    for document in documents:
+        if document.get("doc_type") not in doc_types:
+            continue
+        dedupe_key = document.get("dedupe_key")
+        if dedupe_key:
+            dedupe_groups.setdefault(dedupe_key, []).append(document)
+        else:
+            grouped_documents.append(document)
+
+    for group in dedupe_groups.values():
+        grouped_documents.append(max(group, key=source_rank))
+
+    total = 0.0
+    sources: list[dict[str, Any]] = []
+    for document in grouped_documents:
+        dedupe_key = document.get("dedupe_key")
+        fields = document.get("fields", {})
+        matched_field = next((name for name in field_names if safe_float(fields.get(name)) != 0.0), None)
+        if matched_field is None:
+            continue
+        value = safe_float(fields.get(matched_field))
+        total += value
+        sources.append(
+            {
+                "doc_id": document.get("id"),
+                "doc_type": document.get("doc_type"),
+                "source_type": document.get("source_type"),
+                "source_ref": document.get("source_ref"),
+                "dedupe_key": dedupe_key,
+                "field": matched_field,
+                "value": value,
+            }
+        )
+    return total, sources
+
+
 def answer_fact(
     answers: dict[str, Any],
     key: str,
