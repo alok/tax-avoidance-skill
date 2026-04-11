@@ -114,6 +114,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    itemized_evidence_total = mortgage_interest + charitable_cash
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -186,7 +187,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if itemized_evidence_total > 0.0:
+            evidence_parts: list[str] = []
+            if mortgage_interest > 0.0:
+                evidence_parts.append(f"mortgage interest of ${mortgage_interest:,.2f}")
+            if charitable_cash > 0.0:
+                evidence_parts.append(f"charitable receipts totaling ${charitable_cash:,.2f}")
+            missing_items.append(
+                "Review the available itemized-deduction evidence "
+                f"({', '.join(evidence_parts)}) and choose the deduction path before finalizing the draft package."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -319,6 +331,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "deduction_summary": {
+            "student_loan_interest": student_loan_interest,
+            "mortgage_interest": mortgage_interest,
+            "charitable_cash": charitable_cash,
+            "itemized_evidence_total": itemized_evidence_total,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

@@ -209,6 +209,65 @@
       "scholarships_and_grants": 2500
     }
   },
+  "deduction_review_evidence": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-homeowner",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-homeowner",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 9800
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1850
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 7900
+          }
+        },
+        {
+          "id": "donation-school",
+          "doc_type": "Donation Receipt",
+          "source_type": "google_drive",
+          "source_ref": "drive://donation-school",
+          "fields": {
+            "cash_donations": 700
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9600
+      },
+      "user_request": "Gather my tax docs and tell me what is still needed before I finalize deductions."
+    },
+    "expect": {
+      "status": "ok",
+      "student_loan_interest": 1850,
+      "mortgage_interest": 7900,
+      "charitable_cash": 700
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

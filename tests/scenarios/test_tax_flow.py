@@ -111,6 +111,21 @@ class TaxFlowTest(unittest.TestCase):
             artifacts["missing-items.md"],
         )
 
+    def test_deduction_review_evidence(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_evidence")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 1850)
+        self.assertEqual(normalized["facts"]["mortgage_interest"]["value"], 7900)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 700)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest spotted from 1098-E documents: $1,850.00", artifacts["tax-dossier.md"])
+        self.assertIn("Mortgage interest spotted from 1098 documents: $7,900.00", artifacts["tax-dossier.md"])
+        self.assertIn("Charitable receipts spotted from donation documents: $700.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "itemized-deduction evidence (mortgage interest of $7,900.00, charitable receipts totaling $700.00)",
+            artifacts["missing-items.md"],
+        )
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

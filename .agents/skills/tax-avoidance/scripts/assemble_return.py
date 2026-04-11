@@ -295,6 +295,45 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_summary = normalized.get("deduction_summary", {})
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    itemized_evidence_total = float(deduction_summary.get("itemized_evidence_total", 0.0) or 0.0)
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    deduction_review_lines = [
+        (
+            f"- Draft deduction amount currently applied on Form 1040 line 12: {money(deduction_amount)}."
+            if deduction_amount
+            else "- No deduction amount is applied yet. Choose standard versus itemized before treating the draft package as complete."
+        ),
+        (
+            f"- Student loan interest spotted from 1098-E documents: {money(student_loan_interest)}. This amount is included in the Form 1040 adjustments total."
+            if student_loan_interest
+            else "- No student loan interest evidence was found in the current document set."
+        ),
+        (
+            f"- Mortgage interest spotted from 1098 documents: {money(mortgage_interest)}."
+            if mortgage_interest
+            else "- No mortgage-interest support was found in the current document set."
+        ),
+        (
+            f"- Charitable receipts spotted from donation documents: {money(charitable_cash)}."
+            if charitable_cash
+            else "- No charitable-giving receipts were found in the current document set."
+        ),
+        (
+            f"- Itemized-deduction evidence total spotted from 1098 and donation documents: {money(itemized_evidence_total)}. Do not treat this as the final deduction unless the user confirms the itemized path."
+            if itemized_evidence_total
+            else "- No itemized-deduction evidence total is available yet."
+        ),
+        (
+            "- IRS rule references for this review: "
+            "[Publication 970](https://www.irs.gov/publications/p970), "
+            "[Publication 936](https://www.irs.gov/publications/p936), and "
+            "[Publication 526](https://www.irs.gov/publications/p526)."
+        ),
+    ]
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
@@ -362,6 +401,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## Education Review",
         "",
