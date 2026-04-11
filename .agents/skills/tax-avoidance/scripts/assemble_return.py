@@ -295,6 +295,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    deduction_review_rows = [
+        [
+            entry.get("label", "Unknown"),
+            money(entry.get("amount")),
+            entry.get("draft_treatment", "Review"),
+            entry.get("notes", ""),
+            ", ".join(source.get("source_ref", "unknown") for source in entry.get("sources", [])) or "TBD",
+        ]
+        for entry in normalized.get("deduction_review", {}).get("entries", [])
+    ]
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
@@ -361,6 +371,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction Review",
+        "",
+        make_markdown_table(
+            ["Item", "Amount", "Draft Treatment", "Notes", "Sources"],
+            deduction_review_rows or [["None", "$0.00", "None", "No deduction review items were found.", "None"]],
         ),
         "",
         "## Education Review",

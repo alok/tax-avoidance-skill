@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    traditional_ira_contributions, traditional_ira_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
     qualified_tuition, qualified_tuition_sources = aggregate_numeric(
         documents,
         {"1098-T"},
@@ -187,8 +192,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if mortgage_interest > 0.0 or charitable_cash > 0.0:
+            missing_items.append(
+                "Mortgage-interest or charitable-giving documents were found. Decide whether to itemize or keep the standard deduction before finalizing the draft."
+            )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if traditional_ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            f"Review Form 5498 traditional IRA contributions totaling ${traditional_ira_contributions:,.2f} and confirm the deductible IRA amount before applying it to the return draft."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -261,6 +274,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             student_loan_interest,
             student_loan_interest_sources,
         ),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_sources,
+        ),
         "qualified_tuition": build_fact(
             "qualified_tuition",
             qualified_tuition,
@@ -318,6 +336,64 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     "withholding": totals["withholding"],
                 }
                 for code, totals in sorted(state_allocation_totals.items())
+            ],
+        },
+        "deduction_review": {
+            "entries": [
+                {
+                    "key": "mortgage_interest",
+                    "label": "Mortgage interest from Form 1098",
+                    "amount": mortgage_interest,
+                    "draft_treatment": "Review for itemized deduction decision",
+                    "notes": "This evidence is not auto-applied unless the deduction path is confirmed.",
+                    "sources": mortgage_interest_sources,
+                }
+                for _ in [0]
+                if mortgage_interest > 0.0
+            ]
+            + [
+                {
+                    "key": "charitable_cash",
+                    "label": "Cash charitable giving",
+                    "amount": charitable_cash,
+                    "draft_treatment": "Review for itemized deduction decision",
+                    "notes": "Donation receipts are tracked, but itemized-deduction treatment still needs review.",
+                    "sources": charitable_sources,
+                }
+                for _ in [0]
+                if charitable_cash > 0.0
+            ]
+            + [
+                {
+                    "key": "student_loan_interest_deduction",
+                    "label": "Student loan interest from Form 1098-E",
+                    "amount": student_loan_interest,
+                    "draft_treatment": (
+                        "Included in the line 10 adjustment draft"
+                        if student_loan_interest_sources
+                        else "Tracked for review"
+                    ),
+                    "notes": "Keep the underlying 1098-E and eligibility context with the return package.",
+                    "sources": student_loan_interest_sources,
+                }
+                for _ in [0]
+                if student_loan_interest > 0.0
+            ]
+            + [
+                {
+                    "key": "traditional_ira_contributions",
+                    "label": "Traditional IRA contributions from Form 5498",
+                    "amount": traditional_ira_contributions,
+                    "draft_treatment": (
+                        "User confirmed IRA deduction amount"
+                        if ira_sources
+                        else "Candidate only; confirm deductible amount before applying"
+                    ),
+                    "notes": "The deductible IRA amount can differ from the contributed amount, so this stays review-only until confirmed.",
+                    "sources": traditional_ira_sources,
+                }
+                for _ in [0]
+                if traditional_ira_contributions > 0.0
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
