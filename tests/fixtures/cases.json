@@ -321,6 +321,87 @@
       "candidate_total": 371.89
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-primary",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-primary",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099-primary",
+          "fields": {
+            "benefits": 14400
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 500
+      },
+      "user_request": "Use my wage statement and Social Security statement to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 18000
+    }
+  },
+  "social_security_taxable_amount_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-primary",
+          "fields": {
+            "wages": 18000,
+            "federal_withholding": 1200
+          }
+        },
+        {
+          "id": "ssa-1099-primary",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099-primary",
+          "fields": {
+            "benefits": 14400
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 4200,
+        "deduction_amount": 15000,
+        "tax_before_credits": 500
+      },
+      "user_request": "Use my wage statement and reviewed Social Security taxable amount to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 18000
+    }
+  },
   "expense_year_filter": {
     "input": {
       "tax_year": 2025,

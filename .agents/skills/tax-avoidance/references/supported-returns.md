@@ -4,7 +4,7 @@
 
 - 2025 federal individual returns
 - Filing status: single or married filing jointly
-- Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, Social Security income
+- Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, and SSA-1099 review intake for Social Security benefits
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
 - Common credits and review workflows: education-credit review with 1098-T intake, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
@@ -22,6 +22,11 @@
 - 5498
 - SSA-1099
 - donation receipts
+
+## Review-Only Intake
+
+- SSA-1099 totals are preserved in the artifact set, but the taxable amount is not auto-computed
+- The user must confirm the taxable Social Security amount before the draft carries anything to Form 1040 line 6b
 
 ## Unsupported In V1
 
