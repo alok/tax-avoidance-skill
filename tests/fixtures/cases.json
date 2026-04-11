@@ -209,6 +209,66 @@
       "scholarships_and_grants": 2500
     }
   },
+  "ira_review_5498": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-spouse-a",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-spouse-a",
+          "fields": {
+            "wages": 87000,
+            "federal_withholding": 9800
+          }
+        },
+        {
+          "id": "w2-spouse-b",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-spouse-b",
+          "fields": {
+            "wages": 54000,
+            "federal_withholding": 6200
+          }
+        },
+        {
+          "id": "5498-traditional",
+          "doc_type": "5498",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://5498-traditional",
+          "fields": {
+            "traditional_ira_contributions": 3500
+          }
+        },
+        {
+          "id": "5498-roth",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-roth",
+          "fields": {
+            "roth_ira_contributions": 2000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 14900
+      },
+      "user_request": "Review my IRA contribution forms and tell me what is still needed before any deduction is applied."
+    },
+    "expect": {
+      "status": "ok",
+      "traditional_ira_contributions": 3500,
+      "roth_ira_contributions": 2000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

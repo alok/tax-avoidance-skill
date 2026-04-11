@@ -72,6 +72,22 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    traditional_ira_contributions, traditional_ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
+    if traditional_ira_contributions == 0.0:
+        traditional_ira_contributions, traditional_ira_contribution_sources = aggregate_numeric(
+            documents,
+            {"5498"},
+            "ira_contributions",
+        )
+    roth_ira_contributions, roth_ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "roth_ira_contributions",
+    )
     qualified_tuition, qualified_tuition_sources = aggregate_numeric(
         documents,
         {"1098-T"},
@@ -236,6 +252,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if traditional_ira_contributions > 0.0 or roth_ira_contributions > 0.0:
+            missing_items.append(
+                "Review the 5498 IRA contribution amounts and confirm how much, if any, belongs as a deductible traditional IRA adjustment before applying one to Form 1040 line 10."
+            )
+        else:
+            missing_items.append(
+                "Extract the key 5498 IRA contribution amounts or upload a clearer copy before reviewing any IRA deduction."
+            )
 
     status = "ok"
     if illegal_reasons:
@@ -260,6 +286,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_contribution_sources,
+        ),
+        "roth_ira_contributions": build_fact(
+            "roth_ira_contributions",
+            roth_ira_contributions,
+            roth_ira_contribution_sources,
         ),
         "qualified_tuition": build_fact(
             "qualified_tuition",
