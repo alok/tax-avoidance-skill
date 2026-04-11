@@ -37,6 +37,12 @@ For a plain Codex app user:
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
 
+## IRA Review
+
+- Treat Form 5498 as evidence for IRA contribution review, not as proof that the full amount is deductible.
+- Surface traditional and Roth contribution amounts separately in the artifact set with document provenance.
+- If the user has not confirmed the deductible IRA amount yet, add a missing-item prompt instead of silently applying the full traditional contribution.
+
 ## Interview Principles
 
 - Ask for filing status only after document collection begins.
