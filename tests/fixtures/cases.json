@@ -578,6 +578,39 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 950,
+        "taxable_social_security": 4200
+      },
+      "user_request": "Review my Social Security form and draft the federal package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600,
+      "line_6b": 4200,
+      "line_9": 4200
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,

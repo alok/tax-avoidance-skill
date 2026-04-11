@@ -64,6 +64,12 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
+                if "line_9" in expected:
+                    self.assertIn(f"${expected['line_9']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -138,6 +144,48 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_social_security_review(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18600)
+        self.assertEqual(normalized["facts"]["taxable_social_security"]["value"], 4200)
+        self.assertIn("Social Security Review", artifacts["tax-dossier.md"])
+        self.assertIn("$18,600.00", artifacts["tax-dossier.md"])
+        self.assertIn("$4,200.00", artifacts["tax-dossier.md"])
+        self.assertNotIn(
+            "Review the SSA-1099 benefits and confirm the taxable Social Security amount",
+            artifacts["missing-items.md"],
+        )
+
+    def test_social_security_requires_taxable_review(self) -> None:
+        case = json.loads(json.dumps(self.cases["social_security_review"]))
+        del case["input"]["answers"]["taxable_social_security"]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_path = temp_path / "input.json"
+            out_dir = temp_path / "out"
+            input_path.write_text(json.dumps(case["input"], indent=2), encoding="utf-8")
+
+            subprocess.run(
+                ["uv", "run", "python", str(RUNNER), "--input", str(input_path), "--out-dir", str(out_dir)],
+                check=True,
+                cwd=REPO_ROOT,
+            )
+
+            normalized = json.loads((out_dir / "return-data.json").read_text(encoding="utf-8"))
+            federal_lines = (out_dir / "federal-lines.md").read_text(encoding="utf-8")
+            missing_items = (out_dir / "missing-items.md").read_text(encoding="utf-8")
+
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18600)
+        self.assertEqual(normalized["facts"]["taxable_social_security"]["value"], 0)
+        self.assertIn(
+            "Review the SSA-1099 benefits and confirm the taxable Social Security amount before applying anything to Form 1040 line 6b.",
+            missing_items,
+        )
+        self.assertIn("$18,600.00", federal_lines)
+        self.assertNotIn("Form 1040 | 6b | Taxable Social Security benefits | $18,600.00", federal_lines)
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
