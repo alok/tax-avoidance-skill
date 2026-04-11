@@ -209,6 +209,56 @@
       "scholarships_and_grants": 2500
     }
   },
+  "dependent_intake_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-parent",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-parent",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 8900
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7600,
+        "dependents": [
+          {
+            "first_name": "Maya",
+            "relationship": "daughter",
+            "age_on_dec_31": 8,
+            "months_lived_with_taxpayer": 12,
+            "support_percent_paid_by_taxpayer": 100,
+            "child_care_expenses": 3200,
+            "tin_provided": true,
+            "us_citizen_or_resident": true
+          },
+          {
+            "first_name": "Leo",
+            "relationship": "son",
+            "age_on_dec_31": 17,
+            "months_lived_with_taxpayer": 10
+          }
+        ]
+      },
+      "user_request": "Capture my dependent context and show what I still need to review before claiming any child-related credits."
+    },
+    "expect": {
+      "status": "ok",
+      "dependent_count": 2,
+      "child_care_expenses_total": 3200
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

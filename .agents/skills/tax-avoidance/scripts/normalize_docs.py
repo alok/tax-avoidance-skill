@@ -23,6 +23,19 @@ from tax_flow_common import (  # noqa: E402
     safe_float,
 )
 
+SAFE_DEPENDENT_FIELDS = (
+    "first_name",
+    "relationship",
+    "age_on_dec_31",
+    "months_lived_with_taxpayer",
+    "support_percent_paid_by_taxpayer",
+    "child_care_expenses",
+    "tin_provided",
+    "us_citizen_or_resident",
+    "full_time_student",
+    "permanently_disabled",
+)
+
 
 def build_fact(
     key: str,
@@ -30,6 +43,33 @@ def build_fact(
     sources: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {"key": key, "value": value, "sources": sources}
+
+
+def normalize_dependents(raw_dependents: Any) -> list[dict[str, Any]]:
+    normalized_dependents: list[dict[str, Any]] = []
+    if not isinstance(raw_dependents, list):
+        return normalized_dependents
+
+    for index, item in enumerate(raw_dependents, start=1):
+        if not isinstance(item, dict):
+            continue
+        dependent: dict[str, Any] = {"id": f"dependent_{index}"}
+        for field in SAFE_DEPENDENT_FIELDS:
+            value = item.get(field)
+            if value in (None, ""):
+                continue
+            if field in {
+                "age_on_dec_31",
+                "months_lived_with_taxpayer",
+                "support_percent_paid_by_taxpayer",
+                "child_care_expenses",
+            }:
+                dependent[field] = safe_float(value)
+            else:
+                dependent[field] = value
+        if len(dependent) > 1:
+            normalized_dependents.append(dependent)
+    return normalized_dependents
 
 
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -129,6 +169,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     other_nonrefundable_credits, other_credit_sources = answer_fact(
         answers,
         "other_nonrefundable_credits",
+    )
+    dependents = normalize_dependents(answers.get("dependents"))
+    child_care_expenses_total = sum(
+        safe_float(dependent.get("child_care_expenses"))
+        for dependent in dependents
     )
 
     resident_state = normalize_state_code(state.get("resident_state"))
@@ -236,6 +281,42 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+    dependent_review_flags: list[str] = []
+    if dependents:
+        missing_items.append(
+            "Review whether any listed dependent qualifies for Child Tax Credit, Credit for Other Dependents, or head-of-household treatment before finalizing the draft return."
+        )
+        if "child_tax_credit" not in answers:
+            missing_items.append(
+                "If you want a draft child-related credit on Form 1040 line 20, provide a reviewed child tax credit or other dependent credit amount instead of letting the skill guess."
+            )
+        if child_care_expenses_total > 0.0:
+            missing_items.append(
+                f"Review dependent-care expenses totaling ${child_care_expenses_total:,.2f} and decide whether they belong in a dependent-care credit workflow."
+            )
+        for dependent in dependents:
+            name = str(dependent.get("first_name") or dependent["id"])
+            if "relationship" not in dependent:
+                dependent_review_flags.append(f"Confirm {name}'s relationship to the taxpayer.")
+            if "months_lived_with_taxpayer" not in dependent:
+                dependent_review_flags.append(
+                    f"Confirm how many months {name} lived with the taxpayer during the tax year."
+                )
+            if "support_percent_paid_by_taxpayer" not in dependent:
+                dependent_review_flags.append(
+                    f"Estimate what share of {name}'s support was paid by the taxpayer."
+                )
+            if "tin_provided" not in dependent:
+                dependent_review_flags.append(
+                    f"Confirm whether {name} has a valid TIN for filing purposes, but do not include the number in this public-safe intake."
+                )
+            if "us_citizen_or_resident" not in dependent:
+                dependent_review_flags.append(
+                    f"Confirm whether {name} was a U.S. citizen, U.S. resident, or U.S. national for the tax year."
+                )
+    for flag in dependent_review_flags:
+        if flag not in missing_items:
+            missing_items.append(flag)
 
     status = "ok"
     if illegal_reasons:
@@ -319,6 +400,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "household_summary": {
+            "dependents": dependents,
+            "dependent_count": len(dependents),
+            "child_care_expenses_total": child_care_expenses_total,
+            "review_flags": dependent_review_flags,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

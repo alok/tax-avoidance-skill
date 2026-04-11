@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "dependent_intake_review",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -110,6 +111,18 @@ class TaxFlowTest(unittest.TestCase):
             "Review the 1098-T tuition and scholarship amounts",
             artifacts["missing-items.md"],
         )
+
+    def test_dependent_intake_review(self) -> None:
+        normalized, artifacts = self.run_case("dependent_intake_review")
+        household = normalized["household_summary"]
+        self.assertEqual(household["dependent_count"], 2)
+        self.assertEqual(household["child_care_expenses_total"], 3200)
+        self.assertEqual(household["dependents"][0]["first_name"], "Maya")
+        self.assertIn("Household And Dependents", artifacts["tax-dossier.md"])
+        self.assertIn("Sensitive identifiers are intentionally omitted", artifacts["tax-dossier.md"])
+        self.assertIn("$3,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("Child Tax Credit", artifacts["missing-items.md"])
+        self.assertIn("Leo", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

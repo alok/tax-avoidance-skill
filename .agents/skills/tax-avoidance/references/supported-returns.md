@@ -7,6 +7,7 @@
 - Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, Social Security income
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
 - Common credits and review workflows: education-credit review with 1098-T intake, clean-energy review, clean-vehicle review
+- Household review scaffolding: dependent intake with public-safe fields such as relationship, age, months in home, support share, and child-care expenses, without storing SSNs or auto-deciding eligibility
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
 
@@ -32,6 +33,7 @@
 - trust or estate filings
 - multistate or international filings
 - any concealment or falsification request
+- collecting or preserving sensitive identifiers such as dependent SSNs in the public-safe example flow
 
 ## Behavior On Unsupported Cases
 

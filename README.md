@@ -28,10 +28,11 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Preserves dependent and household review context using public-safe fields only, so the artifact set can surface child-credit and dependent-care follow-up without storing sensitive identifiers.
 
 ## Scope
 
-This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It also recognizes `1098-T` tuition statements as education-credit review evidence and carries those amounts into the artifact set without silently computing the final credit. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
+This repository targets **simple federal individual returns** only: single or married-filing-jointly households with wage, contractor, and investment income plus common deductions and credits. It supports a simple Schedule C skeleton for contractor `1099-NEC` work when gross receipts are known and business expenses can be gathered. It also recognizes `1098-T` tuition statements as education-credit review evidence and carries those amounts into the artifact set without silently computing the final credit. It now preserves safe dependent-intake scaffolding as well, so household context, child-care expenses, and follow-up prompts survive into the artifact set without collecting SSNs or pretending to decide eligibility. It still excludes rental income, K-1s, stock options, QSBS, trusts, estates, multistate returns, and international filings.
 
 All substantive tax facts should trace back to primary IRS sources such as [Publication 17](https://www.irs.gov/publications/p17), [Publication 505](https://www.irs.gov/publications/p505), [Publication 590-A](https://www.irs.gov/publications/p590a), and [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969). Wikipedia is only used for the avoidance-vs-evasion terminology framing.
 
@@ -74,6 +75,14 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 
 That should create the same four standard artifacts in `output/example-run/`.
 
+For a public-safe household example with dependent intake scaffolding:
+
+```bash
+uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
+  --input examples/family-dependent-input.json \
+  --out-dir output/family-example-run
+```
+
 ## Install In Claude Cowork
 
 This repo also ships a Cowork plugin wrapper:
@@ -98,13 +107,13 @@ Primary command:
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.
-8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
+8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, dependent follow-up, and anything that needs professional review.
 
 ## Repository Layout
 
 - `.agents/skills/tax-avoidance/` holds the canonical Codex skill, references, and deterministic scripts.
 - `plugins/tax/` wraps the same workflow for Claude Cowork.
-- `tests/` validates happy paths, connector fallbacks, illegal-request refusals, and artifact consistency.
+- `tests/` validates happy paths, connector fallbacks, dependent review scaffolding, illegal-request refusals, and artifact consistency.
 
 ## Notes
 

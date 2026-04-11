@@ -328,6 +328,39 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    household_summary = normalized.get("household_summary", {})
+    dependent_rows = [
+        [
+            dependent.get("first_name") or dependent.get("id", ""),
+            dependent.get("relationship", "TBD"),
+            str(int(dependent["age_on_dec_31"])) if "age_on_dec_31" in dependent else "TBD",
+            str(int(dependent["months_lived_with_taxpayer"])) if "months_lived_with_taxpayer" in dependent else "TBD",
+            (
+                f"{dependent['support_percent_paid_by_taxpayer']:.0f}%"
+                if "support_percent_paid_by_taxpayer" in dependent
+                else "TBD"
+            ),
+            money(dependent.get("child_care_expenses")) if dependent.get("child_care_expenses") else "$0.00",
+            "Yes" if dependent.get("tin_provided") is True else "No" if dependent.get("tin_provided") is False else "TBD",
+            (
+                "Yes"
+                if dependent.get("us_citizen_or_resident") is True
+                else "No"
+                if dependent.get("us_citizen_or_resident") is False
+                else "TBD"
+            ),
+        ]
+        for dependent in household_summary.get("dependents", [])
+    ]
+    household_lines = [
+        f"- Dependents captured: {household_summary.get('dependent_count', 0)}",
+        (
+            f"- Child-care expenses surfaced for review: {money(household_summary.get('child_care_expenses_total'))}"
+            if household_summary.get("child_care_expenses_total")
+            else "- No dependent-care expenses have been surfaced yet."
+        ),
+        "- Sensitive identifiers are intentionally omitted from this public-safe intake.",
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -366,6 +399,24 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Household And Dependents",
+        "",
+        *household_lines,
+        "",
+        make_markdown_table(
+            [
+                "Name",
+                "Relationship",
+                "Age",
+                "Months With Taxpayer",
+                "Taxpayer Support Share",
+                "Child-Care Expenses",
+                "TIN Confirmed",
+                "U.S. Citizen/Resident",
+            ],
+            dependent_rows or [["None", "None", "None", "None", "None", "$0.00", "None", "None"]],
+        ),
         "",
         "## State Follow-Up",
         "",
