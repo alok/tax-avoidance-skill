@@ -82,6 +82,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-T"},
         "scholarships_or_grants",
     )
+    traditional_ira_contributions, traditional_ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
+    roth_ira_contributions, roth_ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "roth_ira_contributions",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -212,6 +222,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if traditional_ira_contributions > 0.0 or roth_ira_contributions > 0.0:
+            missing_items.append(
+                "Review the Form 5498 IRA contribution amounts and confirm the deductible traditional IRA amount before applying an IRA deduction."
+            )
+        else:
+            missing_items.append(
+                "Extract the key Form 5498 IRA contribution amounts or upload a clearer copy before reviewing any IRA deduction."
+            )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -265,6 +285,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "qualified_tuition",
             qualified_tuition,
             qualified_tuition_sources,
+        ),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_contribution_sources,
+        ),
+        "roth_ira_contributions": build_fact(
+            "roth_ira_contributions",
+            roth_ira_contributions,
+            roth_ira_contribution_sources,
         ),
         "scholarships_and_grants": build_fact(
             "scholarships_and_grants",

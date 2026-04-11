@@ -578,6 +578,48 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "ira_review_5498": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "5498-fidelity",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-fidelity",
+          "fields": {
+            "ira_contributions": 6500,
+            "roth_ira_contributions": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 12500
+      },
+      "user_request": "Use my wage forms and IRA documents to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "traditional_ira_contributions": 6500,
+      "roth_ira_contributions": 1200
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,
