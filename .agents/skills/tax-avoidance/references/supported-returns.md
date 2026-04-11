@@ -36,3 +36,7 @@
 ## Behavior On Unsupported Cases
 
 Preserve the gathered facts, create `missing-items.md`, and state clearly that the flow is outside the supported simple-return envelope.
+
+## Review-Only Evidence
+
+- Form 5498 contribution amounts are preserved as IRA review evidence, but the flow does not silently claim an IRA deduction until the user explicitly confirms the deductible amount.
