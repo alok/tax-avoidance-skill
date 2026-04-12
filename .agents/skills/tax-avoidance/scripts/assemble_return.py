@@ -280,6 +280,44 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    hsa_contributions_reported = fact_value(normalized, "hsa_contributions_reported")
+    hsa_deduction = fact_value(normalized, "hsa_deduction")
+    student_loan_interest_reported = fact_value(normalized, "student_loan_interest_reported")
+    student_loan_interest_deduction = fact_value(normalized, "student_loan_interest_deduction")
+    deduction_review_lines = [
+        (
+            f"- Form 5498 IRA contributions spotted: {money(ira_contributions_reported)}"
+            if ira_contributions_reported
+            else "- No Form 5498 IRA contribution amount was spotted."
+        ),
+        (
+            f"- IRA deduction currently applied on Form 1040 line 10: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet."
+        ),
+        (
+            f"- Form 5498-SA HSA contributions spotted: {money(hsa_contributions_reported)}"
+            if hsa_contributions_reported
+            else "- No Form 5498-SA HSA contribution amount was spotted."
+        ),
+        (
+            f"- HSA deduction currently applied on Form 1040 line 10: {money(hsa_deduction)}"
+            if hsa_deduction
+            else "- No HSA deduction is applied yet."
+        ),
+        (
+            f"- Form 1098-E student loan interest spotted: {money(student_loan_interest_reported)}"
+            if student_loan_interest_reported
+            else "- No Form 1098-E student loan interest amount was spotted."
+        ),
+        (
+            f"- Student loan interest deduction currently applied on Form 1040 line 10: {money(student_loan_interest_deduction)}"
+            if student_loan_interest_deduction
+            else "- No student loan interest deduction is applied yet."
+        ),
+    ]
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -362,6 +400,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## Education Review",
         "",

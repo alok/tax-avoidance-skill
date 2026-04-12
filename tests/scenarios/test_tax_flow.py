@@ -111,6 +111,23 @@ class TaxFlowTest(unittest.TestCase):
             artifacts["missing-items.md"],
         )
 
+    def test_adjustment_review_forms(self) -> None:
+        normalized, artifacts = self.run_case("adjustment_review_forms")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 6500)
+        self.assertEqual(normalized["facts"]["hsa_contributions_reported"]["value"], 3200)
+        self.assertEqual(normalized["facts"]["student_loan_interest_reported"]["value"], 940)
+        self.assertEqual(normalized["facts"]["ira_contribution_deduction"]["value"], 0)
+        self.assertEqual(normalized["facts"]["hsa_deduction"]["value"], 0)
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 0)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("$6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("$3,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("$940.00", artifacts["tax-dossier.md"])
+        self.assertIn("Review the Form 5498 IRA contribution amount", artifacts["missing-items.md"])
+        self.assertIn("Review the Form 5498-SA HSA contribution amount", artifacts["missing-items.md"])
+        self.assertIn("Review the Form 1098-E student loan interest amount", artifacts["missing-items.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

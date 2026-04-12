@@ -72,6 +72,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contributions_reported, ira_contributions_reported_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
+    hsa_contributions_reported, hsa_contributions_reported_sources = aggregate_numeric(
+        documents,
+        {"5498-SA"},
+        "hsa_contributions",
+    )
     qualified_tuition, qualified_tuition_sources = aggregate_numeric(
         documents,
         {"1098-T"},
@@ -117,6 +127,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
+    student_loan_interest_deduction, student_loan_interest_deduction_sources = answer_fact(
+        answers,
+        "student_loan_interest_deduction",
+    )
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
@@ -197,6 +211,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if ira_contributions_reported > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            "Review the Form 5498 IRA contribution amount and confirm how much is deductible before applying any IRA deduction."
+        )
+    if hsa_contributions_reported > 0.0 and "hsa_deduction" not in answers:
+        missing_items.append(
+            "Review the Form 5498-SA HSA contribution amount and confirm how much is deductible before applying any HSA deduction."
+        )
+    if student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        missing_items.append(
+            "Review the Form 1098-E student loan interest amount and confirm the deductible amount before applying it to the return."
+        )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -258,8 +284,23 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
+            student_loan_interest_deduction,
+            student_loan_interest_deduction_sources,
+        ),
+        "student_loan_interest_reported": build_fact(
+            "student_loan_interest_reported",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contributions_reported_sources,
+        ),
+        "hsa_contributions_reported": build_fact(
+            "hsa_contributions_reported",
+            hsa_contributions_reported,
+            hsa_contributions_reported_sources,
         ),
         "qualified_tuition": build_fact(
             "qualified_tuition",

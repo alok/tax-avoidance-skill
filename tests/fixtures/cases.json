@@ -209,6 +209,66 @@
       "scholarships_and_grants": 2500
     }
   },
+  "adjustment_review_forms": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 10800
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        },
+        {
+          "id": "hsa-5498sa",
+          "doc_type": "5498-SA",
+          "source_type": "google_drive",
+          "source_ref": "drive://hsa-5498sa",
+          "fields": {
+            "hsa_contributions": 3200
+          }
+        },
+        {
+          "id": "loan-1098e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://loan-1098e",
+          "fields": {
+            "student_loan_interest": 940
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9900
+      },
+      "user_request": "Gather my tax forms and show me what deduction amounts still need review."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_contributions_reported": 6500,
+      "hsa_contributions_reported": 3200,
+      "student_loan_interest_reported": 940
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
