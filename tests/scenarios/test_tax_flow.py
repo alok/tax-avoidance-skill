@@ -158,6 +158,36 @@ class TaxFlowTest(unittest.TestCase):
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
 
+    def test_workflow_summary_ready_case(self) -> None:
+        normalized, artifacts = self.run_case("w2_single")
+        workflow_summary = normalized["workflow_summary"]
+        stages = {stage["key"]: stage for stage in workflow_summary["stages"]}
+
+        self.assertEqual(workflow_summary["pending_stage_count"], 1)
+        self.assertEqual(stages["source_access"]["status"], "complete")
+        self.assertEqual(stages["filing_status"]["status"], "complete")
+        self.assertEqual(stages["income_documents"]["status"], "complete")
+        self.assertEqual(stages["deduction_review"]["status"], "complete")
+        self.assertEqual(stages["tax_review"]["status"], "complete")
+        self.assertEqual(stages["self_employment"]["status"], "not_needed")
+        self.assertEqual(stages["education_credit"]["status"], "not_needed")
+        self.assertEqual(stages["state_scaffolding"]["status"], "pending")
+        self.assertEqual(stages["document_follow_up"]["status"], "complete")
+        self.assertIn("## Intake Progress", artifacts["tax-dossier.md"])
+        self.assertIn("| Stage | Status | Detail |", artifacts["tax-dossier.md"])
+
+    def test_workflow_summary_review_case(self) -> None:
+        normalized, artifacts = self.run_case("education_credit_review_1098t")
+        workflow_summary = normalized["workflow_summary"]
+        stages = {stage["key"]: stage for stage in workflow_summary["stages"]}
+
+        self.assertGreaterEqual(workflow_summary["pending_stage_count"], 2)
+        self.assertEqual(stages["education_credit"]["status"], "pending")
+        self.assertEqual(stages["document_follow_up"]["status"], "complete")
+        self.assertIn("1098-T documents are present", stages["education_credit"]["detail"])
+        self.assertIn("Education Credit Review", artifacts["tax-dossier.md"])
+        self.assertIn("pending", artifacts["tax-dossier.md"])
+
 
 if __name__ == "__main__":
     unittest.main()

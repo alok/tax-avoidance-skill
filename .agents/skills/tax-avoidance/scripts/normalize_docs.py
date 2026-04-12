@@ -32,6 +32,10 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_stage(key: str, label: str, status: str, detail: str) -> dict[str, str]:
+    return {"key": key, "label": label, "status": status, "detail": detail}
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -243,6 +247,114 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     elif unsupported_reasons:
         status = "unsupported"
 
+    non_w2_income_docs = {
+        "1099-INT",
+        "1099-DIV",
+        "1099-B",
+        "1099-NEC",
+        "SSA-1099",
+    }
+    income_doc_count = sum(
+        1
+        for document in documents
+        if document.get("doc_type") == "W-2" or document.get("doc_type") in non_w2_income_docs
+    )
+    incomplete_documents = [
+        document
+        for document in documents
+        if document.get("content_status") in {"portal_notice_only", "unreadable_encrypted_attachment", "metadata_only"}
+        and not (
+            document.get("dedupe_key")
+            and document.get("dedupe_key") in available_dedupe_keys
+            and document.get("content_status") != "available"
+        )
+    ]
+
+    source_status = "complete" if documents or connectors.get("gmail") or connectors.get("google_drive") else "pending"
+    if documents:
+        source_detail = f"{len(documents)} document(s) are already in the intake queue."
+    elif connectors.get("gmail") or connectors.get("google_drive"):
+        source_detail = "Connectors are available, but no tax documents have been gathered yet."
+    else:
+        source_detail = "Connect Gmail and Google Drive or upload PDFs to start the intake."
+
+    filing_status_status = "complete" if payload.get("filing_status") else "pending"
+    filing_status_detail = (
+        f"Filing status is set to {payload.get('filing_status')}."
+        if payload.get("filing_status")
+        else "Confirm the filing status before drafting the return."
+    )
+
+    income_status = "complete" if income_doc_count else "pending"
+    income_detail = (
+        f"Found {income_doc_count} income document(s) across wage, contractor, investment, or benefit flows."
+        if income_doc_count
+        else "Gather at least one W-2, 1099, or SSA-1099 before continuing."
+    )
+
+    deduction_status = "complete" if "deduction_amount" in answers else "pending"
+    deduction_detail = (
+        f"Deduction amount is captured at ${deduction_amount:,.2f}."
+        if "deduction_amount" in answers
+        else "Choose the deduction path and capture the deduction amount."
+    )
+
+    tax_review_status = "complete" if "tax_before_credits" in answers else "pending"
+    tax_review_detail = (
+        f"Tax-before-credits is captured at ${tax_before_credits:,.2f}."
+        if "tax_before_credits" in answers
+        else "Capture a tax-before-credits figure or leave the draft marked for manual review."
+    )
+
+    if nonemployee_compensation > 0.0:
+        self_employment_status = "complete" if "business_expenses" in answers else "pending"
+        self_employment_detail = (
+            f"Schedule C expenses are captured at ${business_expenses:,.2f}."
+            if "business_expenses" in answers
+            else "1099-NEC income is present. Confirm deductible business expenses or explicitly set them to zero."
+        )
+    else:
+        self_employment_status = "not_needed"
+        self_employment_detail = "No 1099-NEC self-employment income was detected."
+
+    if has_1098t:
+        education_status = "complete" if "education_credit" in answers else "pending"
+        education_detail = (
+            f"Education credit is currently set to ${education_credit:,.2f}."
+            if "education_credit" in answers
+            else "1098-T documents are present. Review qualified tuition and scholarship figures before applying a credit."
+        )
+    else:
+        education_status = "not_needed"
+        education_detail = "No 1098-T education-credit workflow was detected."
+
+    state_status = "complete" if resident_state and not state_follow_up else "pending"
+    if resident_state and not state_follow_up:
+        state_detail = f"Resident state context is captured as {resident_state} with no open state follow-up."
+    elif resident_state or work_states or state_allocation_totals:
+        state_detail = "State context exists, but resident/work-state follow-up is still open."
+    else:
+        state_detail = "Capture resident state and any work states early so state filing follow-up stays visible."
+
+    document_follow_up_status = "pending" if incomplete_documents else "complete"
+    document_follow_up_detail = (
+        f"{len(incomplete_documents)} document(s) still need a clearer PDF, full attachment, or confirmation against the source form."
+        if incomplete_documents
+        else "All queued documents are available in a usable form for this draft."
+    )
+
+    workflow_stages = [
+        build_stage("source_access", "Source Access", source_status, source_detail),
+        build_stage("filing_status", "Filing Status", filing_status_status, filing_status_detail),
+        build_stage("income_documents", "Income Documents", income_status, income_detail),
+        build_stage("deduction_review", "Deduction Review", deduction_status, deduction_detail),
+        build_stage("tax_review", "Tax Review", tax_review_status, tax_review_detail),
+        build_stage("self_employment", "Self-Employment Review", self_employment_status, self_employment_detail),
+        build_stage("education_credit", "Education Credit Review", education_status, education_detail),
+        build_stage("state_scaffolding", "State Scaffolding", state_status, state_detail),
+        build_stage("document_follow_up", "Document Follow-Up", document_follow_up_status, document_follow_up_detail),
+    ]
+
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
         "nonemployee_compensation": build_fact(
@@ -319,6 +431,12 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "workflow_summary": {
+            "completed_stage_count": sum(1 for stage in workflow_stages if stage["status"] == "complete"),
+            "pending_stage_count": sum(1 for stage in workflow_stages if stage["status"] == "pending"),
+            "not_needed_stage_count": sum(1 for stage in workflow_stages if stage["status"] == "not_needed"),
+            "stages": workflow_stages,
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

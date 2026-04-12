@@ -328,6 +328,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for allocation in state_summary.get("allocations", [])
     ]
     state_follow_up_lines = [f"- {item}" for item in state_summary.get("follow_up", [])] or ["- None"]
+    workflow_summary = normalized.get("workflow_summary", {})
+    workflow_rows = [
+        [
+            stage.get("label", ""),
+            stage.get("status", ""),
+            stage.get("detail", ""),
+        ]
+        for stage in workflow_summary.get("stages", [])
+    ]
 
     sections = [
         "# Tax Dossier",
@@ -338,6 +347,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         f"Tax year: {normalized['tax_year']}",
         f"Filing status: {normalized.get('filing_status') or 'TBD'}",
+        "",
+        "## Intake Progress",
+        "",
+        f"- Completed stages: {workflow_summary.get('completed_stage_count', 0)}",
+        f"- Pending stages: {workflow_summary.get('pending_stage_count', 0)}",
+        f"- Not-needed stages: {workflow_summary.get('not_needed_stage_count', 0)}",
+        "",
+        make_markdown_table(
+            ["Stage", "Status", "Detail"],
+            workflow_rows or [["None", "None", "No workflow summary was generated."]],
+        ),
         "",
         "## Connector Notes",
         "",
