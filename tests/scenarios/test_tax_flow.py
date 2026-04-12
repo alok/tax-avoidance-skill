@@ -70,6 +70,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
+                if "schedule_c_line_28" in expected:
+                    self.assertIn(f"${expected['schedule_c_line_28']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
 
@@ -118,6 +120,15 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_schedule_c_zero_expenses(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_zero_expenses")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["business_expenses"]["value"], 0.0)
+        self.assertTrue(normalized["facts"]["business_expenses"]["sources"])
+        self.assertIn("$0.00", artifacts["federal-lines.md"])
+        self.assertIn("$24,000.00", artifacts["federal-lines.md"])
+        self.assertNotIn("Provide deductible business expenses", artifacts["missing-items.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
