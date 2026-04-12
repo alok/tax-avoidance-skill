@@ -45,6 +45,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    unemployment_compensation, unemployment_compensation_sources = aggregate_numeric(
+        documents,
+        {"1099-G"},
+        "unemployment_compensation",
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -245,6 +250,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     facts = {
         "wages": build_fact("wages", wages, wages_sources),
+        "unemployment_compensation": build_fact(
+            "unemployment_compensation",
+            unemployment_compensation,
+            unemployment_compensation_sources,
+        ),
         "nonemployee_compensation": build_fact(
             "nonemployee_compensation",
             nonemployee_compensation,

@@ -41,6 +41,7 @@ def fact_sources(normalized: dict[str, Any], key: str) -> list[dict[str, Any]]:
 
 def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     wages = fact_value(normalized, "wages")
+    unemployment_compensation = fact_value(normalized, "unemployment_compensation")
     nonemployee_compensation = fact_value(normalized, "nonemployee_compensation")
     business_expenses = fact_value(normalized, "business_expenses")
     interest = fact_value(normalized, "taxable_interest")
@@ -52,7 +53,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = wages + unemployment_compensation + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -120,6 +121,14 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "rule_citations": rule_citations("wages"),
         },
         {
+            "form": "Schedule 1",
+            "line": "7",
+            "label": "Unemployment compensation",
+            "value": unemployment_compensation or None,
+            "sources": fact_sources(normalized, "unemployment_compensation"),
+            "rule_citations": rule_citations("unemployment_compensation"),
+        },
+        {
             "form": "Form 1040",
             "line": "2b",
             "label": "Taxable interest",
@@ -151,6 +160,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "sources": [],
             "rule_citations": rule_citations(
                 "wages",
+                "unemployment_compensation",
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",

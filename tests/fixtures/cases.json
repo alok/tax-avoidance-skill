@@ -135,6 +135,48 @@
       "line_3b": 1400
     }
   },
+  "unemployment_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 42000,
+            "federal_withholding": 5100
+          }
+        },
+        {
+          "id": "1099g-state",
+          "doc_type": "1099-G",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099g-state",
+          "fields": {
+            "unemployment_compensation": 6800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 4100
+      },
+      "user_request": "Use my wage and unemployment tax documents to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 42000,
+      "schedule_1_line_7": 6800,
+      "line_25a": 5100
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,

@@ -60,6 +60,8 @@ class TaxFlowTest(unittest.TestCase):
                 federal_lines = artifacts["federal-lines.md"]
                 if "line_1a" in expected:
                     self.assertIn(f"${expected['line_1a']:,.2f}", federal_lines)
+                if "schedule_1_line_7" in expected:
+                    self.assertIn(f"${expected['schedule_1_line_7']:,.2f}", federal_lines)
                 if "line_2b" in expected:
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
