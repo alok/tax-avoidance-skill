@@ -167,6 +167,46 @@
       "line_20": 1800
     }
   },
+  "ira_5498_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-ira-review",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-ira-review",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 12500
+          }
+        },
+        {
+          "id": "5498-traditional-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-traditional-ira",
+          "fields": {
+            "ira_contributions": 3500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 11800
+      },
+      "user_request": "Use my tax forms to build the draft package and flag anything still needed."
+    },
+    "expect": {
+      "status": "ok",
+      "traditional_ira_contributions": 3500
+    }
+  },
   "education_credit_review_1098t": {
     "input": {
       "tax_year": 2025,

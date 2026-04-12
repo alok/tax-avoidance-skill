@@ -114,6 +114,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    traditional_ira_contributions, traditional_ira_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
+    roth_ira_contributions, roth_ira_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "roth_ira_contributions",
+    )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -197,6 +207,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
         )
+    if traditional_ira_contributions > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            "Review the Form 5498 traditional IRA contributions and confirm how much, if any, should be used as an IRA deduction in the draft return."
+        )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
@@ -275,6 +289,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "candidate_business_expenses",
             candidate_business_expenses,
             candidate_expense_sources,
+        ),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_sources,
+        ),
+        "roth_ira_contributions": build_fact(
+            "roth_ira_contributions",
+            roth_ira_contributions,
+            roth_ira_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
