@@ -135,6 +135,58 @@
       "line_3b": 1400
     }
   },
+  "estimated_tax_payments": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 120000,
+            "federal_withholding": 18000
+          }
+        },
+        {
+          "id": "q1-estimate",
+          "doc_type": "1040-ES Payment",
+          "source_type": "google_drive",
+          "source_ref": "drive://2025-q1-estimate",
+          "document_date": "2025-04-15",
+          "fields": {
+            "payment_amount": 1500
+          }
+        },
+        {
+          "id": "extension-payment",
+          "doc_type": "4868 Extension Payment",
+          "source_type": "google_drive",
+          "source_ref": "drive://2025-extension-payment",
+          "document_date": "2025-04-15",
+          "fields": {
+            "amount": 2200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 24000
+      },
+      "user_request": "Carry my estimated tax payments into the draft return package too."
+    },
+    "expect": {
+      "status": "ok",
+      "line_26": 3700,
+      "line_33": 21700
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,

@@ -49,6 +49,7 @@ class TaxFlowTest(unittest.TestCase):
             "w2_single",
             "mfj_common_deductions",
             "investment_household",
+            "estimated_tax_payments",
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
@@ -68,10 +69,24 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_26" in expected:
+                    self.assertIn(f"${expected['line_26']:,.2f}", federal_lines)
+                if "line_33" in expected:
+                    self.assertIn(f"${expected['line_33']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+
+    def test_estimated_tax_payments(self) -> None:
+        normalized, artifacts = self.run_case("estimated_tax_payments")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["other_payments"]["value"], 3700)
+        self.assertIn("Estimated tax payments and amount applied from prior year", artifacts["federal-lines.md"])
+        self.assertIn("$3,700.00", artifacts["federal-lines.md"])
+        self.assertIn("## Estimated Tax Payments", artifacts["tax-dossier.md"])
+        self.assertIn("drive://2025-q1-estimate", artifacts["tax-dossier.md"])
+        self.assertIn("drive://2025-extension-payment", artifacts["tax-dossier.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")

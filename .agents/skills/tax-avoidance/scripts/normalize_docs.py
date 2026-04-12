@@ -12,6 +12,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
+    aggregate_numeric_fields,
     categorize_expense_vendor,
     connector_notes,
     detect_illegal_request,
@@ -45,6 +46,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     wages, wages_sources = aggregate_numeric(documents, {"W-2"}, "wages")
     withholding, withholding_sources = aggregate_numeric(documents, {"W-2"}, "federal_withholding")
+    estimated_tax_payments, estimated_tax_payment_sources = aggregate_numeric_fields(
+        documents,
+        {"1040-ES Payment", "Estimated Tax Payment", "4868 Extension Payment"},
+        ["payment_amount", "amount"],
+    )
     nonemployee_compensation, nonemployee_compensation_sources = aggregate_numeric(
         documents,
         {"1099-NEC"},
@@ -109,6 +115,22 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         for document in expense_documents_for_year
         if safe_float(document.get("fields", {}).get("amount")) != 0.0
     ]
+    other_payment_documents = [
+        {
+            "id": document.get("id"),
+            "doc_type": document.get("doc_type"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "document_date": document.get("document_date"),
+            "payment_amount": safe_float(
+                document.get("fields", {}).get("payment_amount", document.get("fields", {}).get("amount"))
+            ),
+        }
+        for document in documents
+        if document.get("doc_type") in {"1040-ES Payment", "Estimated Tax Payment", "4868 Extension Payment"}
+        and safe_float(document.get("fields", {}).get("payment_amount", document.get("fields", {}).get("amount")))
+        != 0.0
+    ]
     charitable_cash, charitable_sources = aggregate_numeric(
         documents,
         {"Donation Receipt"},
@@ -121,7 +143,9 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
     tax_before_credits, tax_before_credits_sources = answer_fact(answers, "tax_before_credits")
-    other_payments, other_payments_sources = answer_fact(answers, "other_payments")
+    answered_other_payments, answered_other_payments_sources = answer_fact(answers, "other_payments")
+    other_payments = estimated_tax_payments + answered_other_payments
+    other_payments_sources = estimated_tax_payment_sources + answered_other_payments_sources
     education_credit, education_credit_sources = answer_fact(answers, "education_credit")
     clean_vehicle_credit, clean_vehicle_credit_sources = answer_fact(answers, "clean_vehicle_credit")
     clean_energy_credit, clean_energy_credit_sources = answer_fact(answers, "clean_energy_credit")
@@ -321,6 +345,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "other_payment_documents": other_payment_documents,
         "facts": facts,
     }
     return normalized

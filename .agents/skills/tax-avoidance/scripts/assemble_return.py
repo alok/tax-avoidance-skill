@@ -237,11 +237,19 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "26",
+            "label": "Estimated tax payments and amount applied from prior year",
+            "value": other_payments or None,
+            "sources": fact_sources(normalized, "other_payments"),
+            "rule_citations": rule_citations("estimated_tax_payments"),
+        },
+        {
+            "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
             "value": total_payments or None,
             "sources": fact_sources(normalized, "federal_withholding") + fact_sources(normalized, "other_payments"),
-            "rule_citations": rule_citations("federal_withholding"),
+            "rule_citations": rule_citations("federal_withholding", "estimated_tax_payments"),
         },
         {
             "form": "Form 1040",
@@ -295,6 +303,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    other_payment_rows = [
+        [
+            payment.get("document_date") or "unknown",
+            payment.get("doc_type") or "Unknown",
+            money(payment.get("payment_amount")),
+            payment.get("source_ref") or "unknown",
+        ]
+        for payment in normalized.get("other_payment_documents", [])
+    ]
+    other_payments = fact_value(normalized, "other_payments")
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
@@ -361,6 +379,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Estimated Tax Payments",
+        "",
+        f"- Total additional payments carried into the draft package: {money(other_payments) if other_payments else '$0.00'}",
+        "",
+        make_markdown_table(
+            ["Date", "Type", "Amount", "Source"],
+            other_payment_rows or [["None", "None", "$0.00", "None"]],
         ),
         "",
         "## Education Review",
