@@ -13,6 +13,7 @@ from tax_flow_common import (  # noqa: E402
     answer_fact,
     aggregate_numeric,
     categorize_expense_vendor,
+    compute_student_loan_interest_deduction,
     connector_notes,
     detect_illegal_request,
     detect_unsupported,
@@ -131,6 +132,28 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "other_nonrefundable_credits",
     )
 
+    has_business_expenses = bool(business_expense_sources) or business_expenses > 0.0
+    business_net_income = (
+        nonemployee_compensation - business_expenses
+        if nonemployee_compensation and has_business_expenses
+        else 0.0
+    )
+    modified_agi_before_student_loan = (
+        wages
+        + interest
+        + dividends
+        + capital_gains
+        + social_security
+        + business_net_income
+        - ira_deduction
+        - hsa_deduction
+    )
+    student_loan_interest_deduction = compute_student_loan_interest_deduction(
+        payload.get("filing_status", ""),
+        student_loan_interest,
+        modified_agi_before_student_loan,
+    )
+
     resident_state = normalize_state_code(state.get("resident_state"))
     work_states_raw = state.get("work_states", [])
     work_states: list[str] = []
@@ -236,6 +259,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+    if student_loan_interest > 0.0 and student_loan_interest_deduction < student_loan_interest:
+        if student_loan_interest >= 2500.0 and student_loan_interest_deduction == 2500.0:
+            missing_items.append(
+                "The 1098-E student loan interest deduction is capped at $2,500.00 even if the form shows a larger amount."
+            )
+        elif student_loan_interest_deduction == 0.0:
+            missing_items.append(
+                "The 1098-E student loan interest deduction phases out at this income level, so no deduction is currently applied."
+            )
+        else:
+            missing_items.append(
+                f"The 1098-E student loan interest deduction phases down to ${student_loan_interest_deduction:,.2f} at the current income level."
+            )
 
     status = "ok"
     if illegal_reasons:
@@ -258,7 +294,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
-            student_loan_interest,
+            student_loan_interest_deduction,
             student_loan_interest_sources,
         ),
         "qualified_tuition": build_fact(

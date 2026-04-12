@@ -72,6 +72,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "line_10" in expected:
+                    self.assertIn(f"${expected['line_10']:,.2f}", federal_lines)
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
@@ -118,6 +120,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_student_loan_interest_limit_and_phaseout(self) -> None:
+        capped_normalized, capped_artifacts = self.run_case("student_loan_interest_capped")
+        self.assertEqual(capped_normalized["status"], "ok")
+        self.assertEqual(capped_normalized["facts"]["student_loan_interest_deduction"]["value"], 2500)
+        self.assertIn("$2,500.00", capped_artifacts["federal-lines.md"])
+        self.assertIn("capped at $2,500.00", capped_artifacts["missing-items.md"])
+
+        phased_normalized, phased_artifacts = self.run_case("student_loan_interest_phaseout")
+        self.assertEqual(phased_normalized["status"], "ok")
+        self.assertEqual(phased_normalized["facts"]["student_loan_interest_deduction"]["value"], 1000)
+        self.assertIn("$1,000.00", phased_artifacts["federal-lines.md"])
+        self.assertIn("phases down to $1,000.00", phased_artifacts["missing-items.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")

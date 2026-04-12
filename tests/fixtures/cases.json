@@ -209,6 +209,86 @@
       "scholarships_and_grants": 2500
     }
   },
+  "student_loan_interest_capped": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-borrower",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-borrower",
+          "fields": {
+            "wages": 64000,
+            "federal_withholding": 6800
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 3200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7200
+      },
+      "user_request": "Use my loan interest statement in the draft return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_10": 2500
+    }
+  },
+  "student_loan_interest_phaseout": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-high-income",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-high-income",
+          "fields": {
+            "wages": 92500,
+            "federal_withholding": 12200
+          }
+        },
+        {
+          "id": "1098e-high-income",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-high-income",
+          "fields": {
+            "student_loan_interest": 2000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 12400
+      },
+      "user_request": "Apply my student loan interest if it still counts."
+    },
+    "expect": {
+      "status": "ok",
+      "line_10": 1000
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

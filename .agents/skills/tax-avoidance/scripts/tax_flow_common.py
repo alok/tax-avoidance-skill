@@ -200,6 +200,29 @@ def answer_fact(
     return value, [{"source_type": "user_answer", "source_ref": f"answer:{key}", "field": key, "value": value}]
 
 
+def compute_student_loan_interest_deduction(
+    filing_status: str,
+    student_loan_interest_paid: float,
+    modified_agi: float,
+) -> float:
+    if student_loan_interest_paid <= 0.0:
+        return 0.0
+
+    capped_interest = min(student_loan_interest_paid, 2500.0)
+    thresholds = {
+        "single": (85000.0, 100000.0),
+        "married_filing_jointly": (170000.0, 200000.0),
+    }
+    lower, upper = thresholds.get(filing_status, (0.0, float("inf")))
+    if modified_agi <= lower:
+        return round(capped_interest, 2)
+    if modified_agi >= upper:
+        return 0.0
+
+    phaseout_ratio = (upper - modified_agi) / (upper - lower)
+    return round(capped_interest * phaseout_ratio, 2)
+
+
 def detect_illegal_request(user_request: str) -> list[str]:
     lowered = user_request.lower()
     return [pattern for pattern in ILLEGAL_PATTERNS if pattern in lowered]
