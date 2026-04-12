@@ -47,12 +47,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
+    retirement_distribution_gross = fact_value(normalized, "retirement_distribution_gross")
+    retirement_distribution_taxable = fact_value(normalized, "retirement_distribution_taxable")
     has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = (
+        wages
+        + interest
+        + dividends
+        + capital_gains
+        + social_security
+        + retirement_distribution_taxable
+        + (net_profit or 0.0)
+    )
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -75,8 +85,9 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     total_tax = max(tax_before_credits - nonrefundable_credits, 0.0) if tax_before_credits else None
 
     withholding = fact_value(normalized, "federal_withholding")
+    retirement_withholding = fact_value(normalized, "retirement_distribution_withholding")
     other_payments = fact_value(normalized, "other_payments")
-    total_payments = withholding + other_payments
+    total_payments = withholding + retirement_withholding + other_payments
 
     refund = None
     amount_owed = None
@@ -145,6 +156,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "4a/5a",
+            "label": "IRA or pension distributions (placement review)",
+            "value": retirement_distribution_gross or None,
+            "sources": fact_sources(normalized, "retirement_distribution_gross"),
+            "rule_citations": rule_citations("retirement_distribution_gross"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "4b/5b",
+            "label": "Taxable retirement distributions (placement review)",
+            "value": retirement_distribution_taxable or None,
+            "sources": fact_sources(normalized, "retirement_distribution_taxable"),
+            "rule_citations": rule_citations("retirement_distribution_taxable"),
+        },
+        {
+            "form": "Form 1040",
             "line": "9",
             "label": "Total income",
             "value": total_income or None,
@@ -154,6 +181,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
+                "retirement_distribution_taxable",
                 "schedule_c",
             ),
         },
@@ -237,11 +265,21 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "25b",
+            "label": "Federal income tax withheld from Forms 1099",
+            "value": retirement_withholding or None,
+            "sources": fact_sources(normalized, "retirement_distribution_withholding"),
+            "rule_citations": rule_citations("retirement_distribution_withholding"),
+        },
+        {
+            "form": "Form 1040",
             "line": "33",
             "label": "Total payments",
             "value": total_payments or None,
-            "sources": fact_sources(normalized, "federal_withholding") + fact_sources(normalized, "other_payments"),
-            "rule_citations": rule_citations("federal_withholding"),
+            "sources": fact_sources(normalized, "federal_withholding")
+            + fact_sources(normalized, "retirement_distribution_withholding")
+            + fact_sources(normalized, "other_payments"),
+            "rule_citations": rule_citations("federal_withholding", "retirement_distribution_withholding"),
         },
         {
             "form": "Form 1040",

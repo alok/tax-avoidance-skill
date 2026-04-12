@@ -62,6 +62,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"SSA-1099"},
         "benefits",
     )
+    retirement_distribution_gross, retirement_distribution_gross_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "gross_distribution",
+    )
+    retirement_distribution_taxable, retirement_distribution_taxable_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "taxable_amount",
+    )
+    retirement_distribution_withholding, retirement_distribution_withholding_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "federal_withholding",
+    )
     mortgage_interest, mortgage_interest_sources = aggregate_numeric(
         documents,
         {"1098"},
@@ -202,6 +217,19 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    for document in documents:
+        if document.get("doc_type") != "1099-R":
+            continue
+        fields = document.get("fields", {})
+        source_ref = document.get("source_ref", "unknown source")
+        if "taxable_amount" not in fields:
+            missing_items.append(
+                f"Confirm the taxable amount for the 1099-R from {source_ref} before treating the retirement distribution as fully taxable."
+            )
+        if "distribution_kind" not in fields:
+            missing_items.append(
+                f"Confirm whether the 1099-R from {source_ref} belongs on Form 1040 line 4 (IRA) or line 5 (pension/annuity)."
+            )
     has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
     if has_1098t and "education_credit" not in answers:
         if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
@@ -255,6 +283,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "retirement_distribution_gross": build_fact(
+            "retirement_distribution_gross",
+            retirement_distribution_gross,
+            retirement_distribution_gross_sources,
+        ),
+        "retirement_distribution_taxable": build_fact(
+            "retirement_distribution_taxable",
+            retirement_distribution_taxable,
+            retirement_distribution_taxable_sources,
+        ),
+        "retirement_distribution_withholding": build_fact(
+            "retirement_distribution_withholding",
+            retirement_distribution_withholding,
+            retirement_distribution_withholding_sources,
+        ),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",

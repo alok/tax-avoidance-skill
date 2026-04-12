@@ -135,6 +135,53 @@
       "line_3b": 1400
     }
   },
+  "retirement_distribution_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-late-career",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-late-career",
+          "fields": {
+            "wages": 42000,
+            "federal_withholding": 5200
+          }
+        },
+        {
+          "id": "1099r-main",
+          "doc_type": "1099-R",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099r-main",
+          "fields": {
+            "gross_distribution": 18000,
+            "taxable_amount": 16500,
+            "federal_withholding": 1800,
+            "distribution_kind": "pension"
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 6100
+      },
+      "user_request": "Include my pension distribution in the draft return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 42000,
+      "line_25a": 5200,
+      "line_25b": 1800,
+      "retirement_distribution_gross": 18000,
+      "retirement_distribution_taxable": 16500
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,

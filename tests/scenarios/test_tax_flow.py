@@ -49,6 +49,7 @@ class TaxFlowTest(unittest.TestCase):
             "w2_single",
             "mfj_common_deductions",
             "investment_household",
+            "retirement_distribution_household",
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
@@ -68,10 +69,28 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_25b" in expected:
+                    self.assertIn(f"${expected['line_25b']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
                     self.assertIn(f"${expected['schedule_c_line_31']:,.2f}", federal_lines)
+                if "retirement_distribution_gross" in expected:
+                    self.assertIn(f"${expected['retirement_distribution_gross']:,.2f}", federal_lines)
+                if "retirement_distribution_taxable" in expected:
+                    self.assertIn(f"${expected['retirement_distribution_taxable']:,.2f}", federal_lines)
+
+    def test_retirement_distribution_review(self) -> None:
+        normalized, artifacts = self.run_case("retirement_distribution_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["retirement_distribution_gross"]["value"], 18000)
+        self.assertEqual(normalized["facts"]["retirement_distribution_taxable"]["value"], 16500)
+        self.assertEqual(normalized["facts"]["retirement_distribution_withholding"]["value"], 1800)
+        self.assertIn("4a/5a", artifacts["federal-lines.md"])
+        self.assertIn("4b/5b", artifacts["federal-lines.md"])
+        self.assertIn("$18,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("$16,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,800.00", artifacts["federal-lines.md"])
 
     def test_connector_upload_fallback(self) -> None:
         normalized, artifacts = self.run_case("connector_upload_fallback")
