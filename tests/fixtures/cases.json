@@ -84,6 +84,65 @@
       "line_25a": 14800
     }
   },
+  "deduction_review_signals": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-review",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-review",
+          "fields": {
+            "wages": 76000,
+            "federal_withholding": 8800
+          }
+        },
+        {
+          "id": "1098-review",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-review",
+          "fields": {
+            "mortgage_interest": 9100
+          }
+        },
+        {
+          "id": "donation-review",
+          "doc_type": "Donation Receipt",
+          "source_type": "upload",
+          "source_ref": "upload://donation-review",
+          "fields": {
+            "cash_donations": 1400
+          }
+        },
+        {
+          "id": "5498-review",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-review",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 9900
+      },
+      "user_request": "Gather my deduction documents and tell me what still needs review."
+    },
+    "expect": {
+      "status": "ok",
+      "mortgage_interest": 9100,
+      "charitable_cash": 1400,
+      "ira_contributions_reported": 6500
+    }
+  },
   "investment_household": {
     "input": {
       "tax_year": 2025,

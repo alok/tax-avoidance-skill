@@ -119,6 +119,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
 
+    def test_deduction_review_signals(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_signals")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["mortgage_interest"]["value"], 9100)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 1400)
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 6500)
+        self.assertEqual(normalized["facts"]["candidate_itemized_deductions"]["value"], 10500)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Candidate document-backed itemized deductions: $10,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("Form 5498 IRA contributions spotted for review: $6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("mortgage-interest and charitable-giving documents totaling $10,500.00", artifacts["missing-items.md"])
+        self.assertIn("Form 5498 IRA contributions totaling $6,500.00", artifacts["missing-items.md"])
+
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
         self.assertEqual(normalized["status"], "ok")

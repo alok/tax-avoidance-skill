@@ -280,6 +280,11 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    candidate_itemized_deductions = fact_value(normalized, "candidate_itemized_deductions")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    deduction_amount = fact_value(normalized, "deduction_amount")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -305,6 +310,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit)}"
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
+        ),
+    ]
+    deduction_review_lines = [
+        f"- Mortgage interest spotted from 1098 documents: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Charitable cash donations spotted from receipts: {money(charitable_cash) if charitable_cash else '$0.00'}",
+        f"- Candidate document-backed itemized deductions: {money(candidate_itemized_deductions) if candidate_itemized_deductions else '$0.00'}",
+        f"- Form 5498 IRA contributions spotted for review: {money(ira_contributions_reported) if ira_contributions_reported else '$0.00'}",
+        (
+            f"- Draft deduction currently applied on Form 1040 line 12: {money(deduction_amount)}"
+            if deduction_amount
+            else "- No deduction amount is applied yet. Review the standard-vs-itemized choice and any deductible IRA amount before finalizing line 12."
         ),
     ]
     state_summary = normalized.get("state_summary", {})
@@ -362,6 +378,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## Education Review",
         "",
