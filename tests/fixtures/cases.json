@@ -605,6 +605,46 @@
       "unsupported": "Equity compensation"
     }
   },
+  "ira_5498_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-main",
+          "fields": {
+            "wages": 94000,
+            "federal_withholding": 11800
+          }
+        },
+        {
+          "id": "5498-brokerage",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-brokerage",
+          "fields": {
+            "ira_contributions": 7000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 12000
+      },
+      "user_request": "Use my tax forms to draft the return and tell me what retirement details still need review."
+    },
+    "expect": {
+      "status": "ok",
+      "reported_ira_contributions": 7000
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,
