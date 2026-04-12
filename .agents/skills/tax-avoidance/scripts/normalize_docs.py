@@ -32,6 +32,53 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def aggregate_ira_contributions(
+    documents: list[dict[str, Any]],
+) -> tuple[float, list[dict[str, Any]], float, list[dict[str, Any]], float, list[dict[str, Any]]]:
+    total = 0.0
+    total_sources: list[dict[str, Any]] = []
+    traditional_total = 0.0
+    traditional_sources: list[dict[str, Any]] = []
+    roth_total = 0.0
+    roth_sources: list[dict[str, Any]] = []
+
+    for document in documents:
+        if document.get("doc_type") != "5498":
+            continue
+
+        fields = document.get("fields", {})
+        source_base = {
+            "doc_id": document.get("id"),
+            "doc_type": document.get("doc_type"),
+            "source_type": document.get("source_type"),
+            "source_ref": document.get("source_ref"),
+            "dedupe_key": document.get("dedupe_key"),
+        }
+
+        traditional_value = safe_float(fields.get("traditional_ira_contributions"))
+        if traditional_value:
+            traditional_total += traditional_value
+            total += traditional_value
+            source = {**source_base, "field": "traditional_ira_contributions", "value": traditional_value}
+            traditional_sources.append(source)
+            total_sources.append(source)
+
+        roth_value = safe_float(fields.get("roth_ira_contributions"))
+        if roth_value:
+            roth_total += roth_value
+            total += roth_value
+            source = {**source_base, "field": "roth_ira_contributions", "value": roth_value}
+            roth_sources.append(source)
+            total_sources.append(source)
+
+        generic_value = safe_float(fields.get("ira_contributions"))
+        if generic_value and not traditional_value and not roth_value:
+            total += generic_value
+            total_sources.append({**source_base, "field": "ira_contributions", "value": generic_value})
+
+    return total, total_sources, traditional_total, traditional_sources, roth_total, roth_sources
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -114,6 +161,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    ira_contributions_reported, ira_contributions_sources, traditional_ira_contributions, traditional_ira_sources, roth_ira_contributions, roth_ira_sources = aggregate_ira_contributions(documents)
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -212,6 +260,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if ira_contributions_reported > 0.0:
+            missing_items.append(
+                "Review the 5498 IRA contribution amounts and confirm how much deductible traditional IRA contribution should be applied before using any IRA deduction."
+            )
+        else:
+            missing_items.append(
+                "Extract the key 5498 IRA contribution amounts or upload a clearer copy before reviewing any IRA deduction."
+            )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -275,6 +333,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "candidate_business_expenses",
             candidate_business_expenses,
             candidate_expense_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contributions_sources,
+        ),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_sources,
+        ),
+        "roth_ira_contributions": build_fact(
+            "roth_ira_contributions",
+            roth_ira_contributions,
+            roth_ira_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),

@@ -93,6 +93,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "ira_5498_review",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -108,6 +109,20 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
         self.assertIn(
             "Review the 1098-T tuition and scholarship amounts",
+            artifacts["missing-items.md"],
+        )
+
+    def test_ira_review_5498(self) -> None:
+        normalized, artifacts = self.run_case("ira_5498_review")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 8000)
+        self.assertEqual(normalized["facts"]["traditional_ira_contributions"]["value"], 7000)
+        self.assertEqual(normalized["facts"]["roth_ira_contributions"]["value"], 1000)
+        self.assertIn("IRA Review", artifacts["tax-dossier.md"])
+        self.assertIn("$8,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("$7,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,000.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the 5498 IRA contribution amounts",
             artifacts["missing-items.md"],
         )
 
@@ -156,6 +171,7 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("IRA Review", dossier)
             self.assertIn("$48,000.00", dossier)
 
 
