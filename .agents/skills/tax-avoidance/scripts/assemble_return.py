@@ -298,6 +298,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    deduction_amount = fact_value(normalized, "deduction_amount")
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -305,6 +309,16 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit)}"
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
+        ),
+    ]
+    deduction_review_lines = [
+        f"- Mortgage interest spotted from 1098 documents: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Student loan interest spotted from 1098-E documents: {money(student_loan_interest) if student_loan_interest else '$0.00'}",
+        f"- Charitable cash contributions spotted from donation receipts: {money(charitable_cash) if charitable_cash else '$0.00'}",
+        (
+            f"- Draft deduction amount currently used in the package: {money(deduction_amount)}"
+            if deduction_amount
+            else "- No deduction amount is applied yet. Confirm whether the draft should use the standard deduction or an itemized amount."
         ),
     ]
     state_summary = normalized.get("state_summary", {})
@@ -366,6 +380,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## State Follow-Up",
         "",

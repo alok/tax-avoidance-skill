@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Makes deduction support visible in the dossier, including mortgage-interest, student-loan-interest, and charitable-giving evidence that may affect the final deduction choice.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
@@ -73,6 +74,8 @@ uv run python .agents/skills/tax-avoidance/scripts/run_tax_flow.py \
 ```
 
 That should create the same four standard artifacts in `output/example-run/`.
+
+The sample input also demonstrates public-safe deduction scaffolding with `1098-E` student loan interest and donation receipts, so the generated dossier includes a dedicated deduction-review section instead of burying those inputs in raw JSON.
 
 ## Install In Claude Cowork
 

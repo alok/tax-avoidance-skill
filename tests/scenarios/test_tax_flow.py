@@ -139,6 +139,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_deduction_review_inputs(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_household")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 1800)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 1200)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest spotted from 1098-E documents: $1,800.00", artifacts["tax-dossier.md"])
+        self.assertIn("Charitable cash contributions spotted from donation receipts: $1,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("Draft deduction amount currently used in the package: $15,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,800.00", artifacts["federal-lines.md"])
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")
@@ -156,6 +167,8 @@ class TaxFlowTest(unittest.TestCase):
             )
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
+            self.assertIn("Deduction Review", dossier)
+            self.assertIn("Student loan interest spotted from 1098-E documents: $1,400.00", dossier)
             self.assertIn("$48,000.00", dossier)
 
 

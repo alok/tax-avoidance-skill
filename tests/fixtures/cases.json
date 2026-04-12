@@ -437,6 +437,56 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "deduction_review_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-main",
+          "fields": {
+            "wages": 91000,
+            "federal_withholding": 10900
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "upload",
+          "source_ref": "upload://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        },
+        {
+          "id": "donation-school",
+          "doc_type": "Donation Receipt",
+          "source_type": "upload",
+          "source_ref": "upload://donation-school",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Build the draft return package and keep the deduction support visible."
+    },
+    "expect": {
+      "status": "ok",
+      "student_loan_interest": 1800,
+      "charitable_cash": 1200
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,
