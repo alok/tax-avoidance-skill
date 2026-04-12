@@ -72,6 +72,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    taxable_social_security, taxable_social_security_sources = answer_fact(
+        answers,
+        "taxable_social_security_benefits",
+    )
     qualified_tuition, qualified_tuition_sources = aggregate_numeric(
         documents,
         {"1098-T"},
@@ -202,6 +206,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    if social_security > 0.0 and "taxable_social_security_benefits" not in answers:
+        missing_items.append(
+            "Review the SSA-1099 benefits and confirm the taxable Social Security amount before applying it to Form 1040 line 6b."
+        )
     has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
     if has_1098t and "education_credit" not in answers:
         if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
@@ -255,6 +263,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "taxable_social_security_benefits": build_fact(
+            "taxable_social_security_benefits",
+            taxable_social_security,
+            taxable_social_security_sources,
+        ),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",

@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "social_security_taxable_confirmed",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -68,6 +69,12 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
+                if "line_9" in expected:
+                    self.assertIn(f"${expected['line_9']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -93,6 +100,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "social_security_review_required",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -138,6 +146,18 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_social_security_review(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review_required")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 12000)
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 0.0)
+        self.assertIn("Social Security Review", artifacts["tax-dossier.md"])
+        self.assertIn("SSA-1099 benefits spotted: $12,000.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "confirm the taxable Social Security amount before applying it to Form 1040 line 6b",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("| Form 1040 | 6b | Taxable Social Security benefits | TBD |", artifacts["federal-lines.md"])
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

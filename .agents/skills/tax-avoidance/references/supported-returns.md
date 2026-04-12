@@ -4,7 +4,7 @@
 
 - 2025 federal individual returns
 - Filing status: single or married filing jointly
-- Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, Social Security income
+- Income: W-2 wages, 1099-NEC contractor income, taxable interest, ordinary dividends, capital gains summaries, and SSA-1099 review intake for Social Security benefits
 - Common adjustments and deductions: IRA contribution tracking, HSA tracking, student loan interest, mortgage interest, charitable giving
 - Common credits and review workflows: education-credit review with 1098-T intake, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
@@ -36,3 +36,7 @@
 ## Behavior On Unsupported Cases
 
 Preserve the gathered facts, create `missing-items.md`, and state clearly that the flow is outside the supported simple-return envelope.
+
+## Review-Required Cases Inside Scope
+
+- `SSA-1099` support is review-first: preserve gross benefits on Form 1040 line `6a`, but do not auto-compute line `6b` unless the taxable-benefit amount is separately confirmed.

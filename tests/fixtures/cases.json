@@ -468,6 +468,90 @@
       "connector_note": "Upload fallback is active"
     }
   },
+  "social_security_review_required": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-benefits",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-benefits",
+          "fields": {
+            "benefits": 12000
+          }
+        },
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-part-time",
+          "fields": {
+            "wages": 30000,
+            "federal_withholding": 2800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 2200
+      },
+      "user_request": "Use my W-2 and SSA-1099 to draft the return package and tell me what still needs review."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 12000,
+      "line_9": 30000
+    }
+  },
+  "social_security_taxable_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-benefits",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-benefits",
+          "fields": {
+            "benefits": 12000
+          }
+        },
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-part-time",
+          "fields": {
+            "wages": 30000,
+            "federal_withholding": 2800
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 4800,
+        "deduction_amount": 15000,
+        "tax_before_credits": 2600
+      },
+      "user_request": "Use my W-2 and SSA-1099 to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 12000,
+      "line_6b": 4800,
+      "line_9": 34800
+    }
+  },
   "metadata_only_tax_docs": {
     "input": {
       "tax_year": 2025,
