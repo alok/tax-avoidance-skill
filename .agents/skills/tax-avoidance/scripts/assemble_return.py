@@ -307,6 +307,27 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
         ),
     ]
+    traditional_ira_contributions = fact_value(normalized, "traditional_ira_contributions")
+    roth_ira_contributions = fact_value(normalized, "roth_ira_contributions")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    retirement_review_rows = [
+        [
+            contribution.get("id", "unknown"),
+            money(contribution.get("traditional_ira_contributions")),
+            money(contribution.get("roth_ira_contributions")),
+            contribution.get("source_ref", "unknown"),
+        ]
+        for contribution in normalized.get("retirement_contribution_documents", [])
+    ]
+    retirement_review_lines = [
+        f"- Traditional IRA contributions spotted from 5498 documents: {money(traditional_ira_contributions) if traditional_ira_contributions else '$0.00'}",
+        f"- Roth IRA contributions spotted from 5498 documents: {money(roth_ira_contributions) if roth_ira_contributions else '$0.00'}",
+        (
+            f"- Draft IRA deduction currently applied on Form 1040 line 10: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet. Review the 5498 evidence and confirm the deductible traditional IRA amount before adding one."
+        ),
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -361,6 +382,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Retirement Contribution Review",
+        "",
+        *retirement_review_lines,
+        "",
+        make_markdown_table(
+            ["Document", "Traditional IRA", "Roth IRA", "Source"],
+            retirement_review_rows or [["None", "$0.00", "$0.00", "None"]],
         ),
         "",
         "## Education Review",

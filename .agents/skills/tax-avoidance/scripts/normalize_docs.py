@@ -109,10 +109,45 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         for document in expense_documents_for_year
         if safe_float(document.get("fields", {}).get("amount")) != 0.0
     ]
+    retirement_contribution_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "traditional_ira_contributions": safe_float(
+                document.get("fields", {}).get("traditional_ira_contributions")
+                or document.get("fields", {}).get("ira_contributions")
+            ),
+            "roth_ira_contributions": safe_float(document.get("fields", {}).get("roth_ira_contributions")),
+        }
+        for document in documents
+        if document.get("doc_type") == "5498"
+        and (
+            safe_float(document.get("fields", {}).get("traditional_ira_contributions")) != 0.0
+            or safe_float(document.get("fields", {}).get("ira_contributions")) != 0.0
+            or safe_float(document.get("fields", {}).get("roth_ira_contributions")) != 0.0
+        )
+    ]
     charitable_cash, charitable_sources = aggregate_numeric(
         documents,
         {"Donation Receipt"},
         "cash_donations",
+    )
+    traditional_ira_contributions, traditional_ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "traditional_ira_contributions",
+    )
+    if traditional_ira_contributions == 0.0:
+        traditional_ira_contributions, traditional_ira_contribution_sources = aggregate_numeric(
+            documents,
+            {"5498"},
+            "ira_contributions",
+        )
+    roth_ira_contributions, roth_ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "roth_ira_contributions",
     )
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
@@ -212,6 +247,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if traditional_ira_contributions > 0.0:
+            missing_items.append(
+                "Review the 5498 traditional IRA contributions and confirm the deductible amount before applying an IRA deduction."
+            )
+        elif roth_ira_contributions > 0.0:
+            missing_items.append(
+                "A 5498 shows Roth IRA contributions. Keep the contribution record in the dossier, but do not apply an IRA deduction unless a deductible traditional IRA contribution is confirmed."
+            )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -277,6 +322,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             candidate_expense_sources,
         ),
         "charitable_cash": build_fact("charitable_cash", charitable_cash, charitable_sources),
+        "traditional_ira_contributions": build_fact(
+            "traditional_ira_contributions",
+            traditional_ira_contributions,
+            traditional_ira_contribution_sources,
+        ),
+        "roth_ira_contributions": build_fact(
+            "roth_ira_contributions",
+            roth_ira_contributions,
+            roth_ira_contribution_sources,
+        ),
         "ira_contribution_deduction": build_fact("ira_contribution_deduction", ira_deduction, ira_sources),
         "hsa_deduction": build_fact("hsa_deduction", hsa_deduction, hsa_sources),
         "business_expenses": build_fact("business_expenses", business_expenses, business_expense_sources),
@@ -321,6 +376,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             ],
         },
         "candidate_expense_documents": candidate_expense_documents,
+        "retirement_contribution_documents": retirement_contribution_documents,
         "facts": facts,
     }
     return normalized

@@ -93,6 +93,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "ira_contribution_review_5498",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -108,6 +109,18 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
         self.assertIn(
             "Review the 1098-T tuition and scholarship amounts",
+            artifacts["missing-items.md"],
+        )
+
+    def test_ira_contribution_review_5498(self) -> None:
+        normalized, artifacts = self.run_case("ira_contribution_review_5498")
+        self.assertEqual(normalized["facts"]["traditional_ira_contributions"]["value"], 3500)
+        self.assertEqual(normalized["facts"]["roth_ira_contributions"]["value"], 1000)
+        self.assertIn("Retirement Contribution Review", artifacts["tax-dossier.md"])
+        self.assertIn("$3,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,000.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the 5498 traditional IRA contributions and confirm the deductible amount",
             artifacts["missing-items.md"],
         )
 
@@ -157,6 +170,7 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+            self.assertIn("Retirement Contribution Review", dossier)
 
 
 if __name__ == "__main__":
