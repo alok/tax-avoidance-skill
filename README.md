@@ -25,6 +25,7 @@ No separate backend or custom API setup is required for the main workflow in thi
   - `return-data.json`
   - `federal-lines.md`
   - `missing-items.md`
+- Makes the dossier explicitly show above-the-line deduction support such as `1098-E` student loan interest, plus mortgage-interest and donation evidence that should stay visible during deduction review.
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.

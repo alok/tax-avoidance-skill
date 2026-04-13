@@ -111,6 +111,20 @@ class TaxFlowTest(unittest.TestCase):
             artifacts["missing-items.md"],
         )
 
+    def test_deduction_support_evidence(self) -> None:
+        normalized, artifacts = self.run_case("deduction_support_evidence")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 2100)
+        self.assertEqual(normalized["facts"]["mortgage_interest"]["value"], 8900)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 650)
+        self.assertIn("Adjustments And Deduction Support", artifacts["tax-dossier.md"])
+        self.assertIn("Student loan interest deduction", artifacts["tax-dossier.md"])
+        self.assertIn("$2,100.00", artifacts["tax-dossier.md"])
+        self.assertIn("$8,900.00", artifacts["tax-dossier.md"])
+        self.assertIn("$650.00", artifacts["tax-dossier.md"])
+        self.assertIn("| Form 1040 | 10 | Adjustments to income | $2,100.00 |", artifacts["federal-lines.md"])
+        self.assertIn("| Form 1040 | 11 | Adjusted gross income | $75,900.00 |", artifacts["federal-lines.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

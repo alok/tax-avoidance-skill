@@ -298,6 +298,12 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    hsa_deduction = fact_value(normalized, "hsa_deduction")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    deduction_amount = fact_value(normalized, "deduction_amount")
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -306,6 +312,32 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
         ),
+    ]
+    adjustment_rows = [
+        ["IRA contribution deduction", money(ira_deduction), "Applied on Form 1040 line 10 when supplied."],
+        ["HSA deduction", money(hsa_deduction), "Applied on Form 1040 line 10 when supplied."],
+        [
+            "Student loan interest deduction",
+            money(student_loan_interest),
+            "Captured from 1098-E support or interview answers and applied on Form 1040 line 10.",
+        ],
+    ]
+    deduction_support_rows = [
+        [
+            "Mortgage interest evidence",
+            money(mortgage_interest),
+            "Observed from 1098 support. Keep as itemized-deduction evidence until the deduction path is confirmed.",
+        ],
+        [
+            "Charitable cash evidence",
+            money(charitable_cash),
+            "Observed from donation receipts. Keep as itemized-deduction evidence until confirmed.",
+        ],
+        [
+            "Draft deduction amount in use",
+            money(deduction_amount) if deduction_amount else "TBD",
+            "This is the current standard-or-itemized deduction amount carried into Form 1040 line 12.",
+        ],
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -366,6 +398,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Adjustments And Deduction Support",
+        "",
+        "- These amounts are surfaced explicitly so the draft package shows the evidence behind AGI adjustments and deduction review.",
+        "",
+        make_markdown_table(
+            ["Category", "Amount", "How It Is Used"],
+            adjustment_rows,
+        ),
+        "",
+        make_markdown_table(
+            ["Evidence", "Amount", "Review Guidance"],
+            deduction_support_rows,
+        ),
         "",
         "## State Follow-Up",
         "",
