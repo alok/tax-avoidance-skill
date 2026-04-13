@@ -437,6 +437,68 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 18600,
+            "taxable_benefits": 9150
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 350
+      },
+      "user_request": "Use my Social Security statement in the draft return."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600,
+      "line_6b": 9150,
+      "line_9": 9150
+    }
+  },
+  "social_security_missing_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000
+      },
+      "user_request": "Start the return package from my Social Security form."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm the taxable Social Security amount"
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

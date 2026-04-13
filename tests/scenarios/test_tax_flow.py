@@ -52,6 +52,7 @@ class TaxFlowTest(unittest.TestCase):
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
+            "social_security_review",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -64,6 +65,12 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_6a" in expected:
+                    self.assertIn(f"${expected['line_6a']:,.2f}", federal_lines)
+                if "line_6b" in expected:
+                    self.assertIn(f"${expected['line_6b']:,.2f}", federal_lines)
+                if "line_9" in expected:
+                    self.assertIn(f"${expected['line_9']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -93,6 +100,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "social_security_missing_taxable_amount",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -157,6 +165,15 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_social_security_lines(self) -> None:
+        normalized, artifacts = self.run_case("social_security_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18600)
+        self.assertEqual(normalized["facts"]["taxable_social_security_benefits"]["value"], 9150)
+        self.assertIn("Form 1040 | 6a | Social Security benefits | $18,600.00", artifacts["federal-lines.md"])
+        self.assertIn("Form 1040 | 6b | Taxable Social Security benefits | $9,150.00", artifacts["federal-lines.md"])
+        self.assertNotIn("Confirm the taxable Social Security amount", artifacts["missing-items.md"])
 
 
 if __name__ == "__main__":

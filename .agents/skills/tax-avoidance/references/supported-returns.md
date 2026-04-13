@@ -23,6 +23,11 @@
 - SSA-1099
 - donation receipts
 
+## Review Rules For Supported Forms
+
+- `SSA-1099` gross benefits belong on Form 1040 line `6a`.
+- Only the taxable portion belongs on line `6b`; if the taxable amount is not available from the document or interview, keep the return draft in review mode and ask for confirmation instead of assuming the full benefit is taxable.
+
 ## Unsupported In V1
 
 - automated state tax calculations
