@@ -298,6 +298,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    reported_student_loan_interest = fact_value(normalized, "student_loan_interest_reported")
+    deductible_student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -305,6 +309,21 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit)}"
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
+        ),
+    ]
+    deduction_review_lines = [
+        f"- Reported student loan interest from 1098-E documents: {money(reported_student_loan_interest) if reported_student_loan_interest else '$0.00'}",
+        (
+            f"- Student loan interest currently applied as an adjustment: {money(deductible_student_loan_interest)}"
+            if deductible_student_loan_interest
+            else "- No student loan interest deduction is applied yet. Confirm the deductible portion before adding it because the final amount can be limited by MAGI and filing rules."
+        ),
+        f"- Mortgage interest spotted from 1098 documents: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Charitable cash donations spotted from receipts: {money(charitable_cash) if charitable_cash else '$0.00'}",
+        (
+            f"- Deduction amount currently used on Form 1040 line 12: {money(fact_value(normalized, 'deduction_amount'))}"
+            if fact_value(normalized, "deduction_amount")
+            else "- No final deduction amount is applied yet. Choose the standard deduction or an itemized amount before treating line 12 as complete."
         ),
     ]
     state_summary = normalized.get("state_summary", {})
@@ -366,6 +385,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## State Follow-Up",
         "",

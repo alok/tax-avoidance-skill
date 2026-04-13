@@ -20,6 +20,7 @@ For a plain Codex app user:
 3. Search for likely forms before asking the user to browse.
 4. Build a document inventory with source, doc type, and confidence.
 5. Ask only the missing questions needed for supported lines.
+   Ask for explicit confirmation before applying a student loan interest deduction from `1098-E`, because the deductible amount can differ from the reported interest.
 6. Normalize everything into structured facts.
 7. Assemble the artifact set.
 8. Flag unsupported complexity and illegal requests explicitly.

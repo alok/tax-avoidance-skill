@@ -209,6 +209,87 @@
       "scholarships_and_grants": 2500
     }
   },
+  "student_loan_interest_review_1098e": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-borrower",
+          "doc_type": "W-2",
+          "source_type": "google_drive",
+          "source_ref": "drive://w2-borrower",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 9100
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 2100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Review my student loan interest and tell me what is still needed before you apply it."
+    },
+    "expect": {
+      "status": "ok",
+      "student_loan_interest_reported": 2100
+    }
+  },
+  "student_loan_interest_confirmed": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-borrower",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-borrower",
+          "fields": {
+            "wages": 78000,
+            "federal_withholding": 9100
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 2100
+          }
+        }
+      ],
+      "answers": {
+        "student_loan_interest_deduction": 1500,
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Use the deductible portion of my student loan interest in the draft package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_10": 1500
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

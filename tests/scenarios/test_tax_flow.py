@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "student_loan_interest_confirmed",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -66,6 +67,8 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
+                if "line_10" in expected:
+                    self.assertIn(f"${expected['line_10']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
@@ -93,6 +96,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "student_loan_interest_review_1098e",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -110,6 +114,18 @@ class TaxFlowTest(unittest.TestCase):
             "Review the 1098-T tuition and scholarship amounts",
             artifacts["missing-items.md"],
         )
+
+    def test_student_loan_interest_review_1098e(self) -> None:
+        normalized, artifacts = self.run_case("student_loan_interest_review_1098e")
+        self.assertEqual(normalized["facts"]["student_loan_interest_reported"]["value"], 2100)
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 0)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("$2,100.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the 1098-E student loan interest amount",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn("| Form 1040 | 10 | Adjustments to income | TBD |", artifacts["federal-lines.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
