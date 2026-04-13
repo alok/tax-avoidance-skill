@@ -135,10 +135,31 @@ def safe_float(value: Any) -> float:
     return float(str(value))
 
 
+def extract_numeric_field(
+    document: dict[str, Any],
+    field_name: str | tuple[str, ...],
+) -> tuple[float, str | None]:
+    fields = document.get("fields", {})
+    field_names = (field_name,) if isinstance(field_name, str) else field_name
+    fallback_field: str | None = None
+    fallback_value = 0.0
+    for name in field_names:
+        raw_value = fields.get(name)
+        if raw_value in (None, ""):
+            continue
+        numeric_value = safe_float(raw_value)
+        if numeric_value != 0.0:
+            return numeric_value, name
+        if fallback_field is None:
+            fallback_field = name
+            fallback_value = numeric_value
+    return fallback_value, fallback_field
+
+
 def aggregate_numeric(
     documents: list[dict[str, Any]],
     doc_types: set[str],
-    field_name: str,
+    field_name: str | tuple[str, ...],
 ) -> tuple[float, list[dict[str, Any]]]:
     def source_rank(document: dict[str, Any]) -> tuple[int, int]:
         content_status = document.get("content_status", "")
@@ -148,7 +169,8 @@ def aggregate_numeric(
             "unreadable_encrypted_attachment": 2,
             "portal_notice_only": 1,
         }.get(content_status, 0)
-        value_score = 1 if safe_float(document.get("fields", {}).get(field_name)) != 0.0 else 0
+        value, _ = extract_numeric_field(document, field_name)
+        value_score = 1 if value != 0.0 else 0
         return (value_score, status_score)
 
     grouped_documents: list[dict[str, Any]] = []
@@ -169,8 +191,8 @@ def aggregate_numeric(
     sources: list[dict[str, Any]] = []
     for document in grouped_documents:
         dedupe_key = document.get("dedupe_key")
-        value = safe_float(document.get("fields", {}).get(field_name))
-        if value == 0.0:
+        value, source_field = extract_numeric_field(document, field_name)
+        if value == 0.0 or source_field is None:
             continue
         total += value
         sources.append(
@@ -180,7 +202,7 @@ def aggregate_numeric(
                 "source_type": document.get("source_type"),
                 "source_ref": document.get("source_ref"),
                 "dedupe_key": dedupe_key,
-                "field": field_name,
+                "field": source_field,
                 "value": value,
             }
         )
