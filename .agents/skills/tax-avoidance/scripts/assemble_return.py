@@ -295,6 +295,28 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    ira_contributions_observed = fact_value(normalized, "ira_contributions_observed")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    deduction_review_lines = [
+        f"- Mortgage interest spotted from 1098 documents: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Student loan interest spotted from 1098-E documents: {money(student_loan_interest) if student_loan_interest else '$0.00'}",
+        f"- Cash donations spotted from donation receipts: {money(charitable_cash) if charitable_cash else '$0.00'}",
+        f"- IRA contributions spotted from 5498 documents: {money(ira_contributions_observed) if ira_contributions_observed else '$0.00'}",
+        (
+            f"- Draft IRA deduction currently applied on Form 1040 line 10: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet. Review any 5498 contribution evidence before adding one."
+        ),
+        (
+            f"- Current deduction amount used on Form 1040 line 12: {money(deduction_amount)}"
+            if deduction_amount
+            else "- No Form 1040 line 12 deduction amount is supplied yet."
+        ),
+    ]
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
@@ -362,6 +384,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## Education Review",
         "",

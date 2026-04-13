@@ -58,6 +58,11 @@ class TaxFlowTest(unittest.TestCase):
                 self.assertEqual(normalized["status"], self.cases[name]["expect"]["status"])
                 expected = self.cases[name]["expect"]
                 federal_lines = artifacts["federal-lines.md"]
+                if "ira_contributions_observed" in expected:
+                    self.assertEqual(
+                        normalized["facts"]["ira_contributions_observed"]["value"],
+                        expected["ira_contributions_observed"],
+                    )
                 if "line_1a" in expected:
                     self.assertIn(f"${expected['line_1a']:,.2f}", federal_lines)
                 if "line_2b" in expected:
@@ -157,6 +162,21 @@ class TaxFlowTest(unittest.TestCase):
             dossier = (out_dir / "tax-dossier.md").read_text(encoding="utf-8")
             self.assertIn("Candidate Business Expenses", dossier)
             self.assertIn("$48,000.00", dossier)
+
+    def test_deduction_review_from_documents(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_ira_5498")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["ira_contributions_observed"]["value"], 5000)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("$7,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("$650.00", artifacts["tax-dossier.md"])
+        self.assertIn("$300.00", artifacts["tax-dossier.md"])
+        self.assertIn("$5,000.00", artifacts["tax-dossier.md"])
+        self.assertIn("No IRA deduction is applied yet", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the 5498 IRA contribution amounts and confirm how much is deductible before applying an IRA deduction.",
+            artifacts["missing-items.md"],
+        )
 
 
 if __name__ == "__main__":
