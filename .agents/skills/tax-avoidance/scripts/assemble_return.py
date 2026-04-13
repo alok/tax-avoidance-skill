@@ -280,6 +280,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    itemized_subtotal = mortgage_interest + charitable_cash
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -294,6 +298,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             expense.get("source_ref") or "unknown",
         ]
         for expense in normalized.get("candidate_expense_documents", [])
+    ]
+    itemized_review_lines = [
+        f"- Mortgage interest support spotted from 1098 documents: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Cash donation support spotted from donation receipts: {money(charitable_cash) if charitable_cash else '$0.00'}",
+        f"- Partial itemized-deduction subtotal from currently supported records: {money(itemized_subtotal) if itemized_subtotal else '$0.00'}",
+        (
+            f"- Draft deduction currently applied in the package: {money(deduction_amount)}"
+            if deduction_amount
+            else "- No deduction amount is applied yet. Choose standard vs itemized before finalizing the draft package."
+        ),
+        "- This subtotal does not infer SALT, medical, casualty, or other itemized categories that are not modeled here.",
     ]
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
@@ -362,6 +377,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Itemized Deduction Review",
+        "",
+        *itemized_review_lines,
         "",
         "## Education Review",
         "",

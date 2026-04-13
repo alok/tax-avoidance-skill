@@ -209,6 +209,56 @@
       "scholarships_and_grants": 2500
     }
   },
+  "itemized_deduction_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 125000,
+            "federal_withholding": 16200
+          }
+        },
+        {
+          "id": "1098-home",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098-home",
+          "fields": {
+            "mortgage_interest": 11800
+          }
+        },
+        {
+          "id": "charity-2025",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://charity-2025",
+          "fields": {
+            "cash_donations": 3400
+          }
+        }
+      ],
+      "answers": {
+        "tax_before_credits": 14500
+      },
+      "user_request": "Pull together my home and donation documents and show me what is still needed."
+    },
+    "expect": {
+      "status": "ok",
+      "mortgage_interest": 11800,
+      "charitable_cash": 3400,
+      "itemized_subtotal": 15200
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

@@ -185,8 +185,18 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Confirm the filing status for the return.")
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
+    potential_itemized_deductions = mortgage_interest + charitable_cash
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        if potential_itemized_deductions > 0.0:
+            missing_items.append(
+                "Choose whether to use the standard deduction or itemize. "
+                f"Current document support shows at least ${potential_itemized_deductions:,.2f} "
+                "from mortgage-interest and charitable-giving records."
+            )
+        else:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package."
+            )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
