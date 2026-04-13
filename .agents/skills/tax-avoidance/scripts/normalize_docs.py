@@ -72,6 +72,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    ira_contributions_reported, ira_contributions_reported_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     qualified_tuition, qualified_tuition_sources = aggregate_numeric(
         documents,
         {"1098-T"},
@@ -203,6 +208,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
     has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if ira_contributions_reported > 0.0:
+            missing_items.append(
+                "Review the 5498 IRA contribution amount and confirm how much of it should be applied as an IRA deduction before adding it to the draft return."
+            )
+        else:
+            missing_items.append(
+                "Extract the key 5498 IRA contribution amount or upload a clearer copy before reviewing any IRA deduction."
+            )
     if has_1098t and "education_credit" not in answers:
         if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
             missing_items.append(
@@ -260,6 +275,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contributions_reported_sources,
         ),
         "qualified_tuition": build_fact(
             "qualified_tuition",
