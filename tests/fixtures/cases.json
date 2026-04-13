@@ -321,6 +321,56 @@
       "candidate_total": 371.89
     }
   },
+  "estimated_tax_payments": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 120000,
+            "federal_withholding": 11000
+          }
+        },
+        {
+          "id": "q1-estimate",
+          "doc_type": "1040-ES",
+          "source_type": "upload",
+          "source_ref": "upload://q1-estimate",
+          "fields": {
+            "estimated_tax_payment": 1500
+          }
+        },
+        {
+          "id": "q2-confirmation",
+          "doc_type": "IRS Estimated Tax Payment",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://q2-confirmation",
+          "fields": {
+            "payment_amount": 1750
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 16000
+      },
+      "user_request": "Carry my quarterly estimated tax payments into the draft return."
+    },
+    "expect": {
+      "status": "ok",
+      "line_26": 3250,
+      "line_33": 14250
+    }
+  },
   "expense_year_filter": {
     "input": {
       "tax_year": 2025,

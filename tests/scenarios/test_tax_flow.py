@@ -68,6 +68,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
                     self.assertIn(f"${expected['line_25a']:,.2f}", federal_lines)
+                if "line_26" in expected:
+                    self.assertIn(f"${expected['line_26']:,.2f}", federal_lines)
+                if "line_33" in expected:
+                    self.assertIn(f"${expected['line_33']:,.2f}", federal_lines)
                 if "schedule_c_line_1" in expected:
                     self.assertIn(f"${expected['schedule_c_line_1']:,.2f}", federal_lines)
                 if "schedule_c_line_31" in expected:
@@ -118,6 +122,15 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_estimated_tax_payments(self) -> None:
+        normalized, artifacts = self.run_case("estimated_tax_payments")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["estimated_tax_payments"]["value"], 3250)
+        self.assertIn("Form 1040 | 26 |", artifacts["federal-lines.md"])
+        self.assertIn("$3,250.00", artifacts["federal-lines.md"])
+        self.assertIn("$14,250.00", artifacts["federal-lines.md"])
+        self.assertIn("gmail://q2-confirmation", artifacts["federal-lines.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
