@@ -23,6 +23,11 @@
 - SSA-1099
 - donation receipts
 
+## Review-Only Intake
+
+- Form 5498 IRA contribution statements are ingested as contribution evidence and surfaced in the dossier and missing-items review flow.
+- The workflow does not auto-claim the reported 5498 amount as an IRA deduction. A deductible amount still needs explicit confirmation.
+
 ## Unsupported In V1
 
 - automated state tax calculations
