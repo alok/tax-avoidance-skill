@@ -578,6 +578,62 @@
       "missing": "Provide deductible business expenses"
     }
   },
+  "clean_credit_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-employer",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-employer",
+          "fields": {
+            "wages": 112000,
+            "federal_withholding": 16800
+          }
+        },
+        {
+          "id": "seller-report-ev",
+          "doc_type": "Clean Vehicle Seller Report",
+          "source_type": "google_drive",
+          "source_ref": "drive://seller-report-ev",
+          "document_date": "2025-02-12",
+          "fields": {
+            "vehicle_description": "2025 Example EV",
+            "vin": "EV123456789012345",
+            "placed_in_service_date": "2025-02-14",
+            "credit_amount": 7500
+          }
+        },
+        {
+          "id": "energy-receipt-heat-pump",
+          "doc_type": "Home Energy Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://energy-receipt-heat-pump",
+          "document_date": "2025-09-01",
+          "fields": {
+            "project_description": "Heat pump installation",
+            "placed_in_service_date": "2025-09-05",
+            "qualified_cost": 12000,
+            "estimated_credit_amount": 3600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 18900
+      },
+      "user_request": "Gather my tax docs and flag anything I should review before claiming credits."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "unsupported_complex_equity": {
     "input": {
       "tax_year": 2025,

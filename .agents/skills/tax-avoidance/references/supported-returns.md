@@ -22,6 +22,8 @@
 - 5498
 - SSA-1099
 - donation receipts
+- clean vehicle seller reports
+- home energy receipts with qualified-cost or estimated-credit detail
 
 ## Unsupported In V1
 

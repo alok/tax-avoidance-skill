@@ -114,6 +114,36 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"Donation Receipt"},
         "cash_donations",
     )
+    clean_vehicle_review_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "document_date": document.get("document_date"),
+            "vehicle_description": document.get("fields", {}).get("vehicle_description", "Unknown vehicle"),
+            "vin": document.get("fields", {}).get("vin", "Unknown VIN"),
+            "placed_in_service_date": document.get("fields", {}).get("placed_in_service_date"),
+            "credit_amount": safe_float(document.get("fields", {}).get("credit_amount")),
+        }
+        for document in documents
+        if document.get("doc_type") == "Clean Vehicle Seller Report"
+    ]
+    clean_energy_review_documents = [
+        {
+            "id": document.get("id"),
+            "source_ref": document.get("source_ref"),
+            "source_type": document.get("source_type"),
+            "document_date": document.get("document_date"),
+            "project_description": document.get("fields", {}).get("project_description", "Unknown project"),
+            "placed_in_service_date": document.get("fields", {}).get("placed_in_service_date"),
+            "qualified_cost": safe_float(document.get("fields", {}).get("qualified_cost")),
+            "estimated_credit_amount": safe_float(document.get("fields", {}).get("estimated_credit_amount")),
+        }
+        for document in documents
+        if document.get("doc_type") == "Home Energy Receipt"
+    ]
+    clean_vehicle_estimated_credit = sum(item["credit_amount"] for item in clean_vehicle_review_documents)
+    clean_energy_estimated_credit = sum(item["estimated_credit_amount"] for item in clean_energy_review_documents)
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
@@ -212,6 +242,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    if clean_vehicle_review_documents and "clean_vehicle_credit" not in answers:
+        missing_items.append(
+            "Review the clean vehicle seller report details and confirm the allowable clean vehicle credit before applying it to Form 1040 line 20."
+        )
+    if clean_energy_review_documents and "clean_energy_credit" not in answers:
+        missing_items.append(
+            "Review the home energy project receipts and confirm the allowable clean energy credit before applying it to Form 1040 line 20."
+        )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -319,6 +357,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 }
                 for code, totals in sorted(state_allocation_totals.items())
             ],
+        },
+        "credit_reviews": {
+            "clean_vehicle": {
+                "documents": clean_vehicle_review_documents,
+                "estimated_credit_total": clean_vehicle_estimated_credit,
+            },
+            "clean_energy": {
+                "documents": clean_energy_review_documents,
+                "estimated_credit_total": clean_energy_estimated_credit,
+            },
         },
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,

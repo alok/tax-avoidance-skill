@@ -139,6 +139,32 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
 
+    def test_clean_credit_review(self) -> None:
+        normalized, artifacts = self.run_case("clean_credit_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertIn("Clean Credit Review", artifacts["tax-dossier.md"])
+        self.assertIn("2025 Example EV", artifacts["tax-dossier.md"])
+        self.assertIn("EV123456789012345", artifacts["tax-dossier.md"])
+        self.assertIn("Heat pump installation", artifacts["tax-dossier.md"])
+        self.assertIn("$7,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("$3,600.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the clean vehicle seller report details",
+            artifacts["missing-items.md"],
+        )
+        self.assertIn(
+            "Review the home energy project receipts",
+            artifacts["missing-items.md"],
+        )
+        self.assertEqual(
+            normalized["credit_reviews"]["clean_vehicle"]["estimated_credit_total"],
+            7500,
+        )
+        self.assertEqual(
+            normalized["credit_reviews"]["clean_energy"]["estimated_credit_total"],
+            3600,
+        )
+
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")
         self.assertEqual(normalized["status"], "refused")

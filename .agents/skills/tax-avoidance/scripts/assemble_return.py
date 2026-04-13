@@ -307,6 +307,51 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
         ),
     ]
+    credit_reviews = normalized.get("credit_reviews", {})
+    clean_vehicle_review = credit_reviews.get("clean_vehicle", {})
+    clean_vehicle_documents = clean_vehicle_review.get("documents", [])
+    clean_vehicle_credit = fact_value(normalized, "clean_vehicle_credit")
+    clean_vehicle_rows = [
+        [
+            document.get("placed_in_service_date") or document.get("document_date") or "unknown",
+            document.get("vehicle_description") or "Unknown vehicle",
+            document.get("vin") or "Unknown VIN",
+            money(document.get("credit_amount")),
+            document.get("source_ref") or "unknown",
+        ]
+        for document in clean_vehicle_documents
+    ]
+    clean_vehicle_lines = [
+        f"- Clean vehicle documents spotted: {len(clean_vehicle_documents)}",
+        f"- Estimated clean vehicle credit evidence total: {money(clean_vehicle_review.get('estimated_credit_total'))}",
+        (
+            f"- Draft clean vehicle credit currently applied on Form 1040 line 20: {money(clean_vehicle_credit)}"
+            if clean_vehicle_credit
+            else "- No clean vehicle credit is applied yet. Review VIN, purchase timing, and eligibility before adding one."
+        ),
+    ]
+    clean_energy_review = credit_reviews.get("clean_energy", {})
+    clean_energy_documents = clean_energy_review.get("documents", [])
+    clean_energy_credit = fact_value(normalized, "clean_energy_credit")
+    clean_energy_rows = [
+        [
+            document.get("placed_in_service_date") or document.get("document_date") or "unknown",
+            document.get("project_description") or "Unknown project",
+            money(document.get("qualified_cost")),
+            money(document.get("estimated_credit_amount")),
+            document.get("source_ref") or "unknown",
+        ]
+        for document in clean_energy_documents
+    ]
+    clean_energy_lines = [
+        f"- Home energy documents spotted: {len(clean_energy_documents)}",
+        f"- Estimated clean energy credit evidence total: {money(clean_energy_review.get('estimated_credit_total'))}",
+        (
+            f"- Draft clean energy credit currently applied on Form 1040 line 20: {money(clean_energy_credit)}"
+            if clean_energy_credit
+            else "- No clean energy credit is applied yet. Review project type, qualified costs, and service dates before adding one."
+        ),
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -366,6 +411,22 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Clean Credit Review",
+        "",
+        *clean_vehicle_lines,
+        "",
+        make_markdown_table(
+            ["Placed In Service", "Vehicle", "VIN", "Estimated Credit", "Source"],
+            clean_vehicle_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        *clean_energy_lines,
+        "",
+        make_markdown_table(
+            ["Placed In Service", "Project", "Qualified Cost", "Estimated Credit", "Source"],
+            clean_energy_rows or [["None", "None", "$0.00", "$0.00", "None"]],
+        ),
         "",
         "## State Follow-Up",
         "",
