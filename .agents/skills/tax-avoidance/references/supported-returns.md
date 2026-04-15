@@ -23,6 +23,11 @@
 - SSA-1099
 - donation receipts
 
+## Review-Only Intake
+
+- Form `5498` contributions are captured as reported IRA contribution evidence.
+- A `5498` amount is not silently treated as a deductible IRA amount; the user still needs to confirm the deductible figure before it is applied to the draft federal lines.
+
 ## Unsupported In V1
 
 - automated state tax calculations
