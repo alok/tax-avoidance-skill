@@ -135,6 +135,88 @@
       "line_3b": 1400
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-retiree",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-retiree",
+          "fields": {
+            "benefits": 18600
+          }
+        },
+        {
+          "id": "1099-int-bank",
+          "doc_type": "1099-INT",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1099-int-bank",
+          "fields": {
+            "interest_income": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 900
+      },
+      "user_request": "Use my Social Security and bank tax documents to draft the package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600
+    }
+  },
+  "social_security_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-benefits",
+          "doc_type": "SSA-1099",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ssa-1099-benefits",
+          "fields": {
+            "benefits": 18600
+          }
+        },
+        {
+          "id": "w2-parttime",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-parttime",
+          "fields": {
+            "wages": 62500,
+            "federal_withholding": 7100
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 9600,
+        "deduction_amount": 15000,
+        "tax_before_credits": 6400
+      },
+      "user_request": "Draft my federal package using the W-2 and SSA-1099."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 62500,
+      "line_6a": 18600,
+      "line_6b": 9600
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
