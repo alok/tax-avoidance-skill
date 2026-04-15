@@ -135,6 +135,74 @@
       "line_3b": 1400
     }
   },
+  "supporting_facts_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 54000,
+            "federal_withholding": 6100
+          }
+        },
+        {
+          "id": "ssa-benefits",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-benefits",
+          "fields": {
+            "benefits": 18400
+          }
+        },
+        {
+          "id": "home-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://home-1098",
+          "fields": {
+            "mortgage_interest": 7800
+          }
+        },
+        {
+          "id": "student-loan-1098e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://student-loan-1098e",
+          "fields": {
+            "student_loan_interest": 640
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "upload",
+          "source_ref": "upload://donation-receipt",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 4200
+      },
+      "user_request": "Build a safe draft package and show which supporting deductions still need review."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 54000,
+      "line_25a": 6100
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,

@@ -47,12 +47,13 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
+    taxable_social_security = fact_value(normalized, "taxable_social_security_benefits")
     has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = wages + interest + dividends + capital_gains + taxable_social_security + (net_profit or 0.0)
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -145,6 +146,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "6a",
+            "label": "Social Security benefits",
+            "value": social_security or None,
+            "sources": fact_sources(normalized, "social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "6b",
+            "label": "Taxable Social Security benefits",
+            "value": taxable_social_security or None,
+            "sources": fact_sources(normalized, "taxable_social_security_benefits"),
+            "rule_citations": rule_citations("taxable_social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
             "line": "9",
             "label": "Total income",
             "value": total_income or None,
@@ -154,6 +171,7 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
+                "taxable_social_security_benefits",
                 "schedule_c",
             ),
         },
@@ -298,6 +316,11 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    social_security = fact_value(normalized, "social_security_benefits")
+    taxable_social_security = fact_value(normalized, "taxable_social_security_benefits")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    charitable_cash = fact_value(normalized, "charitable_cash")
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -306,6 +329,17 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
         ),
+    ]
+    supporting_review_lines = [
+        f"- Gross Social Security benefits spotted from SSA-1099 documents: {money(social_security) if social_security else '$0.00'}",
+        (
+            f"- Taxable Social Security currently carried to Form 1040 line 6b: {money(taxable_social_security)}"
+            if taxable_social_security
+            else "- No taxable Social Security amount is applied yet. Review the SSA-1099 worksheet before adding one."
+        ),
+        f"- Mortgage interest spotted from 1098 documents: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Student loan interest spotted from 1098-E documents: {money(student_loan_interest) if student_loan_interest else '$0.00'}",
+        f"- Charitable cash receipts spotted from donation documents: {money(charitable_cash) if charitable_cash else '$0.00'}",
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -362,6 +396,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Supporting Facts Review",
+        "",
+        *supporting_review_lines,
         "",
         "## Education Review",
         "",

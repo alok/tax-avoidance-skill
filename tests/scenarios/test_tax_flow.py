@@ -49,6 +49,7 @@ class TaxFlowTest(unittest.TestCase):
             "w2_single",
             "mfj_common_deductions",
             "investment_household",
+            "supporting_facts_review",
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
@@ -118,6 +119,25 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_supporting_facts_review(self) -> None:
+        normalized, artifacts = self.run_case("supporting_facts_review")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["social_security_benefits"]["value"], 18400)
+        self.assertEqual(normalized["facts"]["mortgage_interest"]["value"], 7800)
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 640)
+        self.assertEqual(normalized["facts"]["charitable_cash"]["value"], 1200)
+        self.assertIn("Supporting Facts Review", artifacts["tax-dossier.md"])
+        self.assertIn("$18,400.00", artifacts["tax-dossier.md"])
+        self.assertIn("$7,800.00", artifacts["tax-dossier.md"])
+        self.assertIn("$640.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,200.00", artifacts["tax-dossier.md"])
+        self.assertIn("Form 1040 | 6a | Social Security benefits | $18,400.00", artifacts["federal-lines.md"])
+        self.assertIn("Form 1040 | 6b | Taxable Social Security benefits | TBD", artifacts["federal-lines.md"])
+        self.assertIn(
+            "Review the SSA-1099 benefits and confirm the taxable Social Security amount",
+            artifacts["missing-items.md"],
+        )
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")

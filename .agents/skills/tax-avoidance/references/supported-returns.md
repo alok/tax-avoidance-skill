@@ -9,6 +9,7 @@
 - Common credits and review workflows: education-credit review with 1098-T intake, clean-energy review, clean-vehicle review
 - Simple Schedule C skeletons for sole-proprietor contractor work when gross receipts are known and business expenses are supplied or explicitly treated as zero
 - State data capture for resident state, work states, and follow-up notes, without automated state calculations yet
+- Supporting-fact review sections for SSA-1099 benefits, mortgage interest, student-loan interest, and charitable receipts so the dossier does not bury those source-backed amounts
 
 ## Supported Documents
 
