@@ -437,6 +437,79 @@
       "allocation_text": "$73,000.00"
     }
   },
+  "social_security_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099-main",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 1200
+      },
+      "user_request": "Review my Social Security tax documents and tell me what is still needed."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 18600
+    }
+  },
+  "social_security_taxable_benefits": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "upload",
+          "source_ref": "upload://w2-part-time",
+          "fields": {
+            "wages": 22000,
+            "federal_withholding": 1800
+          }
+        },
+        {
+          "id": "ssa-1099-main",
+          "doc_type": "SSA-1099",
+          "source_type": "upload",
+          "source_ref": "upload://ssa-1099-main",
+          "fields": {
+            "benefits": 18600
+          }
+        }
+      ],
+      "answers": {
+        "taxable_social_security_benefits": 9300,
+        "deduction_amount": 15000,
+        "tax_before_credits": 2400
+      },
+      "user_request": "Use my wages and Social Security documents to draft the return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 22000,
+      "line_6a": 18600,
+      "line_6b": 9300
+    }
+  },
   "connector_upload_fallback": {
     "input": {
       "tax_year": 2025,

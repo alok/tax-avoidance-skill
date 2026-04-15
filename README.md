@@ -28,6 +28,7 @@ No separate backend or custom API setup is required for the main workflow in thi
 - Surfaces likely SaaS or tooling receipts as **candidate business expenses** without silently applying them to Schedule C.
 - Totals candidate expenses using the receipt or payment date for the target tax year, while still showing out-of-year receipts in the document inventory for auditability.
 - Captures resident-state and work-state context now, even before automated state calculations are implemented.
+- Treats `SSA-1099` benefits as review-first evidence: the gross benefits are inventoried immediately, but the taxable portion must be confirmed before the draft applies Form 1040 line 6b.
 
 ## Scope
 
@@ -98,7 +99,8 @@ Primary command:
 5. Normalize extracted facts into `return-data.json`.
 6. Assemble a prefilled federal line map and a human-readable dossier.
 7. Surface likely business-expense receipts separately from confirmed deductible expenses.
-8. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
+8. Route review-heavy evidence such as `1098-T` and `SSA-1099` into explicit follow-up sections instead of silently turning them into final tax-line amounts.
+9. Clearly label legal planning moves, missing items, unsupported complexity, state follow-up, and anything that needs professional review.
 
 ## Repository Layout
 

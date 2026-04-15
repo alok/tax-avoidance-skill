@@ -12,6 +12,7 @@ For a plain Codex app user:
 2. If a source only exposes a portal notice, ask for the actual PDF immediately.
 3. Prefer uploaded PDFs over vague email snippets.
 4. Treat likely SaaS or tooling receipts as candidate expenses until the user confirms they belong on Schedule C.
+5. Treat `SSA-1099` and similar review-heavy forms as evidence first: inventory the gross figures, then ask for the taxable or creditable amount before applying them to federal lines.
 
 ## Order Of Operations
 
@@ -44,3 +45,4 @@ For a plain Codex app user:
 - Prefer targeted clarifications over generic tax questionnaires.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.
+- If `SSA-1099` documents exist, ask for the taxable Social Security amount before trying to finalize Form 1040 line 6b or total income.
