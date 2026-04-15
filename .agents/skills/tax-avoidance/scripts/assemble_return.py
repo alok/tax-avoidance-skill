@@ -263,6 +263,15 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) -> str:
+    interview_queue_rows = [
+        [
+            str(item.get("priority", "")),
+            item.get("category", ""),
+            item.get("prompt", ""),
+            item.get("reason", ""),
+        ]
+        for item in normalized.get("interview_queue", [])
+    ]
     inventory_rows = [
         [
             doc.get("id", "unknown"),
@@ -343,6 +352,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "",
         *connector_lines,
         "",
+        "## Interview Queue",
+        "",
+        make_markdown_table(
+            ["Priority", "Category", "Prompt", "Why It Matters"],
+            interview_queue_rows or [["None", "None", "No additional interview questions are queued.", "All current blockers are already resolved."]],
+        ),
+        "",
         "## Document Inventory",
         "",
         make_markdown_table(
@@ -422,6 +438,13 @@ def build_federal_lines_markdown(line_items: list[dict[str, Any]]) -> str:
 
 def build_missing_items_markdown(normalized: dict[str, Any]) -> str:
     lines = ["# Missing Items", ""]
+    if normalized.get("interview_queue"):
+        lines.extend(["## Interview Queue", ""])
+        for item in normalized["interview_queue"]:
+            lines.append(
+                f"- [P{item['priority']:02d}] ({item['category']}) {item['prompt']} Why: {item['reason']}"
+            )
+        lines.append("")
     if normalized.get("missing_items"):
         lines.extend(f"- {item}" for item in normalized["missing_items"])
     else:

@@ -32,6 +32,22 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def build_interview_item(
+    question_id: str,
+    priority: int,
+    category: str,
+    prompt: str,
+    reason: str,
+) -> dict[str, Any]:
+    return {
+        "id": question_id,
+        "priority": priority,
+        "category": category,
+        "prompt": prompt,
+        "reason": reason,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -156,6 +172,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     state_modules = [resolve_state_support(code) for code in work_states]
     state_modules = [module for module in state_modules if module is not None]
     state_follow_up: list[str] = []
+    interview_queue: list[dict[str, Any]] = []
     if resident_state:
         resident_module = resolve_state_support(resident_state)
         if resident_module and resident_module["status"] == "planned":
@@ -174,6 +191,25 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         state_follow_up.append(
             "State allocations were found on tax documents. Confirm which listed state is your resident state."
         )
+        interview_queue.append(
+            build_interview_item(
+                "confirm-resident-state",
+                20,
+                "state",
+                "Confirm the resident state so the workflow can preserve the right resident and nonresident state context.",
+                "State allocations were found on tax documents, but no resident state was provided.",
+            )
+        )
+    if len(work_states) > 1:
+        interview_queue.append(
+            build_interview_item(
+                "review-work-states",
+                50,
+                "state",
+                "Review the work-state list and keep any state wage sourcing and withholding details needed for later resident and nonresident returns.",
+                "Multiple work states were detected from state intake or source documents.",
+            )
+        )
 
     missing_items: list[str] = []
     available_dedupe_keys = {
@@ -183,34 +219,115 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     }
     if not payload.get("filing_status"):
         missing_items.append("Confirm the filing status for the return.")
+        interview_queue.append(
+            build_interview_item(
+                "confirm-filing-status",
+                10,
+                "core",
+                "Confirm the filing status for the return.",
+                "Filing status is required before the draft package can be finalized.",
+            )
+        )
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
+        interview_queue.append(
+            build_interview_item(
+                "collect-tax-documents",
+                5,
+                "documents",
+                "Upload a tax document now or connect Gmail and Google Drive before continuing.",
+                "No tax documents are available yet.",
+            )
+        )
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        interview_queue.append(
+            build_interview_item(
+                "choose-deduction-path",
+                30,
+                "deductions",
+                "Choose the deduction path and provide the deduction amount to use in the draft package.",
+                "The draft cannot determine taxable income without a standard or itemized deduction amount.",
+            )
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+        interview_queue.append(
+            build_interview_item(
+                "provide-tax-before-credits",
+                70,
+                "tax",
+                "Provide a tax-before-credits figure or explicitly keep the tax lines marked for review.",
+                "The workflow does not infer the line 16 tax amount automatically yet.",
+            )
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+        interview_queue.append(
+            build_interview_item(
+                "confirm-schedule-c-expenses",
+                40,
+                "schedule_c",
+                "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero.",
+                "Schedule C net profit cannot be finalized until business expenses are confirmed.",
+            )
+        )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
+        )
+        interview_queue.append(
+            build_interview_item(
+                "review-candidate-expenses",
+                45,
+                "schedule_c",
+                f"Review the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} and confirm which ones belong on Schedule C.",
+                "The workflow found plausible business receipts but does not apply them automatically.",
+            )
         )
     for note in state_follow_up:
         if note not in missing_items:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+        interview_queue.append(
+            build_interview_item(
+                "summarize-capital-gains",
+                60,
+                "income",
+                "Summarize the net capital gains or losses from the 1099-B support documents.",
+                "A 1099-B document was found without a usable capital-gain summary amount.",
+            )
+        )
     has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
     if has_1098t and "education_credit" not in answers:
         if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
             missing_items.append(
                 "Review the 1098-T tuition and scholarship amounts and confirm the creditable qualified education expenses before applying an education credit."
             )
+            interview_queue.append(
+                build_interview_item(
+                    "review-education-credit",
+                    55,
+                    "credits",
+                    "Review the 1098-T tuition and scholarship amounts and confirm the creditable qualified education expenses before applying an education credit.",
+                    "A 1098-T was found, but the workflow still needs the user to confirm creditable education expenses.",
+                )
+            )
         else:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
+            )
+            interview_queue.append(
+                build_interview_item(
+                    "extract-1098t-amounts",
+                    25,
+                    "documents",
+                    "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit.",
+                    "A 1098-T was detected without usable tuition or scholarship figures.",
+                )
             )
     for document in documents:
         content_status = document.get("content_status")
@@ -223,19 +340,60 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 f"Download the actual {doc_type} from {source_ref}; the current source is only a portal or availability notice."
             )
+            interview_queue.append(
+                build_interview_item(
+                    f"recover-{document.get('id', doc_type).lower()}",
+                    15,
+                    "documents",
+                    f"Download the actual {doc_type} from {source_ref}; the current source is only a portal or availability notice.",
+                    f"The current {doc_type} source is only a portal notice and not the actual form contents.",
+                )
+            )
         elif content_status == "unreadable_encrypted_attachment":
             missing_items.append(
                 f"Open or upload the actual {doc_type} from {source_ref}; the attachment exists but its contents were not readable in this workflow."
+            )
+            interview_queue.append(
+                build_interview_item(
+                    f"unlock-{document.get('id', doc_type).lower()}",
+                    15,
+                    "documents",
+                    f"Open or upload the actual {doc_type} from {source_ref}; the attachment exists but its contents were not readable in this workflow.",
+                    f"The {doc_type} attachment exists, but its contents were unreadable in the current workflow.",
+                )
             )
         elif content_status == "metadata_only":
             if document.get("fields"):
                 missing_items.append(
                     f"Confirm the extracted {doc_type} details from {source_ref} against the actual filed form or PDF before using them in a return draft."
                 )
+                interview_queue.append(
+                    build_interview_item(
+                        f"confirm-{document.get('id', doc_type).lower()}",
+                        35,
+                        "documents",
+                        f"Confirm the extracted {doc_type} details from {source_ref} against the actual filed form or PDF before using them in a return draft.",
+                        f"The {doc_type} data currently comes from metadata rather than a readable source document.",
+                    )
+                )
             else:
                 missing_items.append(
                     f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now."
                 )
+                interview_queue.append(
+                    build_interview_item(
+                        f"upload-{document.get('id', doc_type).lower()}",
+                        15,
+                        "documents",
+                        f"Provide the actual contents for {doc_type} from {source_ref}; only metadata is available right now.",
+                        f"The {doc_type} source only exposes metadata and no usable line-item content.",
+                    )
+                )
+
+    interview_queue = sorted(
+        interview_queue,
+        key=lambda item: (item["priority"], item["category"], item["id"]),
+    )
 
     status = "ok"
     if illegal_reasons:
@@ -306,6 +464,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "illegal_reasons": illegal_reasons,
         "unsupported_reasons": unsupported_reasons,
         "missing_items": missing_items,
+        "interview_queue": interview_queue,
         "state_summary": {
             "resident_state": resident_state,
             "work_states": work_states,

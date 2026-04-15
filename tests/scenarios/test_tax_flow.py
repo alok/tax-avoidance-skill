@@ -103,7 +103,10 @@ class TaxFlowTest(unittest.TestCase):
         normalized, artifacts = self.run_case("education_credit_review_1098t")
         self.assertEqual(normalized["facts"]["qualified_tuition"]["value"], 9600)
         self.assertEqual(normalized["facts"]["scholarships_and_grants"]["value"], 2500)
+        self.assertTrue(normalized["interview_queue"])
+        self.assertEqual(normalized["interview_queue"][0]["id"], "review-education-credit")
         self.assertIn("Education Review", artifacts["tax-dossier.md"])
+        self.assertIn("Interview Queue", artifacts["tax-dossier.md"])
         self.assertIn("$9,600.00", artifacts["tax-dossier.md"])
         self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
         self.assertIn(
@@ -114,10 +117,22 @@ class TaxFlowTest(unittest.TestCase):
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(
+            [item["id"] for item in normalized["interview_queue"][:2]],
+            ["confirm-schedule-c-expenses", "review-candidate-expenses"],
+        )
         self.assertIn("$371.89", artifacts["tax-dossier.md"])
         self.assertIn("candidate business-expense receipts", artifacts["missing-items.md"])
+        self.assertIn("Schedule C", artifacts["missing-items.md"])
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
+
+    def test_document_recovery_queue(self) -> None:
+        normalized, artifacts = self.run_case("metadata_only_tax_docs")
+        queue_ids = [item["id"] for item in normalized["interview_queue"]]
+        self.assertEqual(queue_ids[:2], ["recover-wealthfront-portal", "unlock-baif-1099-nec"])
+        self.assertIn("Provide a tax-before-credits figure", artifacts["missing-items.md"])
+        self.assertIn("Interview Queue", artifacts["missing-items.md"])
 
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
