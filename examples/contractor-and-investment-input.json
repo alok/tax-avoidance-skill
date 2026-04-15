@@ -35,6 +35,15 @@
       }
     },
     {
+      "id": "sample-5498",
+      "doc_type": "5498",
+      "source_type": "upload",
+      "source_ref": "upload://sample-5498",
+      "fields": {
+        "ira_contributions": 7000.0
+      }
+    },
+    {
       "id": "sample-anthropic-receipt",
       "doc_type": "Expense Receipt",
       "source_type": "upload",
