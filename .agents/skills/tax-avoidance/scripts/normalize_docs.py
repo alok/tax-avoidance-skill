@@ -67,7 +67,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
-    student_loan_interest, student_loan_interest_sources = aggregate_numeric(
+    observed_student_loan_interest, observed_student_loan_interest_sources = aggregate_numeric(
         documents,
         {"1098-E"},
         "student_loan_interest",
@@ -117,6 +117,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
+    student_loan_interest_deduction, student_loan_interest_deduction_sources = answer_fact(
+        answers,
+        "student_loan_interest_deduction",
+    )
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
@@ -186,9 +190,24 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not documents:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
-        missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+        deduction_hints: list[str] = []
+        if mortgage_interest > 0.0:
+            deduction_hints.append(f"mortgage interest {mortgage_interest:,.2f}")
+        if charitable_cash > 0.0:
+            deduction_hints.append(f"cash donations {charitable_cash:,.2f}")
+        if deduction_hints:
+            missing_items.append(
+                "Choose the deduction path and provide the deduction amount to use in the draft package. "
+                f"Observed possible itemized inputs: {', '.join(deduction_hints)}."
+            )
+        else:
+            missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
+    if observed_student_loan_interest > 0.0 and "student_loan_interest_deduction" not in answers:
+        missing_items.append(
+            "Review the 1098-E student loan interest amount and confirm the deductible amount before applying it to Schedule 1 adjustments."
+        )
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
@@ -256,10 +275,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "observed_student_loan_interest": build_fact(
+            "observed_student_loan_interest",
+            observed_student_loan_interest,
+            observed_student_loan_interest_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
-            student_loan_interest,
-            student_loan_interest_sources,
+            student_loan_interest_deduction,
+            student_loan_interest_deduction_sources,
         ),
         "qualified_tuition": build_fact(
             "qualified_tuition",

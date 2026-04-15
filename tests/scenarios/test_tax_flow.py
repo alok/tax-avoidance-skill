@@ -111,6 +111,19 @@ class TaxFlowTest(unittest.TestCase):
             artifacts["missing-items.md"],
         )
 
+    def test_deduction_review_1098e(self) -> None:
+        normalized, artifacts = self.run_case("deduction_review_1098e")
+        self.assertEqual(normalized["status"], "ok")
+        self.assertEqual(normalized["facts"]["observed_student_loan_interest"]["value"], 1800)
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 0)
+        self.assertIn("Deduction Review", artifacts["tax-dossier.md"])
+        self.assertIn("$1,800.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the 1098-E student loan interest amount and confirm the deductible amount",
+            artifacts["missing-items.md"],
+        )
+        self.assertNotIn("answer:student_loan_interest_deduction", artifacts["federal-lines.md"])
+
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
         self.assertEqual(normalized["status"], "ok")

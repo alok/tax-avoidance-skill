@@ -167,6 +167,46 @@
       "line_20": 1800
     }
   },
+  "deduction_review_1098e": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-dayjob",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-dayjob",
+          "fields": {
+            "wages": 72000,
+            "federal_withholding": 8100
+          }
+        },
+        {
+          "id": "student-loan-servicer",
+          "doc_type": "1098-E",
+          "source_type": "google_drive",
+          "source_ref": "drive://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 1800
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7600
+      },
+      "user_request": "Build a draft package and tell me what deduction details still need review."
+    },
+    "expect": {
+      "status": "ok",
+      "observed_student_loan_interest": 1800
+    }
+  },
   "education_credit_review_1098t": {
     "input": {
       "tax_year": 2025,

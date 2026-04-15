@@ -295,6 +295,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    observed_student_loan_interest = fact_value(normalized, "observed_student_loan_interest")
+    student_loan_interest_deduction = fact_value(normalized, "student_loan_interest_deduction")
+    deduction_review_lines = [
+        f"- Mortgage interest spotted from 1098 documents: {money(mortgage_interest) if mortgage_interest else '$0.00'}",
+        f"- Cash donations spotted from donation receipts: {money(charitable_cash) if charitable_cash else '$0.00'}",
+        f"- Student loan interest spotted from 1098-E documents: {money(observed_student_loan_interest) if observed_student_loan_interest else '$0.00'}",
+        (
+            f"- Confirmed student loan interest deduction currently applied in the draft: {money(student_loan_interest_deduction)}"
+            if student_loan_interest_deduction
+            else "- No student loan interest deduction is applied yet. Confirm the deductible amount before adding it to the return draft."
+        ),
+    ]
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
@@ -362,6 +376,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## Deduction Review",
+        "",
+        *deduction_review_lines,
         "",
         "## Education Review",
         "",
