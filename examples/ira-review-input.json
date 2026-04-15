@@ -1,0 +1,34 @@
+{
+  "tax_year": 2025,
+  "filing_status": "single",
+  "connectors": {
+    "gmail": false,
+    "google_drive": true
+  },
+  "documents": [
+    {
+      "id": "sample-w2",
+      "doc_type": "W-2",
+      "source_type": "upload",
+      "source_ref": "upload://sample-w2",
+      "fields": {
+        "wages": 91000.0,
+        "federal_withholding": 11200.0
+      }
+    },
+    {
+      "id": "sample-5498",
+      "doc_type": "5498",
+      "source_type": "upload",
+      "source_ref": "upload://sample-5498",
+      "fields": {
+        "ira_contributions": 6500.0
+      }
+    }
+  ],
+  "answers": {
+    "deduction_amount": 15000.0,
+    "tax_before_credits": 12500.0
+  },
+  "user_request": "Review my IRA contribution documents and tell me what is still needed."
+}

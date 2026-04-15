@@ -93,6 +93,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "ira_review_5498",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -138,6 +139,17 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("State Wages", artifacts["tax-dossier.md"])
         self.assertIn("$73,000.00", artifacts["tax-dossier.md"])
         self.assertIn("$650.00", artifacts["tax-dossier.md"])
+
+    def test_ira_review_5498(self) -> None:
+        normalized, artifacts = self.run_case("ira_review_5498")
+        self.assertEqual(normalized["facts"]["ira_contributions_reported"]["value"], 6500)
+        self.assertIn("IRA Review", artifacts["tax-dossier.md"])
+        self.assertIn("$6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("No IRA deduction is applied yet", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "confirm how much is deductible before applying any IRA deduction",
+            artifacts["missing-items.md"],
+        )
 
     def test_illegal_request(self) -> None:
         normalized, artifacts = self.run_case("illegal_request")

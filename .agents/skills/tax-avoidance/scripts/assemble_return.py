@@ -295,6 +295,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         ]
         for expense in normalized.get("candidate_expense_documents", [])
     ]
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
@@ -305,6 +307,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit)}"
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
+        ),
+    ]
+    ira_review_lines = [
+        (
+            f"- IRA contributions spotted from 5498 documents: {money(ira_contributions_reported)}"
+            if ira_contributions_reported
+            else "- No 5498-backed IRA contribution amount is currently captured."
+        ),
+        (
+            f"- Draft IRA deduction currently applied in Form 1040 line 10: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet. A 5498 can show contribution evidence, but deductible treatment still needs review."
         ),
     ]
     state_summary = normalized.get("state_summary", {})
@@ -366,6 +380,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## IRA Review",
+        "",
+        *ira_review_lines,
         "",
         "## State Follow-Up",
         "",
