@@ -135,6 +135,81 @@
       "line_3b": 1400
     }
   },
+  "retirement_distribution_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ira-1099r",
+          "doc_type": "1099-R",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ira-1099r",
+          "fields": {
+            "gross_distribution": 18000,
+            "taxable_amount": 18000,
+            "ira_sep_simple": true
+          }
+        },
+        {
+          "id": "pension-1099r",
+          "doc_type": "1099-R",
+          "source_type": "google_drive",
+          "source_ref": "drive://pension-1099r",
+          "fields": {
+            "gross_distribution": 24000,
+            "taxable_amount": 21000,
+            "ira_sep_simple": false
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 4500
+      },
+      "user_request": "Use my retirement distribution forms in the federal return package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_4b": 18000,
+      "line_5b": 21000
+    }
+  },
+  "retirement_distribution_review_1099r": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "ira-1099r-needs-review",
+          "doc_type": "1099-R",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://ira-1099r-needs-review",
+          "fields": {
+            "gross_distribution": 12000,
+            "ira_sep_simple": true
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Review this 1099-R and tell me what is missing."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Confirm the taxable amount"
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,

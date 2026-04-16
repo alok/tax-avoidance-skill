@@ -49,6 +49,7 @@ class TaxFlowTest(unittest.TestCase):
             "w2_single",
             "mfj_common_deductions",
             "investment_household",
+            "retirement_distribution_household",
             "education_credit_household",
             "schedule_c_contractor",
             "duplicate_doc_sources",
@@ -64,6 +65,10 @@ class TaxFlowTest(unittest.TestCase):
                     self.assertIn(f"${expected['line_2b']:,.2f}", federal_lines)
                 if "line_3b" in expected:
                     self.assertIn(f"${expected['line_3b']:,.2f}", federal_lines)
+                if "line_4b" in expected:
+                    self.assertIn(f"${expected['line_4b']:,.2f}", federal_lines)
+                if "line_5b" in expected:
+                    self.assertIn(f"${expected['line_5b']:,.2f}", federal_lines)
                 if "line_20" in expected:
                     self.assertIn(f"${expected['line_20']:,.2f}", federal_lines)
                 if "line_25a" in expected:
@@ -93,6 +98,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "retirement_distribution_review_1099r",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -110,6 +116,13 @@ class TaxFlowTest(unittest.TestCase):
             "Review the 1098-T tuition and scholarship amounts",
             artifacts["missing-items.md"],
         )
+
+    def test_retirement_distribution_review_1099r(self) -> None:
+        normalized, artifacts = self.run_case("retirement_distribution_review_1099r")
+        self.assertEqual(normalized["facts"]["ira_distributions_gross"]["value"], 12000)
+        self.assertEqual(normalized["facts"]["ira_distributions_taxable"]["value"], 0)
+        self.assertIn("Form 1040 | 4a | IRA distributions | $12,000.00", artifacts["federal-lines.md"])
+        self.assertIn("Confirm the taxable amount", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

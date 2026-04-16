@@ -14,6 +14,8 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "social_security_benefits": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
+    "ira_distributions": {"title": "IRS Publication 590-B", "url": "https://www.irs.gov/publications/p590b"},
+    "pension_distributions": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ira_contribution_deduction": {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",

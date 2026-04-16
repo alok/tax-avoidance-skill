@@ -47,12 +47,25 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
+    ira_distributions_gross = fact_value(normalized, "ira_distributions_gross")
+    ira_distributions_taxable = fact_value(normalized, "ira_distributions_taxable")
+    pension_distributions_gross = fact_value(normalized, "pension_distributions_gross")
+    pension_distributions_taxable = fact_value(normalized, "pension_distributions_taxable")
     has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = (
+        wages
+        + interest
+        + dividends
+        + capital_gains
+        + social_security
+        + ira_distributions_taxable
+        + pension_distributions_taxable
+        + (net_profit or 0.0)
+    )
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -145,6 +158,38 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "form": "Form 1040",
+            "line": "4a",
+            "label": "IRA distributions",
+            "value": ira_distributions_gross or None,
+            "sources": fact_sources(normalized, "ira_distributions_gross"),
+            "rule_citations": rule_citations("ira_distributions"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "4b",
+            "label": "Taxable IRA distributions",
+            "value": ira_distributions_taxable or None,
+            "sources": fact_sources(normalized, "ira_distributions_taxable"),
+            "rule_citations": rule_citations("ira_distributions"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "5a",
+            "label": "Pensions and annuities",
+            "value": pension_distributions_gross or None,
+            "sources": fact_sources(normalized, "pension_distributions_gross"),
+            "rule_citations": rule_citations("pension_distributions"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "5b",
+            "label": "Taxable pensions and annuities",
+            "value": pension_distributions_taxable or None,
+            "sources": fact_sources(normalized, "pension_distributions_taxable"),
+            "rule_citations": rule_citations("pension_distributions"),
+        },
+        {
+            "form": "Form 1040",
             "line": "9",
             "label": "Total income",
             "value": total_income or None,
@@ -154,6 +199,8 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
                 "taxable_interest",
                 "ordinary_dividends",
                 "capital_gains",
+                "ira_distributions",
+                "pension_distributions",
                 "schedule_c",
             ),
         },

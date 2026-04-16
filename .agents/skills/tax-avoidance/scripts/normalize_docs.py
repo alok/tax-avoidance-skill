@@ -62,6 +62,38 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"SSA-1099"},
         "benefits",
     )
+    ira_distribution_documents = [
+        document
+        for document in documents
+        if document.get("doc_type") == "1099-R"
+        and bool(document.get("fields", {}).get("ira_sep_simple"))
+    ]
+    pension_distribution_documents = [
+        document
+        for document in documents
+        if document.get("doc_type") == "1099-R"
+        and not bool(document.get("fields", {}).get("ira_sep_simple"))
+    ]
+    ira_distributions_gross, ira_distributions_gross_sources = aggregate_numeric(
+        ira_distribution_documents,
+        {"1099-R"},
+        "gross_distribution",
+    )
+    ira_distributions_taxable, ira_distributions_taxable_sources = aggregate_numeric(
+        ira_distribution_documents,
+        {"1099-R"},
+        "taxable_amount",
+    )
+    pension_distributions_gross, pension_distributions_gross_sources = aggregate_numeric(
+        pension_distribution_documents,
+        {"1099-R"},
+        "gross_distribution",
+    )
+    pension_distributions_taxable, pension_distributions_taxable_sources = aggregate_numeric(
+        pension_distribution_documents,
+        {"1099-R"},
+        "taxable_amount",
+    )
     mortgage_interest, mortgage_interest_sources = aggregate_numeric(
         documents,
         {"1098"},
@@ -202,6 +234,14 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    for document in documents:
+        if document.get("doc_type") != "1099-R":
+            continue
+        fields = document.get("fields", {})
+        if safe_float(fields.get("gross_distribution")) > 0.0 and "taxable_amount" not in fields:
+            missing_items.append(
+                f"Confirm the taxable amount from {document.get('source_ref', 'the 1099-R')}; do not infer taxable retirement income from the gross distribution alone."
+            )
     has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
     if has_1098t and "education_credit" not in answers:
         if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
@@ -255,6 +295,26 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "ira_distributions_gross": build_fact(
+            "ira_distributions_gross",
+            ira_distributions_gross,
+            ira_distributions_gross_sources,
+        ),
+        "ira_distributions_taxable": build_fact(
+            "ira_distributions_taxable",
+            ira_distributions_taxable,
+            ira_distributions_taxable_sources,
+        ),
+        "pension_distributions_gross": build_fact(
+            "pension_distributions_gross",
+            pension_distributions_gross,
+            pension_distributions_gross_sources,
+        ),
+        "pension_distributions_taxable": build_fact(
+            "pension_distributions_taxable",
+            pension_distributions_taxable,
+            pension_distributions_taxable_sources,
+        ),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
