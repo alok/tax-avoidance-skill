@@ -209,6 +209,48 @@
       "scholarships_and_grants": 2500
     }
   },
+  "retirement_review_5498": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-retirement-review",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-retirement-review",
+          "fields": {
+            "wages": 76000,
+            "federal_withholding": 8400
+          }
+        },
+        {
+          "id": "5498-ira",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://5498-ira",
+          "fields": {
+            "ira_contributions": 6500,
+            "rollover_contributions": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9100
+      },
+      "user_request": "Review my IRA contribution form and tell me what is still needed before taking any deduction."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_contributions_reported": 6500,
+      "ira_rollover_contributions": 1200
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,
