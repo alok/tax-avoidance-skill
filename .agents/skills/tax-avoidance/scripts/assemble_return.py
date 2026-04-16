@@ -298,6 +298,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    ira_contributions = fact_value(normalized, "ira_contributions")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -306,6 +308,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
         ),
+    ]
+    retirement_review_lines = [
+        f"- IRA contributions spotted from Form 5498 documents: {money(ira_contributions) if ira_contributions else '$0.00'}",
+        (
+            f"- Draft deductible IRA contribution currently applied in Form 1040 line 10 adjustments: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet. Review eligibility before adding one."
+        ),
+        "- Rule source: IRS Publication 590-A.",
     ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
@@ -366,6 +377,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Retirement Review",
+        "",
+        *retirement_review_lines,
         "",
         "## State Follow-Up",
         "",
