@@ -50,6 +50,7 @@ class TaxFlowTest(unittest.TestCase):
             "mfj_common_deductions",
             "investment_household",
             "education_credit_household",
+            "retirement_contribution_review_5498",
             "schedule_c_contractor",
             "duplicate_doc_sources",
         ):
@@ -108,6 +109,19 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("$2,500.00", artifacts["tax-dossier.md"])
         self.assertIn(
             "Review the 1098-T tuition and scholarship amounts",
+            artifacts["missing-items.md"],
+        )
+
+    def test_retirement_review_5498(self) -> None:
+        normalized, artifacts = self.run_case("retirement_contribution_review_5498")
+        self.assertEqual(normalized["facts"]["traditional_ira_contributions"]["value"], 6500)
+        self.assertEqual(normalized["facts"]["roth_ira_contributions"]["value"], 1500)
+        self.assertEqual(normalized["facts"]["ira_contribution_deduction"]["value"], 0)
+        self.assertIn("Retirement Review", artifacts["tax-dossier.md"])
+        self.assertIn("$6,500.00", artifacts["tax-dossier.md"])
+        self.assertIn("$1,500.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the Form 5498 IRA contribution amounts",
             artifacts["missing-items.md"],
         )
 
