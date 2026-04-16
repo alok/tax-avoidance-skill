@@ -13,7 +13,11 @@ RULE_SOURCES: dict[str, dict[str, str]] = {
     "taxable_interest": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "ordinary_dividends": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
     "capital_gains": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
-    "social_security_benefits": {"title": "IRS Publication 17", "url": "https://www.irs.gov/publications/p17"},
+    "social_security_benefits": {"title": "IRS Publication 915", "url": "https://www.irs.gov/publications/p915"},
+    "social_security_taxable_benefits": {
+        "title": "IRS Publication 915",
+        "url": "https://www.irs.gov/publications/p915",
+    },
     "ira_contribution_deduction": {
         "title": "IRS Publication 590-A",
         "url": "https://www.irs.gov/publications/p590a",
@@ -139,6 +143,8 @@ def aggregate_numeric(
     documents: list[dict[str, Any]],
     doc_types: set[str],
     field_name: str,
+    *,
+    include_zero: bool = False,
 ) -> tuple[float, list[dict[str, Any]]]:
     def source_rank(document: dict[str, Any]) -> tuple[int, int]:
         content_status = document.get("content_status", "")
@@ -169,8 +175,11 @@ def aggregate_numeric(
     sources: list[dict[str, Any]] = []
     for document in grouped_documents:
         dedupe_key = document.get("dedupe_key")
-        value = safe_float(document.get("fields", {}).get(field_name))
-        if value == 0.0:
+        fields = document.get("fields", {})
+        if field_name not in fields:
+            continue
+        value = safe_float(fields.get(field_name))
+        if value == 0.0 and not include_zero:
             continue
         total += value
         sources.append(

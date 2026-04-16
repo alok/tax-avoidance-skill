@@ -135,6 +135,50 @@
       "line_3b": 1400
     }
   },
+  "social_security_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-part-time",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-part-time",
+          "fields": {
+            "wages": 32000,
+            "federal_withholding": 2100
+          }
+        },
+        {
+          "id": "ssa-1099-a",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099-a",
+          "fields": {
+            "benefits": 18400,
+            "taxable_benefits": 8500
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 930
+      },
+      "user_request": "Draft a simple return with part-time wages and Social Security."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 32000,
+      "line_6a": 18400,
+      "line_6b": 8500,
+      "line_9": 40500
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
@@ -503,6 +547,68 @@
     "expect": {
       "status": "ok",
       "missing": "Download the actual Consolidated 1099"
+    }
+  },
+  "ssa_taxable_benefits_missing": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-review",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099-review",
+          "fields": {
+            "benefits": 18400
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 0
+      },
+      "user_request": "Use my Social Security statement but flag anything still needing review."
+    },
+    "expect": {
+      "status": "ok",
+      "missing": "Compute or confirm the taxable Social Security benefits"
+    }
+  },
+  "ssa_taxable_benefits_zero": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "ssa-1099-zero-taxable",
+          "doc_type": "SSA-1099",
+          "source_type": "google_drive",
+          "source_ref": "drive://ssa-1099-zero-taxable",
+          "fields": {
+            "benefits": 9600,
+            "taxable_benefits": 0
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "tax_before_credits": 0
+      },
+      "user_request": "Keep my Social Security benefit review in the draft package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_6a": 9600,
+      "line_6b": 0
     }
   },
   "duplicate_doc_sources": {
