@@ -44,3 +44,4 @@ For a plain Codex app user:
 - Prefer targeted clarifications over generic tax questionnaires.
 - If the user obviously falls outside the supported scope, stop early and preserve gathered data for handoff.
 - If a contractor flow exists, ask about business expenses before trying to compute net profit.
+- If Form 5498 evidence exists, ask for the deductible traditional IRA amount before applying an IRA deduction; do not treat Roth or rollover amounts as deductible.
