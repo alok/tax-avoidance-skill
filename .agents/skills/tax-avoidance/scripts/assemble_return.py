@@ -298,6 +298,29 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    traditional_ira_contributions = fact_value(normalized, "traditional_ira_contributions")
+    roth_ira_contributions = fact_value(normalized, "roth_ira_contributions")
+    ira_rollovers = fact_value(normalized, "ira_rollovers")
+    ira_contribution_deduction = fact_value(normalized, "ira_contribution_deduction")
+    ira_review_lines = [
+        (
+            "- Traditional IRA contributions spotted from 5498 documents: "
+            f"{money(traditional_ira_contributions) if traditional_ira_contributions else '$0.00'}"
+        ),
+        (
+            "- Roth IRA contributions spotted from 5498 documents: "
+            f"{money(roth_ira_contributions) if roth_ira_contributions else '$0.00'}"
+        ),
+        (
+            "- IRA rollover contributions spotted from 5498 documents: "
+            f"{money(ira_rollovers) if ira_rollovers else '$0.00'}"
+        ),
+        (
+            f"- Draft IRA deduction currently applied on Form 1040 line 10: {money(ira_contribution_deduction)}"
+            if ira_contribution_deduction
+            else "- No IRA deduction is applied yet. Review 5498 evidence and contribution eligibility before adding one."
+        ),
+    ]
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -362,6 +385,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
         ),
+        "",
+        "## IRA Review",
+        "",
+        *ira_review_lines,
         "",
         "## Education Review",
         "",
