@@ -307,6 +307,18 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
         ),
     ]
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    roth_ira_contributions_reported = fact_value(normalized, "roth_ira_contributions_reported")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    retirement_review_lines = [
+        f"- Traditional IRA contributions spotted from Form 5498 documents: {money(ira_contributions_reported) if ira_contributions_reported else '$0.00'}",
+        f"- Roth IRA contributions spotted from Form 5498 documents: {money(roth_ira_contributions_reported) if roth_ira_contributions_reported else '$0.00'}",
+        (
+            f"- Draft IRA deduction currently applied on Form 1040 line 10: {money(ira_deduction)}"
+            if ira_deduction
+            else "- No IRA deduction is applied yet. Confirm eligibility before adding one."
+        ),
+    ]
     state_summary = normalized.get("state_summary", {})
     state_rows = [
         [
@@ -366,6 +378,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Retirement Review",
+        "",
+        *retirement_review_lines,
         "",
         "## State Follow-Up",
         "",
