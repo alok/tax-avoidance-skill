@@ -119,6 +119,33 @@ class TaxFlowTest(unittest.TestCase):
         self.assertIn("Anthropic", artifacts["tax-dossier.md"])
         self.assertIn("AI tools", artifacts["tax-dossier.md"])
 
+    def test_interview_state_surfaces_next_questions(self) -> None:
+        normalized, artifacts = self.run_case("schedule_c_candidate_expenses")
+        open_question_ids = {
+            question["id"]
+            for question in normalized["interview_state"]["open_questions"]
+        }
+
+        self.assertEqual(
+            normalized["interview_state"]["next_question"]["id"],
+            "tax_before_credits",
+        )
+        self.assertIn("schedule_c_expenses", open_question_ids)
+        self.assertIn("candidate_expense_review", open_question_ids)
+        self.assertIn("Interview Checklist", artifacts["tax-dossier.md"])
+        self.assertIn("Review the candidate business-expense receipts", artifacts["tax-dossier.md"])
+
+    def test_interview_state_tracks_document_content_followups(self) -> None:
+        normalized, artifacts = self.run_case("metadata_only_tax_docs")
+        open_question_ids = {
+            question["id"]
+            for question in normalized["interview_state"]["open_questions"]
+        }
+
+        self.assertIn("document_content:baif-1099-nec", open_question_ids)
+        self.assertIn("document_content:wealthfront-portal", open_question_ids)
+        self.assertIn("Provide or confirm the actual contents", artifacts["tax-dossier.md"])
+
     def test_expense_year_filter(self) -> None:
         normalized, artifacts = self.run_case("expense_year_filter")
         self.assertEqual(normalized["status"], "ok")

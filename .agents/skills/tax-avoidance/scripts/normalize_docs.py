@@ -32,6 +32,183 @@ def build_fact(
     return {"key": key, "value": value, "sources": sources}
 
 
+def interview_question(
+    question_id: str,
+    prompt: str,
+    reason: str,
+    *,
+    priority: str = "normal",
+    answer_type: str = "text",
+) -> dict[str, str]:
+    return {
+        "id": question_id,
+        "priority": priority,
+        "answer_type": answer_type,
+        "prompt": prompt,
+        "reason": reason,
+    }
+
+
+def build_interview_state(
+    payload: dict[str, Any],
+    *,
+    documents: list[dict[str, Any]],
+    connectors: dict[str, Any],
+    answers: dict[str, Any],
+    resident_state: str | None,
+    state_allocation_totals: dict[str, dict[str, float]],
+    nonemployee_compensation: float,
+    candidate_business_expenses: float,
+    has_1098t: bool,
+    qualified_tuition: float,
+    scholarships_and_grants: float,
+) -> dict[str, Any]:
+    open_questions: list[dict[str, str]] = []
+    completed: list[str] = []
+
+    if payload.get("filing_status"):
+        completed.append("Filing status is captured.")
+    else:
+        open_questions.append(
+            interview_question(
+                "filing_status",
+                "What filing status should this draft use?",
+                "The federal line map cannot be reviewed cleanly until the household filing status is confirmed.",
+                priority="high",
+                answer_type="choice",
+            )
+        )
+
+    if documents:
+        completed.append("At least one tax document is inventoried.")
+    else:
+        open_questions.append(
+            interview_question(
+                "tax_documents",
+                "Connect Gmail or Google Drive, or upload the tax PDFs to inventory the source documents.",
+                "The workflow needs source-backed tax documents before it can produce a useful return package.",
+                priority="high",
+                answer_type="document_upload",
+            )
+        )
+
+    if not connectors.get("gmail") and not connectors.get("google_drive") and not any(
+        doc.get("source_type") == "upload" for doc in documents
+    ):
+        open_questions.append(
+            interview_question(
+                "source_access",
+                "Should I wait for Gmail or Google Drive to be connected, or should you upload PDFs directly?",
+                "No connector or upload source is currently available for document gathering.",
+                priority="high",
+                answer_type="choice",
+            )
+        )
+
+    if "deduction_amount" in answers:
+        completed.append("Deduction amount is captured.")
+    else:
+        open_questions.append(
+            interview_question(
+                "deduction_path",
+                "Should the draft use the standard deduction or an itemized deduction total?",
+                "Form 1040 line 12 stays marked TBD until a deduction path and amount are chosen.",
+                priority="high",
+                answer_type="money",
+            )
+        )
+
+    if "tax_before_credits" in answers:
+        completed.append("Tax-before-credits amount is captured.")
+    else:
+        open_questions.append(
+            interview_question(
+                "tax_before_credits",
+                "Provide the tax-before-credits figure, or confirm that the tax calculation should remain for review.",
+                "The deterministic layer does not compute the full tax table yet, so line 16 needs an explicit reviewed value.",
+                priority="normal",
+                answer_type="money",
+            )
+        )
+
+    if nonemployee_compensation > 0.0:
+        if "business_expenses" in answers:
+            completed.append("Schedule C expense treatment is captured.")
+        else:
+            open_questions.append(
+                interview_question(
+                    "schedule_c_expenses",
+                    "What deductible business expenses should be applied to the 1099-NEC work, if any?",
+                    "Schedule C net profit should not silently use candidate receipts without user confirmation.",
+                    priority="high",
+                    answer_type="money",
+                )
+            )
+
+    if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
+        open_questions.append(
+            interview_question(
+                "candidate_expense_review",
+                "Review the candidate business-expense receipts and confirm which are ordinary, necessary, and business-related.",
+                "Receipts are surfaced for review but are not applied to Schedule C until confirmed.",
+                priority="high",
+                answer_type="review",
+            )
+        )
+
+    if has_1098t:
+        if "education_credit" in answers:
+            completed.append("Education credit treatment is captured.")
+        else:
+            detail = "the 1098-T details"
+            if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
+                detail = "qualified tuition, scholarships, grants, and actual creditable expenses"
+            open_questions.append(
+                interview_question(
+                    "education_credit_review",
+                    f"Review {detail} before applying any education credit.",
+                    "The artifact set can carry 1098-T facts, but the credit should be user-reviewed before line 20 is populated.",
+                    priority="normal",
+                    answer_type="review",
+                )
+            )
+
+    if resident_state:
+        completed.append("Resident state is captured.")
+    elif state_allocation_totals:
+        open_questions.append(
+            interview_question(
+                "resident_state",
+                "Which state was your resident state for the tax year?",
+                "State wage allocation appeared on documents, but resident-state context is missing.",
+                priority="normal",
+                answer_type="choice",
+            )
+        )
+
+    for document in documents:
+        content_status = document.get("content_status")
+        if content_status not in {"portal_notice_only", "unreadable_encrypted_attachment", "metadata_only"}:
+            continue
+        doc_type = document.get("doc_type", "document")
+        source_ref = document.get("source_ref", "unknown source")
+        open_questions.append(
+            interview_question(
+                f"document_content:{document.get('id', source_ref)}",
+                f"Provide or confirm the actual contents for {doc_type} from {source_ref}.",
+                "Metadata and portal notices are not enough to rely on source facts without the underlying form or PDF.",
+                priority="high" if content_status != "metadata_only" else "normal",
+                answer_type="document_upload",
+            )
+        )
+
+    return {
+        "completed": completed,
+        "open_questions": open_questions,
+        "next_question": open_questions[0] if open_questions else None,
+    }
+
+
 def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     documents = payload.get("documents", [])
     answers = payload.get("answers", {})
@@ -295,6 +472,20 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         ),
     }
 
+    interview_state = build_interview_state(
+        payload,
+        documents=documents,
+        connectors=connectors,
+        answers=answers,
+        resident_state=resident_state,
+        state_allocation_totals=state_allocation_totals,
+        nonemployee_compensation=nonemployee_compensation,
+        candidate_business_expenses=candidate_business_expenses,
+        has_1098t=has_1098t,
+        qualified_tuition=qualified_tuition,
+        scholarships_and_grants=scholarships_and_grants,
+    )
+
     normalized: dict[str, Any] = {
         "status": status,
         "tax_year": tax_year,
@@ -320,6 +511,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 for code, totals in sorted(state_allocation_totals.items())
             ],
         },
+        "interview_state": interview_state,
         "candidate_expense_documents": candidate_expense_documents,
         "facts": facts,
     }

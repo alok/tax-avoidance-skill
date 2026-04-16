@@ -285,6 +285,20 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
     unsupported_lines = [f"- {item}" for item in normalized.get("unsupported_reasons", [])] or ["- None"]
     refusal_lines = [f"- {item}" for item in normalized.get("illegal_reasons", [])] or ["- None"]
+    interview_state = normalized.get("interview_state", {})
+    next_question = interview_state.get("next_question")
+    interview_rows = [
+        [
+            question.get("priority", "normal"),
+            question.get("id", "unknown"),
+            question.get("prompt", ""),
+            question.get("reason", ""),
+        ]
+        for question in interview_state.get("open_questions", [])
+    ]
+    completed_interview_lines = [
+        f"- {item}" for item in interview_state.get("completed", [])
+    ] or ["- None"]
     candidate_expense_rows = [
         [
             expense.get("document_date") or "unknown",
@@ -353,6 +367,23 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Draft Federal Lines",
         "",
         make_markdown_table(["Form", "Line", "Label", "Value"], line_rows),
+        "",
+        "## Interview Checklist",
+        "",
+        (
+            f"- Next question: {next_question.get('prompt')}"
+            if next_question
+            else "- Next question: None"
+        ),
+        "",
+        make_markdown_table(
+            ["Priority", "ID", "Question", "Why It Matters"],
+            interview_rows or [["None", "None", "None", "None"]],
+        ),
+        "",
+        "### Completed Intake",
+        "",
+        *completed_interview_lines,
         "",
         "## Candidate Business Expenses",
         "",
