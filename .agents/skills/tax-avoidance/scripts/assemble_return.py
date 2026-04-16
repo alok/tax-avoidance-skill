@@ -47,12 +47,13 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
     dividends = fact_value(normalized, "ordinary_dividends")
     capital_gains = fact_value(normalized, "capital_gains")
     social_security = fact_value(normalized, "social_security_benefits")
+    taxable_social_security = fact_value(normalized, "taxable_social_security_benefits")
     has_business_expenses = bool(fact_sources(normalized, "business_expenses")) or business_expenses > 0.0
     net_profit = None
     if nonemployee_compensation and has_business_expenses:
         net_profit = nonemployee_compensation - business_expenses
 
-    total_income = wages + interest + dividends + capital_gains + social_security + (net_profit or 0.0)
+    total_income = wages + interest + dividends + capital_gains + taxable_social_security + (net_profit or 0.0)
 
     ira = fact_value(normalized, "ira_contribution_deduction")
     hsa = fact_value(normalized, "hsa_deduction")
@@ -134,6 +135,22 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "value": dividends or None,
             "sources": fact_sources(normalized, "ordinary_dividends"),
             "rule_citations": rule_citations("ordinary_dividends"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "6a",
+            "label": "Social Security benefits",
+            "value": social_security or None,
+            "sources": fact_sources(normalized, "social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
+        },
+        {
+            "form": "Form 1040",
+            "line": "6b",
+            "label": "Taxable Social Security benefits",
+            "value": taxable_social_security or None,
+            "sources": fact_sources(normalized, "taxable_social_security_benefits"),
+            "rule_citations": rule_citations("social_security_benefits"),
         },
         {
             "form": "Form 1040",
@@ -280,6 +297,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         for item in line_items
     ]
     candidate_business_expenses = fact_value(normalized, "candidate_business_expenses")
+    social_security = fact_value(normalized, "social_security_benefits")
+    taxable_social_security = fact_value(normalized, "taxable_social_security_benefits")
 
     connector_lines = [f"- {note}" for note in normalized.get("connector_notes", [])] or ["- None"]
     missing_lines = [f"- {item}" for item in normalized.get("missing_items", [])] or ["- None"]
@@ -366,6 +385,15 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Social Security Review",
+        "",
+        f"- Total Social Security benefits spotted from SSA-1099 documents: {money(social_security) if social_security else '$0.00'}",
+        (
+            f"- Taxable Social Security benefits currently carried to Form 1040 line 6b: {money(taxable_social_security)}"
+            if taxable_social_security
+            else "- No taxable Social Security amount is applied yet. Review the SSA-1099 and confirm the taxable amount before finalizing line 6b."
+        ),
         "",
         "## State Follow-Up",
         "",

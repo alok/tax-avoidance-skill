@@ -12,6 +12,7 @@ For a plain Codex app user:
 2. If a source only exposes a portal notice, ask for the actual PDF immediately.
 3. Prefer uploaded PDFs over vague email snippets.
 4. Treat likely SaaS or tooling receipts as candidate expenses until the user confirms they belong on Schedule C.
+5. Treat SSA-1099 benefits as review evidence until the taxable portion is confirmed; do not assume the full benefit amount is taxable.
 
 ## Order Of Operations
 
