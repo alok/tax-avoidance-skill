@@ -241,6 +241,50 @@
       "schedule_c_line_31": 89658.47
     }
   },
+  "ira_5498_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-main",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-main",
+          "fields": {
+            "wages": 88000,
+            "federal_withholding": 9600
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "traditional_ira_contributions": 6500,
+            "roth_ira_contributions": 1500,
+            "rollover_contributions": 12000
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9800
+      },
+      "user_request": "Review my IRA contribution form and tell me what is still needed before applying any deduction."
+    },
+    "expect": {
+      "status": "ok",
+      "traditional_ira_contributions": 6500,
+      "roth_ira_contributions": 1500,
+      "ira_rollover_contributions": 12000
+    }
+  },
   "schedule_c_missing_expenses": {
     "input": {
       "tax_year": 2025,
