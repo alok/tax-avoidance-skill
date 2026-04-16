@@ -298,6 +298,57 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    mortgage_interest = fact_value(normalized, "mortgage_interest")
+    charitable_cash = fact_value(normalized, "charitable_cash")
+    student_loan_interest = fact_value(normalized, "student_loan_interest_deduction")
+    ira_contributions_reported = fact_value(normalized, "ira_contributions_reported")
+    ira_deduction = fact_value(normalized, "ira_contribution_deduction")
+    hsa_deduction = fact_value(normalized, "hsa_deduction")
+    deduction_amount = fact_value(normalized, "deduction_amount")
+    deduction_review_rows = [
+        [
+            "Mortgage interest spotted from 1098 documents",
+            money(mortgage_interest) if mortgage_interest else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "mortgage_interest")) or "TBD",
+            "IRS Publication 936",
+        ],
+        [
+            "Cash charitable contributions spotted from donation receipts",
+            money(charitable_cash) if charitable_cash else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "charitable_cash")) or "TBD",
+            "IRS Publication 526",
+        ],
+        [
+            "Student loan interest spotted from 1098-E documents",
+            money(student_loan_interest) if student_loan_interest else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "student_loan_interest_deduction")) or "TBD",
+            "IRS Publication 970",
+        ],
+        [
+            "IRA contributions spotted from 5498 documents",
+            money(ira_contributions_reported) if ira_contributions_reported else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contributions_reported")) or "TBD",
+            "IRS Publication 590-A",
+        ],
+        [
+            "Draft IRA deduction currently applied",
+            money(ira_deduction) if ira_deduction else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "ira_contribution_deduction")) or "TBD",
+            "IRS Publication 590-A",
+        ],
+        [
+            "Draft HSA deduction currently applied",
+            money(hsa_deduction) if hsa_deduction else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "hsa_deduction")) or "TBD",
+            "IRS Publication 969",
+        ],
+        [
+            "Draft Form 1040 line 12 deduction amount",
+            money(deduction_amount) if deduction_amount else "$0.00",
+            ", ".join(src.get("source_ref", "unknown") for src in fact_sources(normalized, "deduction_amount")) or "TBD",
+            "User-provided deduction choice",
+        ],
+    ]
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -361,6 +412,13 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         make_markdown_table(
             ["Date", "Vendor", "Category", "Amount", "Source"],
             candidate_expense_rows or [["None", "None", "None", "$0.00", "None"]],
+        ),
+        "",
+        "## Deduction And Retirement Review",
+        "",
+        make_markdown_table(
+            ["Review Item", "Observed Or Applied Amount", "Sources", "Rule Source"],
+            deduction_review_rows,
         ),
         "",
         "## Education Review",

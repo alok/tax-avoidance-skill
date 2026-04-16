@@ -82,6 +82,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-T"},
         "scholarships_or_grants",
     )
+    ira_contributions_reported, ira_contributions_reported_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -187,6 +192,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append("Upload or connect at least one tax document before continuing.")
     if deduction_amount == 0.0 and "deduction_amount" not in answers:
         missing_items.append("Choose the deduction path and provide the deduction amount to use in the draft package.")
+    if ira_contributions_reported > 0.0 and "ira_contribution_deduction" not in answers:
+        missing_items.append(
+            "Review the Form 5498 IRA contribution details and confirm the traditional IRA, Roth IRA, and deductible contribution amounts before applying an IRA deduction."
+        )
     if tax_before_credits == 0.0 and "tax_before_credits" not in answers:
         missing_items.append("Provide a tax-before-credits figure or leave the tax lines marked for review.")
     if nonemployee_compensation > 0.0 and "business_expenses" not in answers:
@@ -270,6 +279,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "scholarships_and_grants",
             scholarships_and_grants,
             scholarships_and_grants_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contributions_reported_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",

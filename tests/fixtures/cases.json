@@ -605,6 +605,77 @@
       "unsupported": "Equity compensation"
     }
   },
+  "deduction_and_retirement_review": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "married_filing_jointly",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-primary",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-primary",
+          "fields": {
+            "wages": 132000,
+            "federal_withholding": 18000
+          }
+        },
+        {
+          "id": "mortgage-1098",
+          "doc_type": "1098",
+          "source_type": "google_drive",
+          "source_ref": "drive://mortgage-1098",
+          "fields": {
+            "mortgage_interest": 11250
+          }
+        },
+        {
+          "id": "student-loan-1098e",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://student-loan-1098e",
+          "fields": {
+            "student_loan_interest": 640
+          }
+        },
+        {
+          "id": "ira-5498",
+          "doc_type": "5498",
+          "source_type": "google_drive",
+          "source_ref": "drive://ira-5498",
+          "fields": {
+            "ira_contributions": 6500
+          }
+        },
+        {
+          "id": "donation-receipt",
+          "doc_type": "Donation Receipt",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://donation-receipt",
+          "fields": {
+            "cash_donations": 1200
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 29200,
+        "hsa_deduction": 1200,
+        "tax_before_credits": 15500
+      },
+      "user_request": "Review my common deductions and retirement forms before drafting the return."
+    },
+    "expect": {
+      "status": "ok",
+      "ira_contributions_reported": 6500,
+      "mortgage_interest": 11250,
+      "charitable_cash": 1200,
+      "student_loan_interest": 640
+    }
+  },
   "illegal_request": {
     "input": {
       "tax_year": 2025,
