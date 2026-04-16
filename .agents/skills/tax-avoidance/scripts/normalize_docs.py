@@ -82,6 +82,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-T"},
         "scholarships_or_grants",
     )
+    ira_contributions, ira_contribution_sources = aggregate_numeric(
+        documents,
+        {"5498"},
+        "ira_contributions",
+    )
     expense_documents_for_year = [
         document
         for document in documents
@@ -212,6 +217,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    has_5498 = any(doc.get("doc_type") == "5498" for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if ira_contributions > 0.0:
+            missing_items.append(
+                "Review the 5498 IRA contribution amount and confirm how much is deductible before applying an IRA deduction."
+            )
+        else:
+            missing_items.append(
+                "Extract the key 5498 IRA contribution amount or upload a clearer copy before reviewing any IRA deduction."
+            )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -270,6 +285,11 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "scholarships_and_grants",
             scholarships_and_grants,
             scholarships_and_grants_sources,
+        ),
+        "ira_contributions": build_fact(
+            "ira_contributions",
+            ira_contributions,
+            ira_contribution_sources,
         ),
         "candidate_business_expenses": build_fact(
             "candidate_business_expenses",
