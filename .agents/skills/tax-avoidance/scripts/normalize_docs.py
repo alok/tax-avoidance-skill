@@ -67,7 +67,7 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098"},
         "mortgage_interest",
     )
-    student_loan_interest, student_loan_interest_sources = aggregate_numeric(
+    student_loan_interest_paid, student_loan_interest_paid_sources = aggregate_numeric(
         documents,
         {"1098-E"},
         "student_loan_interest",
@@ -117,6 +117,10 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     ira_deduction, ira_sources = answer_fact(answers, "ira_contribution_deduction")
     hsa_deduction, hsa_sources = answer_fact(answers, "hsa_deduction")
+    student_loan_interest_deduction, student_loan_interest_deduction_sources = answer_fact(
+        answers,
+        "student_loan_interest_deduction",
+    )
     business_expenses, business_expense_sources = answer_fact(answers, "business_expenses")
     deduction_amount, deduction_sources = answer_fact(answers, "deduction_amount")
     qbi_deduction, qbi_sources = answer_fact(answers, "qbi_deduction")
@@ -212,6 +216,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(
                 "Extract the key 1098-T amounts or upload a clearer copy before reviewing any education credit."
             )
+    has_1098e = any(doc.get("doc_type") == "1098-E" for doc in documents)
+    if has_1098e and "student_loan_interest_deduction" not in answers:
+        if student_loan_interest_paid > 0.0:
+            missing_items.append(
+                "Review the 1098-E student loan interest paid and confirm the deductible amount before applying a student loan interest deduction."
+            )
+        else:
+            missing_items.append(
+                "Extract the key 1098-E student loan interest amount or upload a clearer copy before reviewing any student loan interest deduction."
+            )
     for document in documents:
         content_status = document.get("content_status")
         doc_type = document.get("doc_type", "document")
@@ -256,10 +270,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
+        "student_loan_interest_paid": build_fact(
+            "student_loan_interest_paid",
+            student_loan_interest_paid,
+            student_loan_interest_paid_sources,
+        ),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",
-            student_loan_interest,
-            student_loan_interest_sources,
+            student_loan_interest_deduction,
+            student_loan_interest_deduction_sources,
         ),
         "qualified_tuition": build_fact(
             "qualified_tuition",

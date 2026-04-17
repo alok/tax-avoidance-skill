@@ -93,6 +93,7 @@ class TaxFlowTest(unittest.TestCase):
             "schedule_c_missing_expenses",
             "unsupported_schedule_c",
             "education_credit_review_1098t",
+            "student_loan_interest_review_1098e",
         ):
             with self.subTest(name=name):
                 normalized, artifacts = self.run_case(name)
@@ -110,6 +111,32 @@ class TaxFlowTest(unittest.TestCase):
             "Review the 1098-T tuition and scholarship amounts",
             artifacts["missing-items.md"],
         )
+
+    def test_student_loan_interest_review_1098e(self) -> None:
+        normalized, artifacts = self.run_case("student_loan_interest_review_1098e")
+        self.assertEqual(normalized["facts"]["student_loan_interest_paid"]["value"], 780)
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 0)
+        self.assertIn("Student Loan Interest Review", artifacts["tax-dossier.md"])
+        self.assertIn("$780.00", artifacts["tax-dossier.md"])
+        self.assertIn(
+            "Review the 1098-E student loan interest paid",
+            artifacts["missing-items.md"],
+        )
+        self.assertNotIn(
+            "| Form 1040 | 10 | Adjustments to income | $780.00 |",
+            artifacts["federal-lines.md"],
+        )
+
+    def test_confirmed_student_loan_interest_deduction(self) -> None:
+        normalized, artifacts = self.run_case("student_loan_interest_confirmed_deduction")
+        self.assertEqual(normalized["facts"]["student_loan_interest_paid"]["value"], 780)
+        self.assertEqual(normalized["facts"]["student_loan_interest_deduction"]["value"], 780)
+        self.assertIn(
+            "| Form 1040 | 10 | Adjustments to income | $780.00 |",
+            artifacts["federal-lines.md"],
+        )
+        self.assertIn("answer:student_loan_interest_deduction", artifacts["federal-lines.md"])
+        self.assertNotIn("Review the 1098-E student loan interest paid", artifacts["missing-items.md"])
 
     def test_candidate_business_expenses(self) -> None:
         normalized, artifacts = self.run_case("schedule_c_candidate_expenses")

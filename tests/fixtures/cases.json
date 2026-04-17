@@ -209,6 +209,89 @@
       "scholarships_and_grants": 2500
     }
   },
+  "student_loan_interest_review_1098e": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-borrower",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-borrower",
+          "fields": {
+            "wages": 72000,
+            "federal_withholding": 8200
+          }
+        },
+        {
+          "id": "1098e-servicer",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer",
+          "fields": {
+            "student_loan_interest": 780
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 9200
+      },
+      "user_request": "Review my student loan interest form before deciding whether to claim the deduction."
+    },
+    "expect": {
+      "status": "ok",
+      "student_loan_interest_paid": 780,
+      "student_loan_interest_deduction": 0
+    }
+  },
+  "student_loan_interest_confirmed_deduction": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": false
+      },
+      "documents": [
+        {
+          "id": "w2-borrower-confirmed",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-borrower-confirmed",
+          "fields": {
+            "wages": 72000,
+            "federal_withholding": 8200
+          }
+        },
+        {
+          "id": "1098e-servicer-confirmed",
+          "doc_type": "1098-E",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://1098e-servicer-confirmed",
+          "fields": {
+            "student_loan_interest": 780
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "student_loan_interest_deduction": 780,
+        "tax_before_credits": 9200
+      },
+      "user_request": "I reviewed my 1098-E and confirmed the deductible student loan interest amount."
+    },
+    "expect": {
+      "status": "ok",
+      "student_loan_interest_paid": 780,
+      "student_loan_interest_deduction": 780
+    }
+  },
   "schedule_c_contractor": {
     "input": {
       "tax_year": 2025,

@@ -9,7 +9,7 @@ Use IRS or Treasury sources for all substantive tax guidance. Use Wikipedia only
 - [Publication 505](https://www.irs.gov/publications/p505): withholding and estimated tax
 - [Publication 590-A](https://www.irs.gov/publications/p590a): IRA contribution rules
 - [Publication 969](https://www.irs.gov/forms-pubs/about-publication-969): HSA and related account rules
-- [Publication 970](https://www.irs.gov/publications/p970): education benefits
+- [Publication 970](https://www.irs.gov/publications/p970): education benefits and student loan interest deduction review
 - [Publication 526](https://www.irs.gov/publications/p526): charitable contributions
 - [Publication 936](https://www.irs.gov/publications/p936): home mortgage interest deduction
 - [Clean vehicle and energy credits](https://www.irs.gov/credits-deductions/clean-vehicle-and-energy-credits): vehicle and home-energy credit workflows

@@ -37,6 +37,12 @@ For a plain Codex app user:
 - Use the receipt or payment date to decide whether a candidate expense belongs in the target tax year.
 - Keep out-of-year receipts visible in the inventory, but do not include them in the candidate-expense total for the return year.
 
+## Student Loan Interest Review
+
+- Treat 1098-E documents as evidence of student loan interest paid, not as an automatic deduction.
+- Ask the user to confirm eligibility and the deductible amount before applying any student loan interest adjustment on Form 1040 line 10.
+- Keep the source-backed 1098-E amount visible in `tax-dossier.md` even when no deduction has been applied yet.
+
 ## Interview Principles
 
 - Ask for filing status only after document collection begins.

@@ -177,7 +177,12 @@ def build_line_items(normalized: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Adjusted gross income",
             "value": agi or None,
             "sources": [],
-            "rule_citations": rule_citations("wages", "ira_contribution_deduction", "hsa_deduction"),
+            "rule_citations": rule_citations(
+                "wages",
+                "ira_contribution_deduction",
+                "hsa_deduction",
+                "student_loan_interest_deduction",
+            ),
         },
         {
             "form": "Form 1040",
@@ -298,6 +303,8 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
     qualified_tuition = fact_value(normalized, "qualified_tuition")
     scholarships_and_grants = fact_value(normalized, "scholarships_and_grants")
     education_credit = fact_value(normalized, "education_credit")
+    student_loan_interest_paid = fact_value(normalized, "student_loan_interest_paid")
+    student_loan_interest_deduction = fact_value(normalized, "student_loan_interest_deduction")
     education_review_lines = [
         f"- Qualified tuition spotted from 1098-T documents: {money(qualified_tuition) if qualified_tuition else '$0.00'}",
         f"- Scholarships or grants spotted from 1098-T documents: {money(scholarships_and_grants) if scholarships_and_grants else '$0.00'}",
@@ -305,6 +312,14 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
             f"- Draft education credit currently applied on Form 1040 line 20: {money(education_credit)}"
             if education_credit
             else "- No education credit is applied yet. Review the 1098-T details before adding one."
+        ),
+    ]
+    student_loan_review_lines = [
+        f"- Student loan interest spotted from 1098-E documents: {money(student_loan_interest_paid) if student_loan_interest_paid else '$0.00'}",
+        (
+            f"- Draft student loan interest deduction currently applied on Form 1040 line 10: {money(student_loan_interest_deduction)}"
+            if student_loan_interest_deduction
+            else "- No student loan interest deduction is applied yet. Confirm eligibility and the deductible amount before adding one."
         ),
     ]
     state_summary = normalized.get("state_summary", {})
@@ -366,6 +381,10 @@ def build_dossier(normalized: dict[str, Any], line_items: list[dict[str, Any]]) 
         "## Education Review",
         "",
         *education_review_lines,
+        "",
+        "## Student Loan Interest Review",
+        "",
+        *student_loan_review_lines,
         "",
         "## State Follow-Up",
         "",
