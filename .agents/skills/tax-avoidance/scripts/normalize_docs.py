@@ -72,6 +72,17 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"1098-E"},
         "student_loan_interest",
     )
+    form_5498_doc_types = {"5498", "Form 5498"}
+    ira_contributions_reported, ira_contributions_sources = aggregate_numeric(
+        documents,
+        form_5498_doc_types,
+        "ira_contributions",
+    )
+    roth_ira_contributions_reported, roth_ira_contributions_sources = aggregate_numeric(
+        documents,
+        form_5498_doc_types,
+        "roth_ira_contributions",
+    )
     qualified_tuition, qualified_tuition_sources = aggregate_numeric(
         documents,
         {"1098-T"},
@@ -193,6 +204,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         missing_items.append(
             "Provide deductible business expenses for the 1099-NEC work, or explicitly confirm that business expenses should be treated as zero."
         )
+    has_5498 = any(doc.get("doc_type") in form_5498_doc_types for doc in documents)
+    if has_5498 and "ira_contribution_deduction" not in answers:
+        if ira_contributions_reported > 0.0 or roth_ira_contributions_reported > 0.0:
+            missing_items.append(
+                "Review the Form 5498 IRA contribution amounts and confirm any deductible traditional IRA contribution before applying it on Schedule 1."
+            )
+        else:
+            missing_items.append(
+                "Extract the Form 5498 IRA contribution boxes or upload a clearer copy before reviewing any IRA deduction."
+            )
     if candidate_business_expenses > 0.0 and "business_expenses" not in answers:
         missing_items.append(
             f"Review and confirm the candidate business-expense receipts totaling ${candidate_business_expenses:,.2f} before applying them to Schedule C."
@@ -260,6 +281,16 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "student_loan_interest_deduction",
             student_loan_interest,
             student_loan_interest_sources,
+        ),
+        "ira_contributions_reported": build_fact(
+            "ira_contributions_reported",
+            ira_contributions_reported,
+            ira_contributions_sources,
+        ),
+        "roth_ira_contributions_reported": build_fact(
+            "roth_ira_contributions_reported",
+            roth_ira_contributions_reported,
+            roth_ira_contributions_sources,
         ),
         "qualified_tuition": build_fact(
             "qualified_tuition",
