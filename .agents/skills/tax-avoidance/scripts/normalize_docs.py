@@ -62,6 +62,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         {"SSA-1099"},
         "benefits",
     )
+    retirement_gross_distribution, retirement_gross_distribution_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "gross_distribution",
+    )
+    retirement_taxable_amount, retirement_taxable_amount_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "taxable_amount",
+    )
+    retirement_withholding, retirement_withholding_sources = aggregate_numeric(
+        documents,
+        {"1099-R"},
+        "federal_withholding",
+    )
     mortgage_interest, mortgage_interest_sources = aggregate_numeric(
         documents,
         {"1098"},
@@ -202,6 +217,15 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
             missing_items.append(note)
     if any(doc.get("doc_type") == "1099-B" and "capital_gains" not in doc.get("fields", {}) for doc in documents):
         missing_items.append("Summarize net capital gains or losses from the 1099-B support documents.")
+    if any(
+        doc.get("doc_type") == "1099-R"
+        and "gross_distribution" in doc.get("fields", {})
+        and "taxable_amount" not in doc.get("fields", {})
+        for doc in documents
+    ):
+        missing_items.append(
+            "Confirm the taxable amount from the 1099-R before finalizing pension or retirement distribution lines."
+        )
     has_1098t = any(doc.get("doc_type") == "1098-T" for doc in documents)
     if has_1098t and "education_credit" not in answers:
         if qualified_tuition > 0.0 or scholarships_and_grants > 0.0:
@@ -255,6 +279,21 @@ def normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "ordinary_dividends": build_fact("ordinary_dividends", dividends, dividends_sources),
         "capital_gains": build_fact("capital_gains", capital_gains, capital_gains_sources),
         "social_security_benefits": build_fact("social_security_benefits", social_security, social_security_sources),
+        "retirement_gross_distribution": build_fact(
+            "retirement_gross_distribution",
+            retirement_gross_distribution,
+            retirement_gross_distribution_sources,
+        ),
+        "retirement_taxable_amount": build_fact(
+            "retirement_taxable_amount",
+            retirement_taxable_amount,
+            retirement_taxable_amount_sources,
+        ),
+        "retirement_federal_withholding": build_fact(
+            "retirement_federal_withholding",
+            retirement_withholding,
+            retirement_withholding_sources,
+        ),
         "mortgage_interest": build_fact("mortgage_interest", mortgage_interest, mortgage_interest_sources),
         "student_loan_interest_deduction": build_fact(
             "student_loan_interest_deduction",

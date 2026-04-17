@@ -135,6 +135,82 @@
       "line_3b": 1400
     }
   },
+  "retirement_distribution_household": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": true,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "w2-part-year",
+          "doc_type": "W-2",
+          "source_type": "gmail_attachment",
+          "source_ref": "gmail://w2-part-year",
+          "fields": {
+            "wages": 52000,
+            "federal_withholding": 6800
+          }
+        },
+        {
+          "id": "1099r-pension",
+          "doc_type": "1099-R",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099r-pension",
+          "fields": {
+            "gross_distribution": 18000,
+            "taxable_amount": 14000,
+            "federal_withholding": 2100
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 7200
+      },
+      "user_request": "Add my pension 1099-R to the simple federal package."
+    },
+    "expect": {
+      "status": "ok",
+      "line_1a": 52000,
+      "line_5a": 18000,
+      "line_5b": 14000,
+      "line_25a": 6800,
+      "line_25b": 2100
+    }
+  },
+  "retirement_distribution_missing_taxable_amount": {
+    "input": {
+      "tax_year": 2025,
+      "filing_status": "single",
+      "connectors": {
+        "gmail": false,
+        "google_drive": true
+      },
+      "documents": [
+        {
+          "id": "1099r-needs-review",
+          "doc_type": "1099-R",
+          "source_type": "google_drive",
+          "source_ref": "drive://1099r-needs-review",
+          "fields": {
+            "gross_distribution": 9000,
+            "federal_withholding": 900
+          }
+        }
+      ],
+      "answers": {
+        "deduction_amount": 15000,
+        "tax_before_credits": 0
+      },
+      "user_request": "Review this retirement distribution document."
+    },
+    "expect": {
+      "status": "ok"
+    }
+  },
   "education_credit_household": {
     "input": {
       "tax_year": 2025,
